@@ -56,38 +56,48 @@ const indexPage = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hermes API</title>
+<title>Hermes</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 2rem 1rem; color: #1a1a1a; line-height: 1.6; }
-  h1 { margin-bottom: 0.5rem; }
-  p { margin-bottom: 1rem; color: #555; }
-  pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-bottom: 1.5rem; }
-  form { display: flex; flex-direction: column; gap: 0.75rem; }
-  label { font-weight: 600; font-size: 0.9rem; }
-  input, textarea { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; font-family: inherit; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px 16px; color: #111; font-size: 13px; line-height: 1.5; }
+  .page-header { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #e0e0e0; }
+  h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #999; margin: 0; }
+  p { margin-bottom: 12px; color: #666; font-size: 12px; }
+  pre { background: #fafafa; border: 1px solid #e0e0e0; padding: 14px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; margin-bottom: 20px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 11px; color: #999; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group textarea { width: 100%; padding: 7px 9px; border: 1px solid #ddd; font-size: 13px; font-family: inherit; color: #111; outline: none; }
+  .form-group input:focus, .form-group textarea:focus { border-color: #111; }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: #bbb; }
   textarea { resize: vertical; min-height: 80px; }
-  button { padding: 0.6rem; background: #111; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-  button:hover { background: #333; }
-  button:disabled { background: #999; cursor: not-allowed; }
-  #result { margin-top: 0.75rem; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem; display: none; }
-  #result.ok { display: block; background: #e6f9e6; color: #1a7a1a; }
-  #result.err { display: block; background: #fde8e8; color: #b91c1c; }
+  button { display: block; width: 100%; padding: 8px; background: #111; color: #fff; border: 1px solid #111; font-size: 12px; font-family: inherit; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; margin-top: 6px; }
+  button:hover:not(:disabled) { background: #333; border-color: #333; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #result { margin-top: 12px; padding: 6px 10px; font-size: 12px; display: none; }
+  #result.ok { display: block; background: #fff; border: 1px solid #ddd; color: #111; }
+  #result.err { display: block; background: #fff8f8; border: 1px solid #f5c0c0; color: #c00; }
 </style>
 </head>
 <body>
-<h1>Hermes</h1>
-<p>Send a message via the Hermes API.</p>
+<div class="page-header">
+  <h1>Hermes</h1>
+  <p class="subtitle">Message API</p>
+</div>
 
 <pre><code>curl -X POST https://hermes.baileys.app/ \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "message": "Hello!"}'</code></pre>
 
 <form id="f">
-  <label for="name">Name</label>
-  <input id="name" name="name" required placeholder="Your name">
-  <label for="message">Message</label>
-  <textarea id="message" name="message" required placeholder="Your message"></textarea>
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input id="name" name="name" required placeholder="Your name">
+  </div>
+  <div class="form-group">
+    <label for="message">Message</label>
+    <textarea id="message" name="message" required placeholder="Your message"></textarea>
+  </div>
   <button type="submit">Send</button>
 </form>
 <div id="result"></div>
