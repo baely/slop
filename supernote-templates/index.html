@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supernote Template Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #161616;
+  --surface-raised: #1e1e1e;
+  --border: #2a2a2a;
+  --border-hover: #3a3a3a;
+  --text: #e8e4df;
+  --text-dim: #807c77;
+  --text-muted: #4a4744;
+  --accent: #c4a882;
+  --accent-dim: #8a7560;
+  --paper: #f5f1eb;
+  --ink: #1a1a1a;
+  --ink-light: #999;
+  --radius: 6px;
+  --transition: 180ms ease;
+}
+
+html { font-size: 15px; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+/* Header */
+header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.logo {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.logo span { color: var(--accent); font-style: italic; }
+
+.device-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.download-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 9px 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.download-btn:hover { background: #d4b892; transform: translateY(-1px); }
+.download-btn:active { transform: translateY(0); }
+
+.header-right { display: flex; align-items: center; gap: 14px; }
+
+/* Sidebar */
+aside {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 20px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar-section { padding: 0 18px; margin-bottom: 24px; }
+.sidebar-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+/* Template cards */
+.template-list { display: flex; flex-direction: column; gap: 4px; }
+.template-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+}
+.template-card:hover { background: var(--surface-raised); }
+.template-card.active {
+  background: var(--surface-raised);
+  border-color: var(--accent-dim);
+}
+
+.template-icon {
+  width: 34px;
+  height: 44px;
+  border-radius: 3px;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.template-icon svg { width: 22px; height: 28px; }
+
+.template-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+}
+.template-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Config controls */
+.config-group { margin-bottom: 16px; }
+.config-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  display: block;
+}
+
+select, input[type="number"], input[type="range"] {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition);
+  appearance: none;
+  -webkit-appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23807c77' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+select:focus, input:focus { border-color: var(--accent-dim); }
+
+.row-config { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+input[type="range"] {
+  padding: 0;
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  -webkit-appearance: none;
+  background: var(--border);
+  margin-top: 4px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.range-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  min-width: 28px;
+  text-align: right;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.checkbox-row label {
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Preview area */
+main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle grid bg */
+main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--border) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+}
+
+.preview-frame {
+  position: relative;
+  z-index: 1;
+  background: white;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.3),
+    0 12px 40px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(255,255,255,0.04);
+  max-height: calc(100vh - 120px);
+  aspect-ratio: 1920 / 2560;
+  overflow: hidden;
+}
+
+.preview-frame canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Offscreen canvas for full-res export */
+#exportCanvas { display: none; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sidebar-section { animation: fadeIn 400ms ease both; }
+.sidebar-section:nth-child(2) { animation-delay: 80ms; }
+.sidebar-section:nth-child(3) { animation-delay: 160ms; }
+
+/* Scrollbar */
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-track { background: transparent; }
+aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+@media (max-width: 768px) {
+  body { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  aside { border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; }
+  .preview-frame { max-height: calc(60vh - 80px); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Template <span>Studio</span></div>
+  <div class="header-right">
+    <div class="device-badge">A5X2 Manta · 1920×2560</div>
+    <button class="download-btn" id="downloadBtn">↓ Download PNG</button>
+  </div>
+</header>
+
+<aside>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Templates</div>
+    <div class="template-list" id="templateList"></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Configuration</div>
+    <div id="configPanel"></div>
+  </div>
+</aside>
+
+<main>
+  <div class="preview-frame">
+    <canvas id="previewCanvas"></canvas>
+  </div>
+</main>
+
+<canvas id="exportCanvas" width="1920" height="2560"></canvas>
+
+<script>
+// ─── Template Registry ───────────────────────────────────────────
+const W = 1920, H = 2560;
+const MARGIN = { top: 140, right: 80, bottom: 80, left: 80 };
+
+const templates = {};
+
+function registerTemplate(id, def) {
+  templates[id] = def;
+}
+
+// ─── Utility ─────────────────────────────────────────────────────
+function getMonthData(year, month) {
+  const firstDay = new Date(year, month, 1).getDay();
+  const startDay = firstDay === 0 ? 6 : firstDay - 1; // Monday-start
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weeks = Math.ceil((startDay + daysInMonth) / 7);
+  return { startDay, daysInMonth, weeks };
+}
+
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// ─── Monthly Planner ─────────────────────────────────────────────
+registerTemplate('monthly', {
+  name: 'Monthly Planner',
+  desc: 'Calendar grid with date cells',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="4" width="20" height="22" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    <line x1="1" y1="9" x2="21" y2="9" stroke="#333" stroke-width="0.8"/>
+    <line x1="4" y1="4" x2="4" y2="6" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="18" y1="4" x2="18" y2="6" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
+    <g fill="#555" font-size="3" font-family="sans-serif">
+      <rect x="3" y="11" width="3" height="2.5" rx="0.3" fill="#ddd"/><rect x="8" y="11" width="3" height="2.5" rx="0.3" fill="#ddd"/>
+      <rect x="13" y="11" width="3" height="2.5" rx="0.3" fill="#ddd"/><rect x="3" y="15" width="3" height="2.5" rx="0.3" fill="#ddd"/>
+      <rect x="8" y="15" width="3" height="2.5" rx="0.3" fill="#ddd"/><rect x="13" y="15" width="3" height="2.5" rx="0.3" fill="#ddd"/>
+      <rect x="3" y="19" width="3" height="2.5" rx="0.3" fill="#ddd"/><rect x="8" y="19" width="3" height="2.5" rx="0.3" fill="#ddd"/>
+    </g>
+  </svg>`,
+  defaultConfig: () => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth(), weekStart: 'monday', showWeekNumbers: false, showLabels: true };
+  },
+  configUI: (config, onChange) => {
+    const yearOpts = Array.from({length: 11}, (_, i) => {
+      const y = new Date().getFullYear() - 2 + i;
+      return `<option value="${y}" ${y === config.year ? 'selected' : ''}>${y}</option>`;
+    }).join('');
+    const monthOpts = MONTHS.map((m, i) =>
+      `<option value="${i}" ${i === config.month ? 'selected' : ''}>${m}</option>`
+    ).join('');
+
+    return `
+      <div class="row-config">
+        <div class="config-group">
+          <label class="config-label">Month</label>
+          <select id="cfgMonth">${monthOpts}</select>
+        </div>
+        <div class="config-group">
+          <label class="config-label">Year</label>
+          <select id="cfgYear">${yearOpts}</select>
+        </div>
+      </div>
+      <div class="config-group">
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfgWeekNums" ${config.showWeekNumbers ? 'checked' : ''}>
+          <label for="cfgWeekNums">Show week numbers</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfgLabels" ${config.showLabels ? 'checked' : ''}>
+          <label for="cfgLabels">Show dates &amp; labels</label>
+        </div>
+      </div>
+    `;
+  },
+  bindConfig: (config, onChange) => {
+    document.getElementById('cfgMonth').addEventListener('change', e => { config.month = +e.target.value; onChange(); });
+    document.getElementById('cfgYear').addEventListener('change', e => { config.year = +e.target.value; onChange(); });
+    document.getElementById('cfgWeekNums').addEventListener('change', e => { config.showWeekNumbers = e.target.checked; onChange(); });
+    document.getElementById('cfgLabels').addEventListener('change', e => { config.showLabels = e.target.checked; onChange(); });
+  },
+  render: (ctx, config) => {
+    const { year, month, showWeekNumbers, showLabels } = config;
+    const { startDay, daysInMonth, weeks } = getMonthData(year, month);
+    const rows = showLabels ? weeks : 6;
+
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    if (showLabels) {
+      // Header area — month and year text
+      ctx.fillStyle = '#000';
+      ctx.font = '700 92px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(MONTHS[month], MARGIN.left, MARGIN.top - 100);
+
+      const monthWidth = ctx.measureText(MONTHS[month]).width;
+      ctx.font = '300 92px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.fillText(` ${year}`, MARGIN.left + monthWidth, MARGIN.top - 100);
+    } else {
+      // Generic mode — draw a write-in box for the month
+      const boxW = 500;
+      const boxH = 80;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(MARGIN.left, MARGIN.top - 100, boxW, boxH);
+      ctx.fillStyle = '#000';
+      ctx.font = '500 22px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText('Month / Year', MARGIN.left + 12, MARGIN.top - 96);
+    }
+
+    const gridLeft = MARGIN.left + (showWeekNumbers && showLabels ? 60 : 0);
+    const gridTop = MARGIN.top + 60;
+    const gridW = W - MARGIN.right - gridLeft;
+    const gridH = H - MARGIN.bottom - gridTop;
+    const colW = gridW / 7;
+    const headerH = 50;
+    const rowH = (gridH - headerH) / rows;
+
+    // Day headers — always shown
+    ctx.fillStyle = '#000';
+    ctx.font = '500 28px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    DAYS_SHORT.forEach((d, i) => {
+      const x = gridLeft + i * colW + colW / 2;
+      ctx.textAlign = 'center';
+      ctx.fillText(d, x, gridTop + headerH / 2);
+    });
+
+    // Header separator
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(gridLeft, gridTop + headerH);
+    ctx.lineTo(gridLeft + gridW, gridTop + headerH);
+    ctx.stroke();
+
+    // Grid lines
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+
+    for (let r = 1; r < rows; r++) {
+      const y = gridTop + headerH + r * rowH;
+      ctx.beginPath();
+      ctx.moveTo(gridLeft, y);
+      ctx.lineTo(gridLeft + gridW, y);
+      ctx.stroke();
+    }
+    for (let c = 1; c < 7; c++) {
+      const x = gridLeft + c * colW;
+      ctx.beginPath();
+      ctx.moveTo(x, gridTop + headerH);
+      ctx.lineTo(x, gridTop + headerH + rows * rowH);
+      ctx.stroke();
+    }
+
+    // Outer border
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(gridLeft, gridTop + headerH, gridW, rows * rowH);
+
+    // Date boxes in every cell
+    for (let r = 0; r < rows; r++) {
+      if (showLabels && showWeekNumbers) {
+        const weekDate = new Date(year, month, 1 + r * 7 - startDay);
+        const wn = getWeekNumber(weekDate);
+        ctx.fillStyle = '#000';
+        ctx.font = '400 22px "Helvetica Neue", Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`W${wn}`, gridLeft - 14, gridTop + headerH + r * rowH + rowH / 2);
+      }
+
+      for (let c = 0; c < 7; c++) {
+        const cx = gridLeft + c * colW;
+        const cy = gridTop + headerH + r * rowH;
+        const boxSize = 38;
+        const boxMargin = 8;
+
+        // Draw date box
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cx + boxMargin, cy + boxMargin, boxSize, boxSize);
+
+        // Fill in date number if in label mode and valid day
+        if (showLabels) {
+          const idx = r * 7 + c;
+          const day = idx - startDay + 1;
+          if (idx >= startDay && day <= daysInMonth) {
+            ctx.fillStyle = '#000';
+            ctx.font = '600 24px "Helvetica Neue", Helvetica, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(day), cx + boxMargin + boxSize / 2, cy + boxMargin + boxSize / 2);
+          }
+        }
+      }
+    }
+  }
+});
+
+// ─── Weekly Planner ──────────────────────────────────────────────
+registerTemplate('weekly', {
+  name: 'Weekly Planner',
+  desc: 'Day columns with sections',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="3" width="20" height="23" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    <line x1="4" y1="3" x2="4" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="7" y1="3" x2="7" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="10" y1="3" x2="10" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="13" y1="3" x2="13" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="16" y1="3" x2="16" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="19" y1="3" x2="19" y2="26" stroke="#ccc" stroke-width="0.6"/>
+    <line x1="1" y1="7" x2="21" y2="7" stroke="#333" stroke-width="0.8"/>
+  </svg>`,
+  defaultConfig: () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    return {
+      startDate: monday.toISOString().split('T')[0],
+      showTimeSlots: false,
+      showNotes: true,
+      showLabels: true
+    };
+  },
+  configUI: (config, onChange) => `
+    <div class="config-group">
+      <label class="config-label">Week starting</label>
+      <input type="date" id="cfgStartDate" value="${config.startDate}"
+        style="font-family:'DM Sans',sans-serif;font-size:0.85rem;background:var(--surface-raised);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;width:100%;outline:none;">
+    </div>
+    <div class="config-group">
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgTimeSlots" ${config.showTimeSlots ? 'checked' : ''}>
+        <label for="cfgTimeSlots">Show time slots</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgNotes" ${config.showNotes ? 'checked' : ''}>
+        <label for="cfgNotes">Notes section</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgWeeklyLabels" ${config.showLabels ? 'checked' : ''}>
+        <label for="cfgWeeklyLabels">Show dates &amp; labels</label>
+      </div>
+    </div>
+  `,
+  bindConfig: (config, onChange) => {
+    document.getElementById('cfgStartDate').addEventListener('change', e => { config.startDate = e.target.value; onChange(); });
+    document.getElementById('cfgTimeSlots').addEventListener('change', e => { config.showTimeSlots = e.target.checked; onChange(); });
+    document.getElementById('cfgNotes').addEventListener('change', e => { config.showNotes = e.target.checked; onChange(); });
+    document.getElementById('cfgWeeklyLabels').addEventListener('change', e => { config.showLabels = e.target.checked; onChange(); });
+  },
+  render: (ctx, config) => {
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    const start = new Date(config.startDate + 'T00:00:00');
+    const wn = getWeekNumber(start);
+
+    if (config.showLabels) {
+      ctx.fillStyle = '#000';
+      ctx.font = '700 72px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Week ${wn}`, MARGIN.left, MARGIN.top - 100);
+
+      const endDate = new Date(start);
+      endDate.setDate(endDate.getDate() + 6);
+      const fmt = d => `${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`;
+      ctx.font = '300 42px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.fillText(`${fmt(start)} — ${fmt(endDate)}  ${start.getFullYear()}`, MARGIN.left, MARGIN.top - 20);
+    } else {
+      // Generic mode — write-in box for week
+      const boxW = 500;
+      const boxH = 80;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(MARGIN.left, MARGIN.top - 100, boxW, boxH);
+      ctx.fillStyle = '#000';
+      ctx.font = '500 22px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText('Week / Date Range', MARGIN.left + 12, MARGIN.top - 96);
+    }
+
+    const gridTop = MARGIN.top + 90;
+    const gridH = H - MARGIN.bottom - gridTop;
+    const notesW = config.showNotes ? 340 : 0;
+    const gridW = W - MARGIN.left - MARGIN.right - notesW;
+    const colW = gridW / 7;
+    const headerH = 70;
+    const DAYS_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    // Day headers — always shown
+    for (let i = 0; i < 7; i++) {
+      const x = MARGIN.left + i * colW;
+
+      ctx.fillStyle = '#000';
+      ctx.font = '500 26px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(DAYS_FULL[i].slice(0, 3).toUpperCase(), x + colW / 2, gridTop + 20);
+
+      if (config.showLabels) {
+        const dayDate = new Date(start);
+        dayDate.setDate(dayDate.getDate() + i);
+        ctx.font = '700 32px "Helvetica Neue", Helvetica, Arial, sans-serif';
+        ctx.fillText(String(dayDate.getDate()), x + colW / 2, gridTop + 52);
+      }
+    }
+
+    // Separator
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(MARGIN.left, gridTop + headerH);
+    ctx.lineTo(MARGIN.left + gridW, gridTop + headerH);
+    ctx.stroke();
+
+    // Columns
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    for (let c = 1; c < 7; c++) {
+      const x = MARGIN.left + c * colW;
+      ctx.beginPath();
+      ctx.moveTo(x, gridTop + headerH);
+      ctx.lineTo(x, gridTop + gridH);
+      ctx.stroke();
+    }
+
+    // Border
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(MARGIN.left, gridTop + headerH, gridW, gridH - headerH);
+
+    // Time slots or ruled lines
+    if (config.showTimeSlots) {
+      const bodyH = gridH - headerH;
+      const hours = ['6','7','8','9','10','11','12','1','2','3','4','5','6','7','8','9'];
+      const slotH = bodyH / hours.length;
+      for (let h = 1; h < hours.length; h++) {
+        const y = gridTop + headerH + h * slotH;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(MARGIN.left, y);
+        ctx.lineTo(MARGIN.left + gridW, y);
+        ctx.stroke();
+        if (config.showLabels) {
+          ctx.fillStyle = '#000';
+          ctx.font = '300 18px "Helvetica Neue", Helvetica, Arial, sans-serif';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(hours[h], MARGIN.left + colW - 8, y);
+        }
+      }
+    } else {
+      const bodyH = gridH - headerH;
+      const lineSpacing = 48;
+      const numLines = Math.floor(bodyH / lineSpacing);
+      for (let l = 1; l <= numLines; l++) {
+        const y = gridTop + headerH + l * lineSpacing;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(MARGIN.left, y);
+        ctx.lineTo(MARGIN.left + gridW, y);
+        ctx.stroke();
+      }
+    }
+
+    // Notes section
+    if (config.showNotes) {
+      const notesLeft = MARGIN.left + gridW + 20;
+      const notesTop = gridTop;
+
+      ctx.fillStyle = '#000';
+      ctx.font = '600 28px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Notes', notesLeft, notesTop + 20);
+
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(notesLeft, notesTop + headerH);
+      ctx.lineTo(notesLeft + notesW - 20, notesTop + headerH);
+      ctx.stroke();
+
+      const bodyH = gridH - headerH;
+      const lineSpacing = 48;
+      const numLines = Math.floor(bodyH / lineSpacing);
+      for (let l = 1; l <= numLines; l++) {
+        const y = gridTop + headerH + l * lineSpacing;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(notesLeft, y);
+        ctx.lineTo(notesLeft + notesW - 20, y);
+        ctx.stroke();
+      }
+    }
+  }
+});
+
+// ─── Dot Grid ────────────────────────────────────────────────────
+registerTemplate('dotgrid', {
+  name: 'Dot Grid',
+  desc: 'Evenly spaced dot pattern',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="20" height="26" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    ${Array.from({length: 5}, (_, r) =>
+      Array.from({length: 4}, (_, c) =>
+        `<circle cx="${4 + c * 4.5}" cy="${5 + r * 4.5}" r="0.7" fill="#666"/>`
+      ).join('')
+    ).join('')}
+  </svg>`,
+  defaultConfig: () => ({ spacing: 40, dotSize: 3, margin: 100 }),
+  configUI: (config, onChange) => `
+    <div class="config-group">
+      <label class="config-label">Dot spacing</label>
+      <div class="range-row">
+        <input type="range" id="cfgSpacing" min="20" max="80" value="${config.spacing}">
+        <span class="range-value" id="cfgSpacingVal">${config.spacing}</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <label class="config-label">Dot size</label>
+      <div class="range-row">
+        <input type="range" id="cfgDotSize" min="1" max="8" value="${config.dotSize}">
+        <span class="range-value" id="cfgDotSizeVal">${config.dotSize}</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <label class="config-label">Margin</label>
+      <div class="range-row">
+        <input type="range" id="cfgDotMargin" min="40" max="200" value="${config.margin}">
+        <span class="range-value" id="cfgDotMarginVal">${config.margin}</span>
+      </div>
+    </div>
+  `,
+  bindConfig: (config, onChange) => {
+    ['Spacing', 'DotSize', 'DotMargin'].forEach(key => {
+      const configKey = key === 'DotSize' ? 'dotSize' : key === 'DotMargin' ? 'margin' : 'spacing';
+      const el = document.getElementById(`cfg${key}`);
+      const val = document.getElementById(`cfg${key}Val`);
+      el.addEventListener('input', e => {
+        config[configKey] = +e.target.value;
+        val.textContent = e.target.value;
+        onChange();
+      });
+    });
+  },
+  render: (ctx, config) => {
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    const { spacing, dotSize, margin } = config;
+    ctx.fillStyle = '#000';
+
+    for (let y = margin; y <= H - margin; y += spacing) {
+      for (let x = margin; x <= W - margin; x += spacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+});
+
+// ─── Lined ───────────────────────────────────────────────────────
+registerTemplate('lined', {
+  name: 'Lined Paper',
+  desc: 'Horizontal ruled lines',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="20" height="26" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    ${Array.from({length: 7}, (_, i) =>
+      `<line x1="3" y1="${6 + i * 3}" x2="19" y2="${6 + i * 3}" stroke="#bbb" stroke-width="0.6"/>`
+    ).join('')}
+    <line x1="6" y1="1" x2="6" y2="27" stroke="#c88" stroke-width="0.6"/>
+  </svg>`,
+  defaultConfig: () => ({ lineSpacing: 48, showMarginLine: true, marginPos: 160, headerLines: true }),
+  configUI: (config, onChange) => `
+    <div class="config-group">
+      <label class="config-label">Line spacing</label>
+      <div class="range-row">
+        <input type="range" id="cfgLineSpacing" min="28" max="80" value="${config.lineSpacing}">
+        <span class="range-value" id="cfgLineSpacingVal">${config.lineSpacing}</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgMarginLine" ${config.showMarginLine ? 'checked' : ''}>
+        <label for="cfgMarginLine">Left margin line</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgHeaderLines" ${config.headerLines ? 'checked' : ''}>
+        <label for="cfgHeaderLines">Header area</label>
+      </div>
+    </div>
+  `,
+  bindConfig: (config, onChange) => {
+    const ls = document.getElementById('cfgLineSpacing');
+    const lsv = document.getElementById('cfgLineSpacingVal');
+    ls.addEventListener('input', e => { config.lineSpacing = +e.target.value; lsv.textContent = e.target.value; onChange(); });
+    document.getElementById('cfgMarginLine').addEventListener('change', e => { config.showMarginLine = e.target.checked; onChange(); });
+    document.getElementById('cfgHeaderLines').addEventListener('change', e => { config.headerLines = e.target.checked; onChange(); });
+  },
+  render: (ctx, config) => {
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    const { lineSpacing, showMarginLine, marginPos, headerLines } = config;
+    let startY = 100;
+
+    if (headerLines) {
+      // Title area with heavier lines
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(80, 120);
+      ctx.lineTo(W - 80, 120);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(80, 124);
+      ctx.lineTo(W - 80, 124);
+      ctx.stroke();
+      startY = 160;
+    }
+
+    // Ruled lines
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    for (let y = startY; y <= H - 60; y += lineSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(80, y);
+      ctx.lineTo(W - 80, y);
+      ctx.stroke();
+    }
+
+    // Margin line
+    if (showMarginLine) {
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(marginPos, headerLines ? 124 : 60);
+      ctx.lineTo(marginPos, H - 60);
+      ctx.stroke();
+    }
+  }
+});
+
+// ─── Cornell Notes ───────────────────────────────────────────────
+registerTemplate('cornell', {
+  name: 'Cornell Notes',
+  desc: 'Structured note-taking layout',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="20" height="26" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    <line x1="1" y1="6" x2="21" y2="6" stroke="#333" stroke-width="0.8"/>
+    <line x1="7" y1="6" x2="7" y2="21" stroke="#333" stroke-width="0.8"/>
+    <line x1="1" y1="21" x2="21" y2="21" stroke="#333" stroke-width="0.8"/>
+    <text x="11" y="4.5" text-anchor="middle" fill="#888" font-size="3">TOPIC</text>
+    <text x="4" y="13" text-anchor="middle" fill="#aaa" font-size="2.5">CUE</text>
+    <text x="14" y="13" text-anchor="middle" fill="#aaa" font-size="2.5">NOTES</text>
+    <text x="11" y="24" text-anchor="middle" fill="#aaa" font-size="2.5">SUMMARY</text>
+  </svg>`,
+  defaultConfig: () => ({ cueWidth: 30, summaryHeight: 20, showRuledLines: true, lineSpacing: 44 }),
+  configUI: (config, onChange) => `
+    <div class="config-group">
+      <label class="config-label">Cue column width (%)</label>
+      <div class="range-row">
+        <input type="range" id="cfgCueWidth" min="15" max="45" value="${config.cueWidth}">
+        <span class="range-value" id="cfgCueWidthVal">${config.cueWidth}%</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <label class="config-label">Summary height (%)</label>
+      <div class="range-row">
+        <input type="range" id="cfgSummaryH" min="10" max="35" value="${config.summaryHeight}">
+        <span class="range-value" id="cfgSummaryHVal">${config.summaryHeight}%</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <div class="checkbox-row">
+        <input type="checkbox" id="cfgCornellLines" ${config.showRuledLines ? 'checked' : ''}>
+        <label for="cfgCornellLines">Ruled lines</label>
+      </div>
+    </div>
+  `,
+  bindConfig: (config, onChange) => {
+    const cw = document.getElementById('cfgCueWidth');
+    const cwv = document.getElementById('cfgCueWidthVal');
+    cw.addEventListener('input', e => { config.cueWidth = +e.target.value; cwv.textContent = e.target.value + '%'; onChange(); });
+    const sh = document.getElementById('cfgSummaryH');
+    const shv = document.getElementById('cfgSummaryHVal');
+    sh.addEventListener('input', e => { config.summaryHeight = +e.target.value; shv.textContent = e.target.value + '%'; onChange(); });
+    document.getElementById('cfgCornellLines').addEventListener('change', e => { config.showRuledLines = e.target.checked; onChange(); });
+  },
+  render: (ctx, config) => {
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    const m = 80;
+    const contentW = W - m * 2;
+    const contentH = H - m * 2;
+    const headerH = 120;
+    const summaryH = contentH * (config.summaryHeight / 100);
+    const cueW = contentW * (config.cueWidth / 100);
+    const bodyTop = m + headerH;
+    const bodyH = contentH - headerH - summaryH;
+    const summaryTop = bodyTop + bodyH;
+
+    // Header area
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(m, m, contentW, headerH);
+
+    // Labels
+    ctx.fillStyle = '#000';
+    ctx.font = '500 24px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Topic / Title', m + 16, m + 16);
+
+    ctx.fillText('Date:', m + contentW - 200, m + 16);
+
+    // Cue column
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(m, bodyTop, cueW, bodyH);
+
+    // Notes area
+    ctx.strokeRect(m + cueW, bodyTop, contentW - cueW, bodyH);
+
+    // Summary area
+    ctx.strokeRect(m, summaryTop, contentW, summaryH);
+
+    // Section labels
+    ctx.fillStyle = '#000';
+    ctx.font = '600 22px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('CUES / QUESTIONS', m + cueW / 2, bodyTop + 14);
+    ctx.fillText('NOTES', m + cueW + (contentW - cueW) / 2, bodyTop + 14);
+    ctx.fillText('SUMMARY', m + contentW / 2, summaryTop + 14);
+
+    // Ruled lines
+    if (config.showRuledLines) {
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      const ls = config.lineSpacing;
+      const startY = bodyTop + 50;
+
+      // Cue column lines
+      for (let y = startY; y < summaryTop; y += ls) {
+        ctx.beginPath();
+        ctx.moveTo(m + 10, y);
+        ctx.lineTo(m + cueW - 10, y);
+        ctx.stroke();
+      }
+      // Notes lines
+      for (let y = startY; y < summaryTop; y += ls) {
+        ctx.beginPath();
+        ctx.moveTo(m + cueW + 10, y);
+        ctx.lineTo(m + contentW - 10, y);
+        ctx.stroke();
+      }
+      // Summary lines
+      for (let y = summaryTop + 50; y < m + contentH; y += ls) {
+        ctx.beginPath();
+        ctx.moveTo(m + 10, y);
+        ctx.lineTo(m + contentW - 10, y);
+        ctx.stroke();
+      }
+    }
+  }
+});
+
+// ─── Isometric Dot Grid ─────────────────────────────────────────
+registerTemplate('isometric', {
+  name: 'Isometric Grid',
+  desc: 'Triangular dot pattern for 3D sketches',
+  icon: `<svg viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="20" height="26" rx="1.5" stroke="#333" stroke-width="1.2"/>
+    ${[0,1,2,3,4,5].map(r =>
+      [0,1,2,3].map(c => {
+        const x = 4 + c * 4.5 + (r % 2 ? 2.25 : 0);
+        const y = 5 + r * 3.9;
+        return x < 20 ? `<circle cx="${x}" cy="${y}" r="0.7" fill="#666"/>` : '';
+      }).join('')
+    ).join('')}
+  </svg>`,
+  defaultConfig: () => ({ spacing: 48, dotSize: 3 }),
+  configUI: (config, onChange) => `
+    <div class="config-group">
+      <label class="config-label">Spacing</label>
+      <div class="range-row">
+        <input type="range" id="cfgIsoSpacing" min="24" max="80" value="${config.spacing}">
+        <span class="range-value" id="cfgIsoSpacingVal">${config.spacing}</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <label class="config-label">Dot size</label>
+      <div class="range-row">
+        <input type="range" id="cfgIsoDotSize" min="1" max="8" value="${config.dotSize}">
+        <span class="range-value" id="cfgIsoDotSizeVal">${config.dotSize}</span>
+      </div>
+    </div>
+  `,
+  bindConfig: (config, onChange) => {
+    const sp = document.getElementById('cfgIsoSpacing');
+    const spv = document.getElementById('cfgIsoSpacingVal');
+    sp.addEventListener('input', e => { config.spacing = +e.target.value; spv.textContent = e.target.value; onChange(); });
+    const ds = document.getElementById('cfgIsoDotSize');
+    const dsv = document.getElementById('cfgIsoDotSizeVal');
+    ds.addEventListener('input', e => { config.dotSize = +e.target.value; dsv.textContent = e.target.value; onChange(); });
+  },
+  render: (ctx, config) => {
+    ctx.fillStyle = '#f5f1eb';
+    ctx.fillRect(0, 0, W, H);
+
+    const { spacing, dotSize } = config;
+    const rowH = spacing * Math.sin(Math.PI / 3);
+    const margin = 80;
+    ctx.fillStyle = '#000';
+
+    let row = 0;
+    for (let y = margin; y <= H - margin; y += rowH) {
+      const offset = (row % 2) * (spacing / 2);
+      for (let x = margin + offset; x <= W - margin; x += spacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      row++;
+    }
+  }
+});
+
+// ─── App State & Rendering ───────────────────────────────────────
+let activeTemplate = 'monthly';
+let configs = {};
+
+// Initialize configs
+Object.keys(templates).forEach(id => {
+  configs[id] = templates[id].defaultConfig();
+});
+
+const previewCanvas = document.getElementById('previewCanvas');
+const exportCanvas = document.getElementById('exportCanvas');
+
+function render() {
+  const tpl = templates[activeTemplate];
+  const config = configs[activeTemplate];
+
+  // Render to export canvas at full resolution
+  const ectx = exportCanvas.getContext('2d');
+  tpl.render(ectx, config);
+
+  // Scale to preview
+  previewCanvas.width = W;
+  previewCanvas.height = H;
+  const pctx = previewCanvas.getContext('2d');
+  pctx.drawImage(exportCanvas, 0, 0);
+}
+
+function buildSidebar() {
+  const list = document.getElementById('templateList');
+  list.innerHTML = Object.entries(templates).map(([id, tpl]) => `
+    <div class="template-card ${id === activeTemplate ? 'active' : ''}" data-id="${id}">
+      <div class="template-icon">${tpl.icon}</div>
+      <div>
+        <div class="template-name">${tpl.name}</div>
+        <div class="template-desc">${tpl.desc}</div>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('click', () => {
+      activeTemplate = card.dataset.id;
+      buildSidebar();
+      buildConfig();
+      render();
+    });
+  });
+}
+
+function buildConfig() {
+  const panel = document.getElementById('configPanel');
+  const tpl = templates[activeTemplate];
+  const config = configs[activeTemplate];
+  panel.innerHTML = tpl.configUI(config, () => render());
+  tpl.bindConfig(config, () => render());
+}
+
+// Download
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const tpl = templates[activeTemplate];
+  const config = configs[activeTemplate];
+
+  // Generate filename
+  const filename = `supernote-${activeTemplate}.png`;
+
+  exportCanvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+});
+
+// Init
+buildSidebar();
+buildConfig();
+render();
+</script>
+</body>
+</html>
