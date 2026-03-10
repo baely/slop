@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Location</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; }
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 4px 2px rgba(46, 204, 113, 0.8); }
+      50% { box-shadow: 0 0 12px 6px rgba(46, 204, 113, 0.4); }
+      100% { box-shadow: 0 0 4px 2px rgba(46, 204, 113, 0.8); }
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 4px 2px rgba(231, 76, 60, 0.8); }
+      50% { box-shadow: 0 0 12px 6px rgba(231, 76, 60, 0.4); }
+      100% { box-shadow: 0 0 4px 2px rgba(231, 76, 60, 0.8); }
+    }
+    .live-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid #fff;
+    }
+    .live-dot.live {
+      background: #2ecc71;
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+    .live-dot.stale {
+      background: #e74c3c;
+      animation: pulse-red 2s ease-in-out infinite;
+    }
+
+    /* Side Panel */
+    #panel {
+      position: absolute;
+      top: 0; left: 0;
+      width: 360px; height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #panel.collapsed {
+      transform: translateX(-360px);
+    }
+    #panel-toggle {
+      position: absolute;
+      top: 12px;
+      right: -36px;
+      width: 36px; height: 36px;
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+    #panel-toggle:hover { background: #f0f0f0; }
+
+    .panel-section {
+      padding: 16px;
+    }
+    .panel-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    /* Duration tabs */
+    .duration-tabs {
+      display: flex;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .duration-tab {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: #f5f5f5;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .duration-tab.active {
+      background: #4285F4;
+      color: #fff;
+    }
+    .duration-tab:not(.active):hover {
+      background: #e8e8e8;
+    }
+
+    /* Trips section */
+    #trips-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 34%;
+      border-top: 1px solid #eee;
+    }
+    #trips-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+    }
+    .trip-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .trip-item:hover {
+      background: #f0f4ff;
+      border-color: #d0dcf0;
+    }
+    .trip-item.active {
+      background: #e3ecff;
+      border-color: #4285F4;
+    }
+    .trip-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+    .trip-time {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .trip-loading {
+      padding: 20px 16px;
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+    }
+
+    /* Transactions section */
+    #transactions-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-top: 1px solid #eee;
+      max-height: 33%;
+    }
+    #transactions-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+    }
+    .transaction-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .transaction-item:hover {
+      background: #f0f4ff;
+      border-color: #d0dcf0;
+    }
+    .transaction-item.active {
+      background: #e3ecff;
+      border-color: #4285F4;
+    }
+    .transaction-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .transaction-vendor {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .transaction-time {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .transaction-location {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 1px;
+    }
+    .transaction-amount {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-left: 12px;
+      white-space: nowrap;
+    }
+    .transaction-loading {
+      padding: 20px 16px;
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+    }
+
+    /* Listening section */
+    #listening-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-top: 1px solid #eee;
+      max-height: 33%;
+    }
+    #listening-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+    }
+    .listening-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .listening-item:hover {
+      background: #e8f5e9;
+      border-color: #a5d6a7;
+    }
+    .listening-item.active {
+      background: #c8e6c9;
+      border-color: #1DB954;
+    }
+    .listening-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .listening-track {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .listening-artist {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .listening-time {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+    .listening-location {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 1px;
+    }
+    .listening-spotify {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      margin-left: 8px;
+      margin-top: 2px;
+      color: #aaa;
+      transition: color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .listening-spotify:hover {
+      color: #1DB954;
+    }
+    .listening-spotify svg {
+      width: 16px;
+      height: 16px;
+    }
+    .listening-loading {
+      padding: 20px 16px;
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+    }
+
+    /* Listening map markers */
+    .listening-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1DB954;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Transaction map markers */
+    .transaction-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ff9800;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Show All button */
+    #show-all-btn {
+      display: none;
+      margin: 0 16px 12px;
+      padding: 8px 0;
+      border: 1px solid #4285F4;
+      background: transparent;
+      color: #4285F4;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #show-all-btn:hover {
+      background: #4285F4;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="panel">
+    <button id="panel-toggle" title="Toggle panel">◀</button>
+
+    <div class="panel-section">
+      <h3>Duration</h3>
+      <div class="duration-tabs">
+        <button class="duration-tab active" data-duration="24h">24 Hours</button>
+        <button class="duration-tab" data-duration="7d">7 Days</button>
+        <button class="duration-tab" data-duration="30d">30 Days</button>
+      </div>
+    </div>
+
+    <div id="trips-section" class="panel-section">
+      <h3>Excursions</h3>
+      <button id="show-all-btn">Show All</button>
+      <div id="trips-list">
+        <div class="trip-loading">Loading trips...</div>
+      </div>
+    </div>
+
+    <div id="transactions-section" class="panel-section">
+      <h3>Transactions</h3>
+      <div id="transactions-list">
+        <div class="transaction-loading">Loading transactions...</div>
+      </div>
+    </div>
+
+    <div id="listening-section" class="panel-section">
+      <h3>Listening</h3>
+      <div id="listening-list">
+        <div class="listening-loading">Loading listening activity...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE = '';
+    const DEVICE_ID = 1;
+    const STALE_THRESHOLD = 5 * 60 * 1000;
+
+    // State
+    let currentMode = 'duration'; // 'duration' | 'trip'
+    let selectedTrip = null;
+    let durationSetting = '24h';
+    let detectedTrips = [];
+    let currentTransactions = [];
+    let transactionMarkers = L.layerGroup();
+    let currentListening = [];
+    let listeningMarkers = L.layerGroup();
+    let highlightMarker = null;
+
+    const PANEL_WIDTH = 360;
+
+    function getPanelOffset() {
+      const panel = document.getElementById('panel');
+      return panel && !panel.classList.contains('collapsed') ? PANEL_WIDTH : 0;
+    }
+
+    function fitBoundsWithPanel(bounds) {
+      map.fitBounds(bounds, {
+        paddingTopLeft: [getPanelOffset() + 30, 30],
+        paddingBottomRight: [30, 30]
+      });
+    }
+
+    function setViewWithPanel(latlng, zoom) {
+      map.setView(latlng, zoom);
+      const offset = getPanelOffset();
+      if (offset) map.panBy([-offset / 2, 0], { animate: false });
+    }
+
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 20
+    }).addTo(map);
+
+    transactionMarkers.addTo(map);
+    listeningMarkers.addTo(map);
+
+    let trail = null;
+    let marker = null;
+    let trailPoints = [];
+    let firstLoad = true;
+    const trailTooltip = L.tooltip({ sticky: true });
+
+    function apiFetch(path) {
+      return fetch(BASE + path).then(r => {
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        return r.json();
+      });
+    }
+
+    function fetchPositions(hours, bucketMs) {
+      const now = new Date();
+      const from = new Date(now.getTime() - hours * 60 * 60 * 1000);
+      return apiFetch(`/api/positions?deviceId=${DEVICE_ID}&from=${from.toISOString()}&to=${now.toISOString()}`).then(raw => {
+        return aggregatePositions(raw, bucketMs);
+      });
+    }
+
+    function fetchLivePosition() {
+      return apiFetch('/api/positions/live');
+    }
+
+    function aggregatePositions(positions, bucketMs = 30000) {
+      const buckets = {};
+      for (const p of positions) {
+        const key = Math.floor(new Date(p.fixTime).getTime() / bucketMs);
+        if (!buckets[key]) buckets[key] = p;
+      }
+      return Object.values(buckets).sort(
+        (a, b) => new Date(a.fixTime) - new Date(b.fixTime)
+      );
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function findNearest(latlng, points) {
+      let best = null, bestDist = Infinity;
+      for (const p of points) {
+        const dx = p.latitude - latlng.lat, dy = p.longitude - latlng.lng;
+        const d = dx * dx + dy * dy;
+        if (d < bestDist) { bestDist = d; best = p; }
+      }
+      return best;
+    }
+
+    function updateMarker(pos) {
+      const age = Date.now() - new Date(pos.fixTime).getTime();
+      const isLive = age < STALE_THRESHOLD;
+      const cssClass = isLive ? 'live' : 'stale';
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="live-dot ${cssClass}"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+
+      if (marker) {
+        marker.setLatLng([pos.latitude, pos.longitude]);
+        marker.setIcon(icon);
+      } else {
+        marker = L.marker([pos.latitude, pos.longitude], { icon }).addTo(map);
+      }
+
+      const time = new Date(pos.fixTime).toLocaleString();
+      const label = isLive ? 'Live' : 'Last seen';
+      marker.bindTooltip(`${label}: ${time}`, { permanent: false });
+    }
+
+    function drawTrail(positions) {
+      if (trail) map.removeLayer(trail);
+      if (positions.length === 0) return;
+
+      const latlngs = positions.map(p => [p.latitude, p.longitude]);
+      trailPoints = positions;
+      trail = L.polyline(latlngs, { color: '#4285F4', weight: 3, opacity: 0.7 }).addTo(map);
+      trail.on('mouseover', () => trail.bindTooltip(trailTooltip));
+      trail.on('mousemove', (e) => {
+        const nearest = findNearest(e.latlng, trailPoints);
+        if (nearest) trail.setTooltipContent(new Date(nearest.fixTime).toLocaleString());
+      });
+    }
+
+    function getDurationParams() {
+      if (durationSetting === '24h') return { hours: 24, bucketMs: 30000 };
+      if (durationSetting === '7d') return { hours: 168, bucketMs: 300000 };
+      return { hours: 720, bucketMs: 600000 };
+    }
+
+    async function updateTrail() {
+      if (currentMode === 'trip') return; // Don't refresh trail when viewing a trip
+      try {
+        const { hours, bucketMs } = getDurationParams();
+        const positions = await fetchPositions(hours, bucketMs);
+        if (positions.length === 0) return;
+
+        drawTrail(positions);
+        updateMarker(positions[positions.length - 1]);
+
+        if (firstLoad) {
+          fitBoundsWithPanel(trail.getBounds());
+          firstLoad = false;
+        }
+        loadTransactions();
+        loadListening();
+      } catch (e) {
+        console.error('Trail update failed:', e);
+      }
+    }
+
+    async function updateLive() {
+      try {
+        const positions = await fetchLivePosition();
+        const pos = positions.find(p => p.deviceId === DEVICE_ID);
+        if (pos) updateMarker(pos);
+      } catch (e) {
+        console.error('Live update failed:', e);
+      }
+    }
+
+    // --- Up Banking Transactions ---
+
+    async function fetchTransactions(since, until) {
+      return apiFetch(`/api/transactions?since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}`);
+    }
+
+    function findPositionAtTime(timestamp) {
+      if (trailPoints.length === 0) return null;
+      const time = new Date(timestamp).getTime();
+      let lo = 0, hi = trailPoints.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (new Date(trailPoints[mid].fixTime).getTime() < time) lo = mid + 1;
+        else hi = mid;
+      }
+      // Check lo and lo-1 for closest
+      if (lo > 0) {
+        const diffLo = Math.abs(new Date(trailPoints[lo].fixTime).getTime() - time);
+        const diffPrev = Math.abs(new Date(trailPoints[lo - 1].fixTime).getTime() - time);
+        if (diffPrev < diffLo) lo = lo - 1;
+      }
+      return trailPoints[lo];
+    }
+
+    function findExcursionForTimestamp(timestamp) {
+      const time = new Date(timestamp).getTime();
+      for (let i = 0; i < detectedTrips.length; i++) {
+        const trip = detectedTrips[i];
+        if (time >= trip.startTime.getTime() && time <= trip.endTime.getTime()) {
+          return i;
+        }
+      }
+      return null;
+    }
+
+    function getLocationLabel(timestamp) {
+      const time = new Date(timestamp).getTime();
+      for (const trip of detectedTrips) {
+        if (time >= trip.startTime.getTime() && time <= trip.endTime.getTime()) {
+          return `On ${trip.date} Excursion #${trip.tripNum}`;
+        }
+      }
+      const pos = findPositionAtTime(timestamp);
+      if (!pos) return '';
+      const HOME = { lat: -37.817416, lng: 144.995483 };
+      const WORK = { lat: -37.816086, lng: 144.961648 };
+      const HOME_RADIUS = 50;
+      const WORK_RADIUS = 175;
+      const dist = (a, b) => {
+        const R = 6371000;
+        const dLat = (b.lat - a.lat) * Math.PI / 180;
+        const dLng = (b.lng - a.lng) * Math.PI / 180;
+        const sinLat = Math.sin(dLat / 2);
+        const sinLng = Math.sin(dLng / 2);
+        const h = sinLat * sinLat + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * sinLng * sinLng;
+        return 2 * R * Math.asin(Math.sqrt(h));
+      };
+      const pt = { lat: pos.latitude, lng: pos.longitude };
+      if (dist(pt, HOME) <= HOME_RADIUS) return 'At Home';
+      if (dist(pt, WORK) <= WORK_RADIUS) return 'At Work';
+      return '';
+    }
+
+    async function loadTransactions() {
+      if (trailPoints.length === 0) return;
+      const listEl = document.getElementById('transactions-list');
+      try {
+        const since = new Date(trailPoints[0].fixTime).toISOString();
+        const until = new Date(trailPoints[trailPoints.length - 1].fixTime).toISOString();
+        currentTransactions = await fetchTransactions(since, until);
+        renderTransactions();
+        renderTransactionMarkers();
+      } catch (e) {
+        console.error('Transaction loading failed:', e);
+        listEl.innerHTML = '<div class="transaction-loading">Failed to load transactions</div>';
+      }
+    }
+
+    function renderTransactions() {
+      const list = document.getElementById('transactions-list');
+      const spending = currentTransactions.filter(tx => parseFloat(tx.amount.value) < 0);
+      if (spending.length === 0) {
+        list.innerHTML = '<div class="transaction-loading">No transactions</div>';
+        return;
+      }
+      list.innerHTML = '';
+      for (const tx of spending) {
+        const item = document.createElement('div');
+        item.className = 'transaction-item';
+        item.dataset.id = tx.id;
+        const date = new Date(tx.createdAt);
+        const timeStr = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' ' + formatTime(date);
+        const val = Math.abs(parseFloat(tx.amount.value));
+        const locationLabel = getLocationLabel(tx.createdAt);
+        item.innerHTML = `
+          <div class="transaction-info">
+            <div class="transaction-vendor">${tx.description}</div>
+            <div class="transaction-time">${timeStr}</div>
+            ${locationLabel ? `<div class="transaction-location">${locationLabel}</div>` : ''}
+          </div>
+          <div class="transaction-amount">$${val.toFixed(2)}</div>
+        `;
+        item.addEventListener('click', () => onTransactionClick(tx));
+        list.appendChild(item);
+      }
+    }
+
+    function onTransactionClick(tx) {
+      // Highlight in list
+      document.querySelectorAll('.transaction-item').forEach(el => el.classList.remove('active'));
+      const el = document.querySelector(`.transaction-item[data-id="${tx.id}"]`);
+      if (el) el.classList.add('active');
+
+      // Check if this transaction belongs to an excursion
+      const excursionIdx = findExcursionForTimestamp(tx.createdAt);
+      if (excursionIdx !== null) {
+        selectTrip(excursionIdx);
+        return;
+      }
+
+      // Find GPS position and snap map
+      const pos = findPositionAtTime(tx.createdAt);
+      if (!pos) return;
+      const latlng = [pos.latitude, pos.longitude];
+      setViewWithPanel(latlng, 17);
+
+      // Show temporary highlight marker
+      if (highlightMarker) map.removeLayer(highlightMarker);
+      highlightMarker = L.circleMarker(latlng, {
+        radius: 12, color: '#4285F4', fillColor: '#4285F4', fillOpacity: 0.3, weight: 2
+      }).addTo(map);
+      setTimeout(() => { if (highlightMarker) map.removeLayer(highlightMarker); highlightMarker = null; }, 5000);
+    }
+
+    function renderTransactionMarkers() {
+      transactionMarkers.clearLayers();
+      const spending = currentTransactions.filter(tx => parseFloat(tx.amount.value) < 0);
+      for (const tx of spending) {
+        const pos = findPositionAtTime(tx.createdAt);
+        if (!pos) continue;
+        const val = Math.abs(parseFloat(tx.amount.value));
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="transaction-marker">$</div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+        const m = L.marker([pos.latitude, pos.longitude], { icon });
+        m.bindTooltip(`${tx.description} — $${val.toFixed(2)}`, { direction: 'top', offset: [0, -12] });
+        m.on('click', () => onMarkerTransactionClick(tx));
+        transactionMarkers.addLayer(m);
+      }
+    }
+
+    function onMarkerTransactionClick(tx) {
+      // Highlight in list and scroll to it
+      document.querySelectorAll('.transaction-item').forEach(el => el.classList.remove('active'));
+      const el = document.querySelector(`.transaction-item[data-id="${tx.id}"]`);
+      if (el) {
+        el.classList.add('active');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Navigate to excursion if applicable
+      const excursionIdx = findExcursionForTimestamp(tx.createdAt);
+      if (excursionIdx !== null) {
+        selectTrip(excursionIdx);
+      }
+    }
+
+    // --- Last.fm Listening Activity ---
+
+    async function fetchListening(since, until) {
+      return apiFetch(`/api/listening?since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}`);
+    }
+
+    async function loadListening() {
+      if (trailPoints.length === 0) return;
+      const listEl = document.getElementById('listening-list');
+      try {
+        const since = new Date(trailPoints[0].fixTime).toISOString();
+        const until = new Date(trailPoints[trailPoints.length - 1].fixTime).toISOString();
+        currentListening = await fetchListening(since, until);
+        renderListening();
+        renderListeningMarkers();
+      } catch (e) {
+        console.error('Listening loading failed:', e);
+        listEl.innerHTML = '<div class="listening-loading">Failed to load listening activity</div>';
+      }
+    }
+
+    function renderListening() {
+      const list = document.getElementById('listening-list');
+      if (currentListening.length === 0) {
+        list.innerHTML = '<div class="listening-loading">No listening activity</div>';
+        return;
+      }
+      list.innerHTML = '';
+      for (const track of currentListening) {
+        const item = document.createElement('div');
+        item.className = 'listening-item';
+        item.dataset.id = track.timestamp;
+        const date = new Date(track.timestamp * 1000);
+        const timeStr = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' ' + formatTime(date);
+        const locationLabel = getLocationLabel(date.toISOString());
+        const spotifyQuery = encodeURIComponent(`${track.track} ${track.artist}`);
+        const spotifyUrl = `https://open.spotify.com/search/${spotifyQuery}`;
+        item.innerHTML = `
+          <div class="listening-info">
+            <div class="listening-track">${track.track}</div>
+            <div class="listening-artist">${track.artist}</div>
+            <div class="listening-time">${timeStr}</div>
+            ${locationLabel ? `<div class="listening-location">${locationLabel}</div>` : ''}
+          </div>
+          <a class="listening-spotify" href="${spotifyUrl}" target="_blank" rel="noopener" title="Open in Spotify" onclick="event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          </a>
+        `;
+        item.addEventListener('click', () => onListeningClick(track));
+        list.appendChild(item);
+      }
+    }
+
+    function renderListeningMarkers() {
+      listeningMarkers.clearLayers();
+      for (const track of currentListening) {
+        const pos = findPositionAtTime(new Date(track.timestamp * 1000).toISOString());
+        if (!pos) continue;
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="listening-marker">▶</div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+        const m = L.marker([pos.latitude, pos.longitude], { icon });
+        m.bindTooltip(`${track.artist} — ${track.track}`, { direction: 'top', offset: [0, -12] });
+        m.on('click', () => onMarkerListeningClick(track));
+        listeningMarkers.addLayer(m);
+      }
+    }
+
+    function onListeningClick(track) {
+      document.querySelectorAll('.listening-item').forEach(el => el.classList.remove('active'));
+      const el = document.querySelector(`.listening-item[data-id="${track.timestamp}"]`);
+      if (el) el.classList.add('active');
+
+      // Check if this track belongs to an excursion
+      const isoTime = new Date(track.timestamp * 1000).toISOString();
+      const excursionIdx = findExcursionForTimestamp(isoTime);
+      if (excursionIdx !== null) {
+        selectTrip(excursionIdx);
+        return;
+      }
+
+      const pos = findPositionAtTime(isoTime);
+      if (!pos) return;
+      const latlng = [pos.latitude, pos.longitude];
+      setViewWithPanel(latlng, 17);
+
+      if (highlightMarker) map.removeLayer(highlightMarker);
+      highlightMarker = L.circleMarker(latlng, {
+        radius: 12, color: '#1DB954', fillColor: '#1DB954', fillOpacity: 0.3, weight: 2
+      }).addTo(map);
+      setTimeout(() => { if (highlightMarker) map.removeLayer(highlightMarker); highlightMarker = null; }, 5000);
+    }
+
+    function onMarkerListeningClick(track) {
+      document.querySelectorAll('.listening-item').forEach(el => el.classList.remove('active'));
+      const el = document.querySelector(`.listening-item[data-id="${track.timestamp}"]`);
+      if (el) {
+        el.classList.add('active');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Navigate to excursion if applicable
+      const excursionIdx = findExcursionForTimestamp(new Date(track.timestamp * 1000).toISOString());
+      if (excursionIdx !== null) {
+        selectTrip(excursionIdx);
+      }
+    }
+
+    // --- Trip loading and UI ---
+
+    async function loadTrips() {
+      try {
+        const trips = await apiFetch('/api/trips');
+        detectedTrips = trips.map(t => ({
+          ...t,
+          startTime: new Date(t.startTime),
+          endTime: new Date(t.endTime)
+        }));
+        renderTripList();
+      } catch (e) {
+        console.error('Trip loading failed:', e);
+        document.getElementById('trips-list').innerHTML = '<div class="trip-loading">Failed to load trips</div>';
+      }
+    }
+
+    function renderTripList() {
+      const list = document.getElementById('trips-list');
+      if (detectedTrips.length === 0) {
+        list.innerHTML = '<div class="trip-loading">No trips detected</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      // Show newest first
+      for (let i = detectedTrips.length - 1; i >= 0; i--) {
+        const trip = detectedTrips[i];
+        const item = document.createElement('div');
+        item.className = 'trip-item' + (selectedTrip === i ? ' active' : '');
+        item.innerHTML = `
+          <div class="trip-date">${trip.date} Excursion #${trip.tripNum}</div>
+          <div class="trip-time">${formatTime(trip.startTime)} – ${formatTime(trip.endTime)}</div>
+        `;
+        item.addEventListener('click', () => selectTrip(i));
+        list.appendChild(item);
+      }
+    }
+
+    function selectTrip(index) {
+      currentMode = 'trip';
+      selectedTrip = index;
+      const trip = detectedTrips[index];
+
+      drawTrail(trip.positions);
+      fitBoundsWithPanel(trail.getBounds());
+
+      renderTripList();
+      document.getElementById('show-all-btn').style.display = 'block';
+      loadTransactions();
+      loadListening();
+    }
+
+    function showAll() {
+      currentMode = 'duration';
+      selectedTrip = null;
+      firstLoad = true;
+      document.getElementById('show-all-btn').style.display = 'none';
+      renderTripList();
+      updateTrail();
+    }
+
+    // --- Panel toggle ---
+    const panel = document.getElementById('panel');
+    const toggleBtn = document.getElementById('panel-toggle');
+    toggleBtn.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+      toggleBtn.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+    });
+
+    // --- Duration tabs ---
+    document.querySelectorAll('.duration-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        if (tab.dataset.duration === durationSetting) return;
+        document.querySelectorAll('.duration-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        durationSetting = tab.dataset.duration;
+        currentMode = 'duration';
+        selectedTrip = null;
+        firstLoad = true;
+        document.getElementById('show-all-btn').style.display = 'none';
+        renderTripList();
+        updateTrail();
+      });
+    });
+
+    // --- Show All button ---
+    document.getElementById('show-all-btn').addEventListener('click', showAll);
+
+    // --- Init ---
+    updateTrail();
+    setInterval(updateTrail, 120000);
+    setInterval(updateLive, 5000);
+    loadTrips();
+    setInterval(loadTrips, 10 * 60 * 1000);
+
+  </script>
+</body>
+</html>

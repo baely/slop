@@ -1,0 +1,9 @@
+services:
+  trackui:
+    image: registry.baileys.dev/trackui
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trackui.rule=Host(`track.baileys.app`)"
+      - "traefik.http.services.trackui.loadbalancer.server.port=8080"
