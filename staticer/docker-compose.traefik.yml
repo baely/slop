@@ -1,0 +1,118 @@
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --log.level=${TRAEFIK_LOG_LEVEL:-INFO}
+      - --accesslog=true
+    labels:
+      - "traefik.enable=true"
+      # Dashboard
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+    networks:
+      - traefik-network
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  staticer:
+    image: registry.baileys.dev/staticer:latest
+    container_name: staticer-server
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_HOST=${DOMAIN}
+      - SITES_DIR=/app/sites
+      - DATABASE_PATH=/app/data/staticer.db
+      - UPLOAD_SECRET=${UPLOAD_SECRET}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-104857600}
+      - MAX_EXTRACTED_SIZE=${MAX_EXTRACTED_SIZE:-524288000}
+      - MAX_FILES_PER_SITE=${MAX_FILES_PER_SITE:-1000}
+      - RATE_LIMIT_UPLOADS=${RATE_LIMIT_UPLOADS:-10}
+    volumes:
+      - staticer-data:/app/data
+      - staticer-sites:/app/sites
+    labels:
+      - "traefik.enable=true"
+      # Main domain (dashboard)
+      - "traefik.http.routers.staticer-main.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.staticer-main.entrypoints=websecure"
+      - "traefik.http.routers.staticer-main.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.staticer-main.service=staticer"
+      - "traefik.http.routers.staticer-main.priority=30"
+      # Wildcard subdomains (deployed sites)
+      - "traefik.http.routers.staticer-wildcard.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${DOMAIN}`)"
+      - "traefik.http.routers.staticer-wildcard.entrypoints=websecure"
+      - "traefik.http.routers.staticer-wildcard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.staticer-wildcard.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.staticer-wildcard.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.staticer-wildcard.service=staticer"
+      - "traefik.http.routers.staticer-wildcard.priority=20"
+      # Custom domains (catch-all, lowest priority)
+      - "traefik.http.routers.staticer-custom.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.staticer-custom.entrypoints=websecure"
+      - "traefik.http.routers.staticer-custom.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.staticer-custom.service=staticer"
+      - "traefik.http.routers.staticer-custom.priority=1"
+      # Service definition
+      - "traefik.http.services.staticer.loadbalancer.server.port=8080"
+      # Security headers
+      - "traefik.http.middlewares.security-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.security-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.security-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsseconds=31536000"
+      - "traefik.http.routers.staticer-main.middlewares=security-headers"
+      - "traefik.http.routers.staticer-wildcard.middlewares=security-headers"
+      - "traefik.http.routers.staticer-custom.middlewares=security-headers"
+    networks:
+      - traefik-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      traefik:
+        condition: service_healthy
+
+volumes:
+  traefik-letsencrypt:
+    driver: local
+  staticer-data:
+    driver: local
+  staticer-sites:
+    driver: local
+
+networks:
+  traefik-network:
+    driver: bridge

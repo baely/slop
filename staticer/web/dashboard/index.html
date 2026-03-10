@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staticer</title>
+    <link rel="stylesheet" href="/dashboard/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">S</div>
+            <div>
+                <h1>Staticer</h1>
+                <p class="subtitle">Deploy static sites instantly</p>
+            </div>
+        </header>
+
+        <div id="toast-container"></div>
+
+        <!-- Auth gate -->
+        <div id="auth-section">
+            <div class="card auth-card">
+                <h2>Get started</h2>
+                <p class="hint">Enter your upload secret to deploy and manage sites.</p>
+                <div class="auth-form">
+                    <input type="password" id="upload-secret" placeholder="Upload secret" autofocus>
+                    <button onclick="saveSecret()" class="btn btn-primary">Connect</button>
+                </div>
+                <p class="hint">Stored locally in your browser.</p>
+            </div>
+        </div>
+
+        <!-- Main app (hidden until authed) -->
+        <div id="app" style="display: none;">
+
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>Deploy</h2>
+                <details class="deploy-options">
+                    <summary>Options</summary>
+                    <div class="options-grid">
+                        <div class="form-group">
+                            <label for="custom-subdomain">Subdomain</label>
+                            <input type="text" id="custom-subdomain" placeholder="auto-generated" pattern="[a-z0-9][a-z0-9-]{1,61}[a-z0-9]">
+                        </div>
+                        <div class="form-group">
+                            <label for="custom-domain">Custom domain</label>
+                            <input type="text" id="custom-domain" placeholder="e.g. my.domain.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="custom-expires">Expires</label>
+                            <input type="text" id="custom-expires" placeholder="e.g. 1h, 7d, never">
+                        </div>
+                    </div>
+                </details>
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p>Drop a ZIP or HTML file here</p>
+                        <span class="drop-hint">or</span>
+                        <input type="file" id="file-input" accept=".zip,.html,.htm" onchange="handleFileSelect(event)">
+                        <label for="file-input" class="btn btn-secondary">Browse files</label>
+                    </div>
+                </div>
+                <div id="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="progress-text">Deploying...</p>
+                </div>
+            </div>
+
+            <!-- Sites List -->
+            <div class="card">
+                <div class="section-header">
+                    <h2>Your Sites</h2>
+                    <button onclick="loadSites()" class="btn btn-ghost btn-small">Refresh</button>
+                </div>
+                <div id="sites-list"></div>
+                <p id="no-sites" class="empty-state">No sites deployed yet. Drop a file above to get started.</p>
+            </div>
+
+            <!-- CLI -->
+            <details class="card">
+                <summary class="card-summary"><h2>CLI Tool</h2></summary>
+                <pre class="code-block"><code><span class="code-comment"># Install (requires Go)</span>
+go install github.com/baely/staticer/cmd/staticer@latest
+
+<span class="code-comment"># Configure</span>
+staticer config --secret your-upload-secret
+
+<span class="code-comment"># Deploy</span>
+cd your-site-directory
+staticer deploy</code></pre>
+            </details>
+
+            <!-- Admin (collapsed by default) -->
+            <details class="card card-admin" id="admin-section">
+                <summary class="card-summary"><h2>Admin</h2></summary>
+                <div class="admin-auth" id="admin-auth">
+                    <div class="auth-form">
+                        <input type="password" id="admin-secret" placeholder="Admin secret">
+                        <button onclick="saveAdminSecret()" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+                <div id="admin-panel" style="display: none;">
+                    <div id="admin-stats" class="admin-stats"></div>
+                    <div class="section-header">
+                        <h3>All Sites</h3>
+                        <button onclick="loadAdminSites()" class="btn btn-ghost btn-small">Refresh</button>
+                    </div>
+                    <div id="admin-sites-list"></div>
+                </div>
+            </details>
+
+            <button onclick="logout()" class="btn btn-ghost btn-small logout-btn">Disconnect</button>
+        </div>
+
+        <footer>Staticer</footer>
+    </div>
+
+    <script src="/dashboard/app.js"></script>
+</body>
+</html>
