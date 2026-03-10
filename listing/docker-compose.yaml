@@ -1,0 +1,10 @@
+services:
+  listing:
+    image: registry.baileys.dev/listing
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.listing.rule=Host(`index.baileys.app`)"
+      - "traefik.http.services.listing.loadbalancer.server.port=8080"
