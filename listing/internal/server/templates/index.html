@@ -12,86 +12,101 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-            padding: 2rem;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #222;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #fff;
+            color: #111;
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 24px 16px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 640px;
             margin: 0 auto;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
+        .page-header {
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
-        .card {
-            background: #fff;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.2s ease;
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .card-title {
-            font-size: 1.25rem;
+        h1 {
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #222;
+            margin-bottom: 4px;
         }
 
-        .card-description {
+        .subtitle {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item {
+            padding: 14px 0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .item-description {
             color: #666;
-            margin-bottom: 1rem;
-            font-size: 0.95rem;
+            font-size: 12px;
         }
 
-        .card-link {
+        .item-link {
             display: inline-block;
-            color: #0066cc;
+            color: #111;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            color: #999;
             word-break: break-all;
         }
 
-        .card-link:hover {
-            text-decoration: underline;
+        .item-link:hover {
+            color: #111;
         }
 
         .empty {
             text-align: center;
-            padding: 3rem;
-            color: #666;
+            padding: 40px 0;
+            color: #bbb;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Services</h1>
+        <div class="page-header">
+            <h1>Services</h1>
+            <p class="subtitle">Running containers</p>
+        </div>
         {{if .Containers}}
-        <div class="grid">
+        <div class="list">
             {{range .Containers}}
-            <div class="card">
-                <h2 class="card-title">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</h2>
+            <div class="item">
+                <span class="item-title">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</span>
                 {{if .Description}}
-                <p class="card-description">{{.Description}}</p>
+                <span class="item-description">{{.Description}}</span>
                 {{end}}
-                <a href="{{.URL}}" class="card-link" target="_blank" rel="noopener">{{.URL}}</a>
+                <a href="{{.URL}}" class="item-link" target="_blank" rel="noopener">{{.URL}}</a>
             </div>
             {{end}}
         </div>
