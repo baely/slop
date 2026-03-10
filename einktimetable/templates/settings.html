@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-ink Display Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .setting-group {
+            margin-bottom: 30px;
+        }
+        .setting-label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            cursor: pointer;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .toggle-labels {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+        .current-status {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .current-status h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .preview-links {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .preview-links a {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .preview-links a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>E-ink Display Settings</h1>
+        
+        <div class="setting-group">
+            <label class="setting-label">Display Mode</label>
+            <div class="toggle-container">
+                <div class="toggle-labels">
+                    <span>Tram Timetable</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="displayToggle" {{ 'checked' if current_mode == 'wifi' else '' }}>
+                    <span class="slider"></span>
+                </label>
+                <div class="toggle-labels">
+                    <span>WiFi QR Code</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="current-status">
+            <h3>Current Status</h3>
+            <p><strong>Display Mode:</strong> 
+                <span id="currentMode">
+                    {% if current_mode == 'wifi' %}WiFi QR Code{% else %}Tram Timetable{% endif %}
+                </span>
+            </p>
+            <p><strong>E-ink Device:</strong> Will display the selected mode on next refresh (every 20 seconds)</p>
+        </div>
+        
+        <div class="preview-links">
+            <a href="/display" target="_blank">Preview Current Display</a>
+            <a href="/" target="_blank">HTML Editor</a>
+        </div>
+    </div>
+
+    <script>
+        const toggle = document.getElementById('displayToggle');
+        const currentModeSpan = document.getElementById('currentMode');
+        
+        toggle.addEventListener('change', async function() {
+            const mode = this.checked ? 'wifi' : 'tram';
+            console.log('Toggle changed to:', mode);
+            
+            try {
+                console.log('Sending request to /api/set-display-mode');
+                const response = await fetch('/api/set-display-mode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ mode: mode })
+                });
+                
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (result.success) {
+                    currentModeSpan.textContent = mode === 'wifi' ? 'WiFi QR Code' : 'Tram Timetable';
+                    console.log('Successfully updated to:', mode);
+                } else {
+                    // Revert toggle on error
+                    this.checked = !this.checked;
+                    alert('Error updating display mode: ' + result.error);
+                    console.error('API error:', result.error);
+                }
+            } catch (error) {
+                // Revert toggle on error
+                this.checked = !this.checked;
+                alert('Error updating display mode: ' + error.message);
+                console.error('Request failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>
