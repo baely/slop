@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Corkmap</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #111;
+    touch-action: none;
+  }
+
+  #map-container {
+    width: 100vw;
+    height: 100vh;
+    background: #1a1a1a;
+  }
+
+  svg { width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  svg:active { cursor: grabbing; }
+
+  .country {
+    fill: #2a2a2a;
+    stroke: #444;
+    stroke-width: 0.5px;
+    stroke-linejoin: round;
+  }
+
+  .pin-head {
+    cursor: pointer;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  }
+
+  /* Invisible larger touch target behind pin */
+  .pin-touch {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  #tooltip {
+    position: fixed;
+    display: none;
+    background: rgba(255,255,255,0.95);
+    padding: 4px 10px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #111;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 150;
+  }
+
+  /* Toolbar */
+  #toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: rgba(17,17,17,0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 100;
+    border-bottom: 1px solid #333;
+  }
+
+  #toolbar h1 {
+    color: #e0e0e0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex: 1;
+  }
+
+  .toolbar-buttons {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  #toolbar button {
+    background: #2a2a2a;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  #toolbar button:hover { background: #3a3a3a; color: #fff; }
+
+  @media (max-width: 500px) {
+    #toolbar { padding: 0 10px; gap: 8px; }
+    #toolbar h1 { font-size: 14px; }
+    #toolbar button { padding: 6px 10px; font-size: 12px; }
+  }
+
+  /* Pin popover */
+  #popover {
+    position: fixed;
+    display: none;
+    background: #222;
+    border: 1px solid #444;
+    padding: 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 200;
+    min-width: 200px;
+  }
+
+  #popover label {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+  #popover label:first-child { margin-top: 0; }
+
+  #popover input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    outline: none;
+  }
+  #popover input:focus { border-color: #888; }
+
+  #popover .popover-buttons {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  #popover button {
+    padding: 5px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid #444;
+    transition: background 0.15s;
+  }
+
+  #popover .btn-save { background: #e0e0e0; color: #111; border-color: #e0e0e0; }
+  #popover .btn-save:hover { background: #fff; }
+  #popover .btn-cancel { background: #2a2a2a; color: #ccc; }
+  #popover .btn-cancel:hover { background: #3a3a3a; }
+  #popover .btn-delete { background: #c0392b; color: #fff; border-color: #a93226; }
+  #popover .btn-delete:hover { background: #e74c3c; }
+
+  @media (max-width: 500px) {
+    #popover {
+      left: 0 !important;
+      right: 0;
+      bottom: 0 !important;
+      top: auto !important;
+      width: 100%;
+      border-radius: 12px 12px 0 0;
+      padding: 20px 16px;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      min-width: unset;
+    }
+    #popover input { font-size: 16px; padding: 10px 12px; }
+    #popover button { padding: 10px 18px; font-size: 14px; }
+    #popover label { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>Corkmap</h1>
+  <div class="toolbar-buttons" id="toolbar-buttons">
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="downloadStaticSite()">Download Static Site</button>
+  </div>
+</div>
+
+<div id="map-container">
+  <svg id="map"></svg>
+</div>
+
+<div id="tooltip"></div>
+
+<div id="popover">
+  <label for="pin-label">Location</label>
+  <input type="text" id="pin-label" placeholder="e.g. Paris">
+  <label for="pin-year">Year</label>
+  <input type="text" id="pin-year" placeholder="e.g. 2024">
+  <div class="popover-buttons">
+    <button class="btn-delete" id="btn-delete" onclick="deletePin()">Delete</button>
+    <button class="btn-cancel" onclick="closePopover()">Cancel</button>
+    <button class="btn-save" onclick="savePin()">Save</button>
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<script>
+// --- Embedded pins for static deploy (populated by export) ---
+const EMBEDDED_PINS = [];
+
+// --- Mode detection ---
+const isLocalMode = ['localhost', '127.0.0.1', '0.0.0.0', ''].includes(location.hostname);
+
+// --- Pin state ---
+let pins = [];
+let editingPinId = null;
+let pendingCoords = null;
+
+// --- Init ---
+const toolbar = document.getElementById('toolbar');
+const toolbarButtons = document.getElementById('toolbar-buttons');
+const popover = document.getElementById('popover');
+const btnDelete = document.getElementById('btn-delete');
+
+if (!isLocalMode) {
+  // Hide only the edit buttons, keep the title bar
+  toolbarButtons.style.display = 'none';
+}
+
+// Load pins
+function loadPins() {
+  if (isLocalMode) {
+    const stored = localStorage.getItem('corkmap_pins');
+    const localPins = stored ? JSON.parse(stored) : [];
+    const localIds = new Set(localPins.map(p => p.id));
+    pins = [...localPins, ...EMBEDDED_PINS.filter(p => !localIds.has(p.id))];
+  } else {
+    pins = [...EMBEDDED_PINS];
+  }
+}
+
+function savePins() {
+  if (isLocalMode) {
+    localStorage.setItem('corkmap_pins', JSON.stringify(pins));
+  }
+}
+
+loadPins();
+
+// --- Map setup ---
+const svg = d3.select('#map');
+const g = svg.append('g');
+
+const projection = d3.geoNaturalEarth1();
+const path = d3.geoPath(projection);
+
+// Store map dimensions for translate clamping
+let mapWidth, mapHeight;
+
+// Zoom with translate clamping
+const zoom = d3.zoom()
+  .scaleExtent([1, 8])
+  .on('zoom', (event) => {
+    const t = event.transform;
+    // Clamp translation so the map can't be panned out of view
+    const tx = Math.min(0, Math.max(t.x, mapWidth - mapWidth * t.k));
+    const ty = Math.min(0, Math.max(t.y, mapHeight - mapHeight * t.k));
+    const clamped = d3.zoomIdentity.translate(tx, ty).scale(t.k);
+    g.attr('transform', clamped);
+    // Sync the internal transform state if it was clamped
+    if (tx !== t.x || ty !== t.y) {
+      svg.property('__zoom', clamped);
+    }
+  });
+
+svg.call(zoom);
+
+// Prevent default on double-click zoom
+svg.on('dblclick.zoom', null);
+
+// Click to add pin (local mode)
+if (isLocalMode) {
+  svg.on('click', function(event) {
+    if (popover.style.display === 'block') {
+      closePopover();
+      return;
+    }
+    const transform = d3.zoomTransform(svg.node());
+    const [mx, my] = d3.pointer(event);
+    const [x, y] = transform.invert([mx, my]);
+    const coords = projection.invert([x, y]);
+    if (!coords || isNaN(coords[0]) || isNaN(coords[1])) return;
+    pendingCoords = { lng: coords[0], lat: coords[1] };
+    editingPinId = null;
+    openPopover(event.clientX, event.clientY, '', '');
+  });
+}
+
+// Fetch and render map
+const topoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+d3.json(topoUrl).then(world => {
+  const countries = topojson.feature(world, world.objects.countries);
+
+  const container = document.getElementById('map-container');
+  mapWidth = container.clientWidth;
+  mapHeight = container.clientHeight;
+  projection.fitSize([mapWidth, mapHeight], countries);
+
+  g.selectAll('.country')
+    .data(countries.features)
+    .join('path')
+    .attr('class', 'country')
+    .attr('d', path);
+
+  renderPins();
+});
+
+// --- Pin rendering ---
+const PIN_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e91e63','#ff7043'];
+
+function pinColor(pin) {
+  let hash = 0;
+  for (let i = 0; i < pin.id.length; i++) hash = ((hash << 5) - hash) + pin.id.charCodeAt(i);
+  return PIN_COLORS[Math.abs(hash) % PIN_COLORS.length];
+}
+
+const tooltip = document.getElementById('tooltip');
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+let tappedPinId = null; // track which pin was last tapped (for touch tooltip)
+
+function showTooltip(text, cx, cy) {
+  tooltip.textContent = text;
+  tooltip.style.display = 'block';
+  // Position: above the tap point on mobile, beside cursor on desktop
+  const tw = tooltip.offsetWidth || 100;
+  let tx = cx - tw / 2;
+  let ty = cy - 40;
+  if (tx < 4) tx = 4;
+  if (tx + tw > window.innerWidth - 4) tx = window.innerWidth - tw - 4;
+  if (ty < 4) ty = cy + 16;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+  tappedPinId = null;
+}
+
+// Hide tooltip when tapping elsewhere on mobile
+if (isTouchDevice) {
+  svg.on('touchstart.tooltip', () => hideTooltip(), { passive: true });
+}
+
+function renderPins() {
+  g.selectAll('.pin').remove();
+
+  pins.forEach(pin => {
+    const [x, y] = projection([pin.lng, pin.lat]);
+    if (isNaN(x) || isNaN(y)) return;
+
+    const pg = g.append('g')
+      .attr('class', 'pin')
+      .attr('transform', `translate(${x},${y})`);
+
+    const color = pinColor(pin);
+    const labelText = pin.label + (pin.year ? ` (${pin.year})` : '');
+
+    // Larger invisible touch target
+    pg.append('circle')
+      .attr('cx', 0).attr('cy', -8)
+      .attr('r', 18)
+      .attr('class', 'pin-touch')
+      .on('mouseenter', function(event) {
+        if (isTouchDevice) return;
+        showTooltip(labelText, event.clientX + 12, event.clientY);
+      })
+      .on('mousemove', function(event) {
+        if (isTouchDevice) return;
+        tooltip.style.left = (event.clientX + 12) + 'px';
+        tooltip.style.top = (event.clientY - 28) + 'px';
+      })
+      .on('mouseleave', function() {
+        if (isTouchDevice) return;
+        hideTooltip();
+      })
+      .on('click', function(event) {
+        event.stopPropagation();
+
+        if (isTouchDevice && !isLocalMode) {
+          // Touch + static mode: tap toggles tooltip
+          if (tappedPinId === pin.id) {
+            hideTooltip();
+          } else {
+            tappedPinId = pin.id;
+            showTooltip(labelText, event.clientX, event.clientY);
+          }
+          return;
+        }
+
+        if (isTouchDevice && isLocalMode) {
+          // Touch + local mode: first tap shows tooltip, second tap opens edit
+          if (tappedPinId === pin.id) {
+            hideTooltip();
+            editingPinId = pin.id;
+            pendingCoords = null;
+            openPopover(event.clientX, event.clientY, pin.label, pin.year || '');
+          } else {
+            tappedPinId = pin.id;
+            showTooltip(labelText, event.clientX, event.clientY);
+          }
+          return;
+        }
+
+        // Desktop + local mode: click opens edit
+        if (!isLocalMode) return;
+        editingPinId = pin.id;
+        pendingCoords = null;
+        openPopover(event.clientX, event.clientY, pin.label, pin.year || '');
+      });
+
+    // Pin needle
+    pg.append('line')
+      .attr('x1', 0).attr('y1', 0)
+      .attr('x2', 0).attr('y2', -8)
+      .attr('stroke', '#888')
+      .attr('stroke-width', 1)
+      .style('pointer-events', 'none');
+
+    // Pin head (visual only, touch target handles events)
+    pg.append('circle')
+      .attr('cx', 0).attr('cy', -8)
+      .attr('r', 5)
+      .attr('fill', color)
+      .attr('stroke', 'rgba(255,255,255,0.2)')
+      .attr('stroke-width', 0.5)
+      .attr('class', 'pin-head')
+      .style('pointer-events', 'none');
+  });
+}
+
+// --- Popover ---
+function openPopover(cx, cy, label, year) {
+  const pinLabel = document.getElementById('pin-label');
+  const pinYear = document.getElementById('pin-year');
+  pinLabel.value = label;
+  pinYear.value = year;
+  btnDelete.style.display = editingPinId ? 'inline-block' : 'none';
+  hideTooltip();
+
+  if (window.innerWidth <= 500) {
+    // Bottom sheet on mobile — CSS handles positioning
+    popover.style.left = '';
+    popover.style.top = '';
+  } else {
+    let px = cx + 12;
+    let py = cy - 20;
+    if (px + 220 > window.innerWidth) px = cx - 220;
+    if (py + 160 > window.innerHeight) py = cy - 160;
+    if (py < 60) py = 60;
+    popover.style.left = px + 'px';
+    popover.style.top = py + 'px';
+  }
+
+  popover.style.display = 'block';
+  // Delay focus on mobile to avoid keyboard popping up and shifting layout
+  if (!isTouchDevice) pinLabel.focus();
+}
+
+function closePopover() {
+  popover.style.display = 'none';
+  editingPinId = null;
+  pendingCoords = null;
+}
+
+function savePin() {
+  const label = document.getElementById('pin-label').value.trim();
+  const year = document.getElementById('pin-year').value.trim();
+  if (!label) { document.getElementById('pin-label').focus(); return; }
+
+  if (editingPinId) {
+    const pin = pins.find(p => p.id === editingPinId);
+    if (pin) { pin.label = label; pin.year = year; }
+  } else if (pendingCoords) {
+    pins.push({
+      id: 'pin_' + Date.now(),
+      lat: Math.round(pendingCoords.lat * 1000) / 1000,
+      lng: Math.round(pendingCoords.lng * 1000) / 1000,
+      label,
+      year
+    });
+  }
+
+  savePins();
+  renderPins();
+  closePopover();
+}
+
+function deletePin() {
+  if (!editingPinId) return;
+  pins = pins.filter(p => p.id !== editingPinId);
+  savePins();
+  renderPins();
+  closePopover();
+}
+
+// Handle Enter key in popover
+document.getElementById('pin-label').addEventListener('keydown', e => { if (e.key === 'Enter') savePin(); });
+document.getElementById('pin-year').addEventListener('keydown', e => { if (e.key === 'Enter') savePin(); });
+// Handle Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopover(); });
+
+// --- Export ---
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(pins, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pins.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadStaticSite() {
+  fetch(location.href).then(r => r.text()).then(html => {
+    const pinsJSON = JSON.stringify(pins, null, 2);
+    html = html.replace(
+      /const EMBEDDED_PINS = \[.*?\];/s,
+      `const EMBEDDED_PINS = ${pinsJSON};`
+    );
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'corkmap.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
+// --- Resize ---
+window.addEventListener('resize', () => {
+  const container = document.getElementById('map-container');
+  d3.json(topoUrl).then(world => {
+    const countries = topojson.feature(world, world.objects.countries);
+    mapWidth = container.clientWidth;
+    mapHeight = container.clientHeight;
+    projection.fitSize([mapWidth, mapHeight], countries);
+    g.selectAll('.country').attr('d', path);
+    renderPins();
+  });
+});
+</script>
+</body>
+</html>
