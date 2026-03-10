@@ -1,0 +1,9 @@
+services:
+  messenger:
+    image: registry.baileys.dev/messenger
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.messenger.rule=Host(`hermes.baileys.app`)"
+      - "traefik.http.services.messenger.loadbalancer.server.port=8080"
