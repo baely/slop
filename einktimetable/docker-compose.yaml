@@ -1,0 +1,8 @@
+services:
+  einktimetable:
+    image: registry.baileys.dev/einktimetable
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.einktimetable.rule=Host(`timetable.baileys.dev`)"
+      - "traefik.http.services.einktimetable.loadbalancer.server.port=8080"
