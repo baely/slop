@@ -1,0 +1,52 @@
+services:
+  staticer:
+    image: registry.baileys.dev/staticer:latest
+    container_name: staticer
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_HOST=${DOMAIN}
+      - UPLOAD_SECRET=${UPLOAD_SECRET}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - DATABASE_PATH=/app/data/staticer.db
+      - SITES_DIR=/app/sites
+      - MAX_UPLOAD_SIZE=104857600
+      - MAX_EXTRACTED_SIZE=524288000
+      - MAX_FILES_PER_SITE=1000
+      - RATE_LIMIT_UPLOADS=10
+    volumes:
+      - staticer-data:/app/data
+      - staticer-sites:/app/sites
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+
+      # Router for main domain and wildcard subdomains
+      - "traefik.http.routers.staticer.rule=Host(`${DOMAIN}`) || HostRegexp(`{subdomain:[a-z]+-[a-z]+}.${DOMAIN}`)"
+      - "traefik.http.routers.staticer.entrypoints=websecure"
+      - "traefik.http.routers.staticer.tls.certresolver=letsencrypt"
+
+      # Service (which port to route to)
+      - "traefik.http.services.staticer.loadbalancer.server.port=8080"
+
+      # Security headers
+      - "traefik.http.middlewares.staticer-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.staticer-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.staticer-headers.headers.stsseconds=31536000"
+      - "traefik.http.routers.staticer.middlewares=staticer-headers"
+    networks:
+      - traefik
+    healthcheck:
+      test: ["CMD-SHELL", "ps | grep staticer-server | grep -v grep || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  staticer-data:
+  staticer-sites:
+
+networks:
+  traefik:
+    external: true

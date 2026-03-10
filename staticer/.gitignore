@@ -1,0 +1,40 @@
+# Binaries
+staticer-server
+staticer
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output
+*.out
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+
+# Data directories
+/sites/*
+!/sites/.gitkeep
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TLS cache
+/var/cache/staticer/
