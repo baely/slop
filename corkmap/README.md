@@ -21,5 +21,5 @@ Open `index.html` in a browser. When running locally, click anywhere on the map 
 Static single-file app — deploy with staticer:
 
 ```sh
-staticer deploy --domain corkmap.baileys.dev --expires never
+staticer deploy --domain traveller.baileys.app --expires never
 ```
