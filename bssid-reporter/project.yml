@@ -25,3 +25,6 @@ targets:
           - location
         NSLocationAlwaysAndWhenInUseUsageDescription: "BSSID Reporter needs location access to detect WiFi changes and report your BSSID in the background."
         NSLocationWhenInUseUsageDescription: "BSSID Reporter needs location access to read the current WiFi BSSID."
+        UILaunchScreen: {}
+        LSRequiresIPhoneOS: true
+        CFBundleDisplayName: BSSID Reporter
