@@ -1,0 +1,5 @@
+BSSIDReporter.xcodeproj/
+xcuserdata/
+DerivedData/
+.build/
+*.xcworkspace
