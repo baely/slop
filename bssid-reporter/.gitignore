@@ -3,3 +3,5 @@ xcuserdata/
 DerivedData/
 .build/
 *.xcworkspace
+*.ipa
+BSSIDReporter */
