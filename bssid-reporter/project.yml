@@ -1,0 +1,30 @@
+name: BSSIDReporter
+options:
+  bundleIdPrefix: dev.baileys
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "16.0"
+
+targets:
+  BSSIDReporter:
+    type: application
+    platform: iOS
+    sources:
+      - BSSIDReporter
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: BSSIDReporter/Resources/BSSIDReporter.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: dev.baileys.bssid-reporter
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+    info:
+      path: BSSIDReporter/Info.plist
+      properties:
+        UIBackgroundModes:
+          - location
+        NSLocationAlwaysAndWhenInUseUsageDescription: "BSSID Reporter needs location access to detect WiFi changes and report your BSSID in the background."
+        NSLocationWhenInUseUsageDescription: "BSSID Reporter needs location access to read the current WiFi BSSID."
+        UILaunchScreen: {}
+        LSRequiresIPhoneOS: true
+        CFBundleDisplayName: BSSID Reporter
