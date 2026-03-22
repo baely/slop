@@ -4,6 +4,7 @@ import SwiftUI
 struct BSSIDReporterApp: App {
     @StateObject private var settings = AppSettings()
     @StateObject private var locationManager = LocationManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -15,6 +16,11 @@ struct BSSIDReporterApp: App {
                         locationManager.start()
                     }
                 }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active, settings.isEnabled {
+                locationManager.start()
+            }
         }
     }
 }
