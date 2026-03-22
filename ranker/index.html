@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranker</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111;
+  background: #fff;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout */
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 32px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.logo-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: -0.01em;
+}
+.logo-sub {
+  font-size: 12px;
+  color: #999;
+}
+
+.header-actions { display: flex; gap: 8px; }
+
+/* Buttons */
+button {
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+.btn {
+  padding: 8px 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.btn-primary {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+}
+.btn-primary:hover { background: #333; border-color: #333; }
+.btn-primary:active { background: #111; }
+.btn-primary:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.btn-secondary {
+  background: #fff;
+  border: 1px solid #ddd;
+  color: #555;
+}
+.btn-secondary:hover { border-color: #999; color: #111; }
+
+.btn-ghost {
+  color: #999;
+  padding: 6px 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.btn-ghost:hover { color: #111; }
+
+.btn-danger {
+  color: #c00;
+  padding: 6px 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.btn-danger:hover { background: #fff8f8; }
+
+/* Views */
+.view {
+  display: none;
+  flex: 1;
+  animation: fadeIn 0.2s ease;
+}
+.view.active { display: flex; flex-direction: column; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Step indicator */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 24px;
+}
+
+.step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ddd;
+  transition: all 0.15s;
+}
+.step-dot.active { background: #111; }
+.step-dot.done { background: #999; }
+
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+  margin: 0 8px;
+}
+
+/* Section titles */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.section-subtitle {
+  color: #999;
+  font-size: 12px;
+  margin-bottom: 24px;
+}
+
+/* Inputs */
+input[type="text"] {
+  width: 100%;
+  padding: 7px 9px;
+  background: #fff;
+  border: 1px solid #ddd;
+  color: #111;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"]::placeholder { color: #bbb; }
+input[type="text"]:focus { border-color: #111; }
+
+/* Setup view */
+.input-group {
+  margin-bottom: 20px;
+}
+.input-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.add-row {
+  display: flex;
+  gap: 6px;
+}
+.add-row input { flex: 1; }
+.add-row .btn { flex-shrink: 0; }
+
+.item-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.item-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-top: none;
+  animation: slideIn 0.15s ease;
+}
+.item-entry:first-child { border-top: 1px solid #ddd; }
+.item-entry .item-name {
+  font-size: 13px;
+  color: #111;
+}
+.item-entry .item-num {
+  font-size: 11px;
+  color: #aaa;
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.item-entry .remove-btn {
+  color: #bbb;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.item-entry .remove-btn:hover { color: #c00; }
+
+@keyframes slideIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.setup-footer {
+  margin-top: auto;
+  padding: 20px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Compare view */
+.compare-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.compare-progress {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.compare-progress-bar {
+  height: 100%;
+  background: #111;
+  transition: width 0.4s ease;
+}
+
+.compare-arena {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.compare-card {
+  width: 100%;
+  padding: 28px 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.compare-card:hover {
+  border-color: #111;
+  background: #fafafa;
+}
+.compare-card:active { background: #f5f5f5; }
+
+.compare-card .card-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+.compare-card .card-name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #111;
+}
+
+.compare-vs {
+  font-size: 11px;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  padding: 2px 0;
+}
+
+.compare-footer {
+  padding: 16px 0 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.compare-card.chosen {
+  border-color: #111;
+  background: #f5f5f5;
+}
+
+/* Results view */
+.results-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 24px;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-top: none;
+  animation: slideIn 0.2s ease backwards;
+}
+.result-item:first-child { border-top: 1px solid #ddd; }
+.result-item:nth-child(1) { animation-delay: 0.03s; }
+.result-item:nth-child(2) { animation-delay: 0.06s; }
+.result-item:nth-child(3) { animation-delay: 0.09s; }
+.result-item:nth-child(4) { animation-delay: 0.12s; }
+.result-item:nth-child(5) { animation-delay: 0.15s; }
+.result-item:nth-child(n+6) { animation-delay: 0.18s; }
+
+.result-rank {
+  font-size: 14px;
+  font-weight: 700;
+  color: #bbb;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.result-item:first-child .result-rank { color: #111; }
+
+.result-name {
+  font-size: 13px;
+  padding-left: 8px;
+}
+
+.result-item:first-child {
+  background: #fafafa;
+  font-weight: 500;
+}
+
+.results-footer {
+  margin-top: auto;
+  padding: 20px 0;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* History view */
+.history-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 24px;
+}
+
+.history-card {
+  border: 1px solid #ddd;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.history-card:hover {
+  border-color: #999;
+}
+
+.history-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.history-card-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-card-date {
+  font-size: 11px;
+  color: #aaa;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.history-card-items {
+  font-size: 11px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.history-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.history-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #999;
+  font-size: 12px;
+  margin-bottom: 16px;
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.history-back:hover { color: #111; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .app { padding: 16px 12px; }
+  .compare-card { padding: 22px 14px; }
+  .compare-card .card-name { font-size: 16px; }
+}
+
+/* Undo toast */
+.undo-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
+  background: #fff;
+  border: 1px solid #ddd;
+  color: #555;
+  font-size: 11px;
+  padding: 6px 14px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.undo-indicator.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo" onclick="goHome()">
+      <div class="logo-mark">R</div>
+      <div><div class="logo-text">Ranker</div><div class="logo-sub">Pairwise ranking tool</div></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost" onclick="showHistory()" id="historyBtn">History</button>
+    </div>
+  </header>
+
+  <!-- SETUP VIEW -->
+  <div class="view active" id="setupView">
+    <div class="steps">
+      <div class="step-dot active"></div>
+      <div class="step-line"></div>
+      <div class="step-dot"></div>
+      <div class="step-line"></div>
+      <div class="step-dot"></div>
+    </div>
+    <div class="section-label">Step 1</div>
+    <div class="section-title">Set up your ranking</div>
+    <div class="section-subtitle">Name your ranking and add at least two items to compare.</div>
+
+    <div class="input-group">
+      <label>Ranking name</label>
+      <input type="text" id="rankingName" placeholder="e.g. Best pizza toppings" autocomplete="off">
+    </div>
+
+    <div class="input-group">
+      <label>Add items</label>
+      <div class="add-row">
+        <input type="text" id="itemInput" placeholder="Type an item and press Enter" autocomplete="off">
+        <button class="btn btn-secondary" onclick="addItem()">Add</button>
+      </div>
+    </div>
+
+    <ul class="item-list" id="itemList"></ul>
+
+    <div class="setup-footer">
+      <button class="btn btn-primary" id="startBtn" disabled onclick="startRanking()">Start Ranking</button>
+    </div>
+  </div>
+
+  <!-- COMPARE VIEW -->
+  <div class="view" id="compareView">
+    <div class="steps">
+      <div class="step-dot done"></div>
+      <div class="step-line"></div>
+      <div class="step-dot active"></div>
+      <div class="step-line"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="compare-header">
+      <div class="section-label">Step 2</div>
+      <div class="section-title" id="compareTitleEl">Which do you prefer?</div>
+      <div class="section-subtitle" id="compareSubtitle"></div>
+      <div class="compare-progress">
+        <div class="compare-progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="compare-arena">
+      <div class="compare-card" id="cardLeft" onclick="choose('left')">
+        <span class="card-label">Option A</span>
+        <span class="card-name" id="leftName"></span>
+      </div>
+      <div class="compare-vs">vs</div>
+      <div class="compare-card" id="cardRight" onclick="choose('right')">
+        <span class="card-label">Option B</span>
+        <span class="card-name" id="rightName"></span>
+      </div>
+    </div>
+
+    <div class="compare-footer">
+      <button class="btn btn-secondary" id="undoBtn" onclick="undoChoice()" disabled>Undo</button>
+    </div>
+  </div>
+
+  <!-- RESULTS VIEW -->
+  <div class="view" id="resultsView">
+    <div class="steps">
+      <div class="step-dot done"></div>
+      <div class="step-line"></div>
+      <div class="step-dot done"></div>
+      <div class="step-line"></div>
+      <div class="step-dot active"></div>
+    </div>
+
+    <div class="section-label">Results</div>
+    <div class="section-title" id="resultsTitleEl">Your ranking</div>
+    <div class="section-subtitle" id="resultsSubtitle"></div>
+
+    <ol class="results-list" id="resultsList"></ol>
+
+    <div class="results-footer">
+      <button class="btn btn-secondary" onclick="rerank()">Re-rank</button>
+      <button class="btn btn-primary" onclick="saveAndDone()">Save &amp; Done</button>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div class="view" id="historyView">
+    <div class="section-title">History</div>
+    <div class="section-subtitle">Your previous rankings.</div>
+
+    <div id="historyContent"></div>
+  </div>
+</div>
+
+<div class="undo-indicator" id="undoToast">Undone</div>
+
+<script>
+// ─── State ───
+let items = [];
+let ranker = null;
+let currentRankingName = '';
+let currentResult = null;
+
+// ─── Merge Sort Ranker ───
+class MergeSortRanker {
+  constructor(items) {
+    // Shuffle for fairness
+    this.original = [...items];
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    this.runs = shuffled.map(item => [item]);
+    this.nextRuns = [];
+    this.pairIndex = 0;
+    this.left = null;
+    this.right = null;
+    this.leftIdx = 0;
+    this.rightIdx = 0;
+    this.merged = [];
+    this.history = [];
+    this.done = false;
+    this.result = null;
+    this.completedComparisons = 0;
+
+    // Worst-case comparisons estimate
+    const n = items.length;
+    this.maxComparisons = Math.max(1, Math.ceil(n * Math.log2(n || 1)));
+
+    this._advance();
+  }
+
+  _advance() {
+    // Continue current merge if both sides have elements
+    if (this.left && this.right) {
+      if (this.leftIdx < this.left.length && this.rightIdx < this.right.length) {
+        return; // need user input
+      }
+      // Exhaust remaining
+      while (this.leftIdx < this.left.length) this.merged.push(this.left[this.leftIdx++]);
+      while (this.rightIdx < this.right.length) this.merged.push(this.right[this.rightIdx++]);
+      this.nextRuns.push([...this.merged]);
+      this.pairIndex += 2;
+    }
+
+    // Find next pair to merge
+    while (this.pairIndex < this.runs.length) {
+      if (this.pairIndex + 1 < this.runs.length) {
+        this.left = this.runs[this.pairIndex];
+        this.right = this.runs[this.pairIndex + 1];
+        this.leftIdx = 0;
+        this.rightIdx = 0;
+        this.merged = [];
+        return; // need user input
+      } else {
+        this.nextRuns.push([...this.runs[this.pairIndex]]);
+        this.pairIndex += 2;
+      }
+    }
+
+    // Pass complete
+    if (this.nextRuns.length <= 1) {
+      this.done = true;
+      this.result = this.nextRuns[0] || [];
+      return;
+    }
+
+    this.runs = [...this.nextRuns];
+    this.nextRuns = [];
+    this.pairIndex = 0;
+    this.left = null;
+    this.right = null;
+    this._advance();
+  }
+
+  getPair() {
+    if (this.done) return null;
+    return [this.left[this.leftIdx], this.right[this.rightIdx]];
+  }
+
+  choose(side) {
+    this.history.push({
+      runs: JSON.parse(JSON.stringify(this.runs)),
+      nextRuns: JSON.parse(JSON.stringify(this.nextRuns)),
+      pairIndex: this.pairIndex,
+      left: [...this.left],
+      right: [...this.right],
+      leftIdx: this.leftIdx,
+      rightIdx: this.rightIdx,
+      merged: [...this.merged],
+      completedComparisons: this.completedComparisons
+    });
+
+    if (side === 'left') {
+      this.merged.push(this.left[this.leftIdx++]);
+    } else {
+      this.merged.push(this.right[this.rightIdx++]);
+    }
+    this.completedComparisons++;
+    this._advance();
+  }
+
+  undo() {
+    if (!this.history.length) return false;
+    const s = this.history.pop();
+    this.runs = s.runs;
+    this.nextRuns = s.nextRuns;
+    this.pairIndex = s.pairIndex;
+    this.left = s.left;
+    this.right = s.right;
+    this.leftIdx = s.leftIdx;
+    this.rightIdx = s.rightIdx;
+    this.merged = s.merged;
+    this.completedComparisons = s.completedComparisons;
+    this.done = false;
+    this.result = null;
+    return true;
+  }
+
+  get canUndo() { return this.history.length > 0; }
+  get progress() { return Math.min(1, this.completedComparisons / this.maxComparisons); }
+}
+
+// ─── View Management ───
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Setup ───
+const itemInput = document.getElementById('itemInput');
+const rankingNameInput = document.getElementById('rankingName');
+const startBtn = document.getElementById('startBtn');
+
+function renderItems() {
+  const list = document.getElementById('itemList');
+  list.innerHTML = items.map((item, i) => `
+    <li class="item-entry">
+      <div style="display:flex;align-items:center">
+        <span class="item-num">${i + 1}</span>
+        <span class="item-name">${esc(item)}</span>
+      </div>
+      <button class="remove-btn" onclick="removeItem(${i})">&times;</button>
+    </li>
+  `).join('');
+  startBtn.disabled = items.length < 2;
+}
+
+function addItem() {
+  const val = itemInput.value.trim();
+  if (!val) return;
+  if (items.includes(val)) { itemInput.select(); return; }
+  items.push(val);
+  itemInput.value = '';
+  itemInput.focus();
+  renderItems();
+}
+
+function removeItem(i) {
+  items.splice(i, 1);
+  renderItems();
+}
+
+itemInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+});
+
+function startRanking() {
+  if (items.length < 2) return;
+  currentRankingName = rankingNameInput.value.trim() || 'Untitled ranking';
+  ranker = new MergeSortRanker(items);
+  showView('compareView');
+  renderComparison();
+}
+
+// ─── Compare ───
+function renderComparison() {
+  if (ranker.done) {
+    currentResult = ranker.result;
+    showResults();
+    return;
+  }
+  const [a, b] = ranker.getPair();
+  document.getElementById('leftName').textContent = a;
+  document.getElementById('rightName').textContent = b;
+  document.getElementById('compareSubtitle').textContent =
+    `Comparison ${ranker.completedComparisons + 1}`;
+  document.getElementById('progressBar').style.width =
+    `${Math.round(ranker.progress * 100)}%`;
+  document.getElementById('undoBtn').disabled = !ranker.canUndo;
+
+  // Reset card states
+  document.getElementById('cardLeft').classList.remove('chosen');
+  document.getElementById('cardRight').classList.remove('chosen');
+}
+
+function choose(side) {
+  const card = document.getElementById(side === 'left' ? 'cardLeft' : 'cardRight');
+  card.classList.add('chosen');
+
+  setTimeout(() => {
+    ranker.choose(side);
+    renderComparison();
+  }, 180);
+}
+
+function undoChoice() {
+  if (ranker.undo()) {
+    renderComparison();
+    // Show toast
+    const toast = document.getElementById('undoToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1200);
+  }
+}
+
+// Keyboard shortcuts for compare
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('compareView').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft' || e.key === '1') choose('left');
+  else if (e.key === 'ArrowRight' || e.key === '2') choose('right');
+  else if ((e.key === 'z' && (e.metaKey || e.ctrlKey)) || e.key === 'Backspace') {
+    e.preventDefault();
+    undoChoice();
+  }
+});
+
+// ─── Results ───
+function showResults() {
+  showView('resultsView');
+  document.getElementById('resultsTitleEl').textContent = currentRankingName;
+  document.getElementById('resultsSubtitle').textContent =
+    `Ranked ${currentResult.length} items in ${ranker.completedComparisons} comparisons`;
+
+  const list = document.getElementById('resultsList');
+  list.innerHTML = currentResult.map((item, i) => `
+    <li class="result-item">
+      <span class="result-rank">${i + 1}</span>
+      <span class="result-name">${esc(item)}</span>
+    </li>
+  `).join('');
+}
+
+function rerank() {
+  ranker = new MergeSortRanker(items);
+  showView('compareView');
+  renderComparison();
+}
+
+function saveAndDone() {
+  const history = getHistory();
+  history.unshift({
+    id: Date.now(),
+    name: currentRankingName,
+    date: new Date().toISOString(),
+    items: [...items],
+    result: [...currentResult]
+  });
+  localStorage.setItem('ranker_history', JSON.stringify(history));
+  showHistory();
+}
+
+// ─── History ───
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('ranker_history')) || []; }
+  catch { return []; }
+}
+
+function showHistory() {
+  showView('historyView');
+  const history = getHistory();
+  const content = document.getElementById('historyContent');
+
+  if (!history.length) {
+    content.innerHTML = '<div class="history-empty">No rankings yet.<br>Create one to get started.</div>';
+    return;
+  }
+
+  content.innerHTML = '<div class="history-list">' + history.map((h, idx) => `
+    <div class="history-card" onclick="viewHistoryDetail(${idx})">
+      <div class="history-card-header">
+        <div class="history-card-title">${esc(h.name)}</div>
+        <div class="history-card-date">${formatDate(h.date)}</div>
+      </div>
+      <div class="history-card-items">${h.result.slice(0, 5).map((r, i) => `${i + 1}. ${esc(r)}`).join(' &middot; ')}${h.result.length > 5 ? ' &hellip;' : ''}</div>
+      <div class="history-card-actions">
+        <button class="btn-ghost" onclick="event.stopPropagation(); rerankFromHistory(${idx})">Re-rank</button>
+        <button class="btn-danger" onclick="event.stopPropagation(); deleteHistory(${idx})">Delete</button>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+function viewHistoryDetail(idx) {
+  const history = getHistory();
+  const h = history[idx];
+  const content = document.getElementById('historyContent');
+
+  content.innerHTML = `
+    <button class="history-back" onclick="showHistory()">&#8592; Back</button>
+    <div class="section-title" style="margin-bottom:4px">${esc(h.name)}</div>
+    <div class="section-subtitle">${formatDate(h.date)} &middot; ${h.result.length} items</div>
+    <ol class="results-list">
+      ${h.result.map((item, i) => `
+        <li class="result-item">
+          <span class="result-rank">${i + 1}</span>
+          <span class="result-name">${esc(item)}</span>
+        </li>
+      `).join('')}
+    </ol>
+    <div style="display:flex;gap:10px;padding-bottom:32px">
+      <button class="btn btn-secondary" onclick="rerankFromHistory(${idx})">Re-rank</button>
+    </div>
+  `;
+}
+
+function rerankFromHistory(idx) {
+  const history = getHistory();
+  const h = history[idx];
+  items = [...h.items];
+  currentRankingName = h.name;
+  rankingNameInput.value = h.name;
+  renderItems();
+  ranker = new MergeSortRanker(items);
+  showView('compareView');
+  renderComparison();
+}
+
+function deleteHistory(idx) {
+  const history = getHistory();
+  history.splice(idx, 1);
+  localStorage.setItem('ranker_history', JSON.stringify(history));
+  showHistory();
+}
+
+function goHome() {
+  items = [];
+  currentResult = null;
+  ranker = null;
+  rankingNameInput.value = '';
+  renderItems();
+  showView('setupView');
+  rankingNameInput.focus();
+}
+
+// ─── Helpers ───
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+</script>
+
+</body>
+</html>
