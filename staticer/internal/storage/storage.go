@@ -15,6 +15,7 @@ import (
 type DeployOptions struct {
 	ExpiresAt    *time.Time
 	CustomDomain string
+	Listed       bool
 }
 
 // Storage defines the interface for site storage operations
@@ -36,6 +37,12 @@ type Storage interface {
 
 	// ListSites retrieves all sites
 	ListSites() ([]*models.Site, error)
+
+	// ListPublicSites retrieves all publicly listed sites
+	ListPublicSites() ([]*models.Site, error)
+
+	// UpdateSiteMetadata updates mutable metadata fields for a site
+	UpdateSiteMetadata(subdomain string, updates map[string]interface{}) error
 
 	// DeleteSite removes a site and its files
 	DeleteSite(subdomain string) error
@@ -109,6 +116,7 @@ func (s *storage) CreateSite(subdomain string, zipData io.Reader, maxFiles int, 
 	if opts != nil {
 		site.ExpiresAt = opts.ExpiresAt
 		site.CustomDomain = opts.CustomDomain
+		site.Listed = opts.Listed
 	}
 
 	// Save to database (with hashed API key)
@@ -156,6 +164,7 @@ func (s *storage) CreateSingleFileSite(subdomain string, fileData io.Reader, fil
 	if opts != nil {
 		site.ExpiresAt = opts.ExpiresAt
 		site.CustomDomain = opts.CustomDomain
+		site.Listed = opts.Listed
 	}
 
 	// Save to database (with hashed API key)
@@ -194,6 +203,16 @@ func (s *storage) GetSitePath(subdomain string) string {
 // ListSites retrieves all sites
 func (s *storage) ListSites() ([]*models.Site, error) {
 	return s.db.ListSites()
+}
+
+// ListPublicSites retrieves all publicly listed sites
+func (s *storage) ListPublicSites() ([]*models.Site, error) {
+	return s.db.ListPublicSites()
+}
+
+// UpdateSiteMetadata updates mutable metadata fields for a site
+func (s *storage) UpdateSiteMetadata(subdomain string, updates map[string]interface{}) error {
+	return s.db.UpdateSiteMetadata(subdomain, updates)
 }
 
 // DeleteSite removes a site and its files

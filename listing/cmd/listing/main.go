@@ -11,6 +11,7 @@ import (
 
 	"github.com/baely/listing/internal/docker"
 	"github.com/baely/listing/internal/server"
+	"github.com/baely/listing/internal/staticer"
 	"github.com/baely/listing/internal/store"
 )
 
@@ -40,8 +41,16 @@ func main() {
 	eventCtx, eventCancel := context.WithCancel(ctx)
 	go docker.ListenEvents(eventCtx, cli, containerStore)
 
+	// Initialize staticer client (optional)
+	var staticerClient *staticer.Client
+	if staticerURL := os.Getenv("STATICER_URL"); staticerURL != "" {
+		staticerClient = staticer.NewClient(staticerURL)
+		staticerClient.Start(30 * time.Second)
+		log.Printf("Staticer integration enabled, polling %s", staticerURL)
+	}
+
 	// Initialize HTTP server
-	srv, err := server.New(addr, containerStore)
+	srv, err := server.New(addr, containerStore, staticerClient)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

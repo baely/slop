@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/baely/listing/internal/staticer"
 	"github.com/baely/listing/internal/store"
 )
 
@@ -15,12 +16,13 @@ var templatesFS embed.FS
 // Server handles HTTP requests for the listing service
 type Server struct {
 	store    *store.ContainerStore
+	staticer *staticer.Client
 	template *template.Template
 	server   *http.Server
 }
 
 // New creates a new Server instance
-func New(addr string, s *store.ContainerStore) (*Server, error) {
+func New(addr string, s *store.ContainerStore, sc *staticer.Client) (*Server, error) {
 	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		return nil, err
@@ -28,11 +30,13 @@ func New(addr string, s *store.ContainerStore) (*Server, error) {
 
 	srv := &Server{
 		store:    s,
+		staticer: sc,
 		template: tmpl,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", srv.handleIndex)
+	mux.HandleFunc("/api/sites", srv.handleAPISites)
 	mux.HandleFunc("/health", srv.handleHealth)
 
 	srv.server = &http.Server{

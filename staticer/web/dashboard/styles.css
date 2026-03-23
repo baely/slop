@@ -378,6 +378,51 @@ input::placeholder {
     margin-top: 8px;
 }
 
+/* Listed toggle */
+
+.listed-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #999;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 10px;
+}
+
+.listed-toggle input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Inline edit */
+
+.site-editable {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.inline-edit {
+    flex: 1;
+    padding: 4px 6px;
+    border: 1px solid #e0e0e0;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fafafa;
+    color: #111;
+    outline: none;
+}
+
+.inline-edit:focus {
+    border-color: #111;
+    background: #fff;
+}
+
+.inline-edit::placeholder {
+    color: #ccc;
+}
+
 /* Empty state */
 
 .empty-state {

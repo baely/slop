@@ -12,6 +12,9 @@ type Site struct {
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 	FileCount    int        `json:"file_count"`
 	SizeBytes    int64      `json:"size_bytes"`
+	Listed       bool       `json:"listed"`
+	Title        string     `json:"title,omitempty"`
+	Description  string     `json:"description,omitempty"`
 }
 
 // StorageStats represents storage usage statistics
