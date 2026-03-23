@@ -115,6 +115,24 @@
             <p>No services available</p>
         </div>
         {{end}}
+
+        {{if .StaticSites}}
+        <div class="page-header" style="margin-top: 24px;">
+            <h1>Static Sites</h1>
+            <p class="subtitle">Publicly listed deployments</p>
+        </div>
+        <div class="list">
+            {{range .StaticSites}}
+            <div class="item">
+                <span class="item-title">{{if .Title}}{{.Title}}{{else}}{{.Subdomain}}{{end}}</span>
+                {{if .Description}}
+                <span class="item-description">{{.Description}}</span>
+                {{end}}
+                <a href="{{.URL}}" class="item-link" target="_blank" rel="noopener">{{.URL}}</a>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
     </div>
 </body>
 </html>

@@ -2,6 +2,8 @@ services:
   listing:
     image: registry.baileys.dev/listing
     restart: unless-stopped
+    environment:
+      - STATICER_URL=https://lab.baileys.app
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:

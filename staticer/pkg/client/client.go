@@ -35,6 +35,7 @@ type DeployOptions struct {
 	Subdomain string // Custom subdomain (optional)
 	Expires   string // Custom expiration like "1h", "7d", "never" (optional)
 	Domain    string // Custom domain like "track.baileys.app" (optional)
+	Listed    bool   // Whether the site should be publicly listed
 }
 
 // Deploy uploads a ZIP file and deploys a new site
@@ -53,6 +54,9 @@ func (c *Client) Deploy(zipData []byte, opts *DeployOptions) (*models.Site, erro
 		}
 		if opts.Domain != "" {
 			writer.WriteField("domain", opts.Domain)
+		}
+		if opts.Listed {
+			writer.WriteField("listed", "true")
 		}
 	}
 

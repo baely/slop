@@ -180,9 +180,17 @@ function displaySites(sites) {
             <div class="site-header">
                 <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
                 <div class="site-actions">
+                    <label class="listed-toggle" title="${site.listed ? 'Publicly listed' : 'Not listed'}">
+                        <input type="checkbox" ${site.listed ? 'checked' : ''} onchange="toggleListed('${site.subdomain}', this.checked)">
+                        Listed
+                    </label>
                     <button onclick="copySiteURL('${site.url}')" class="btn btn-ghost btn-small">Copy</button>
                     <button onclick="deleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
                 </div>
+            </div>
+            <div class="site-editable">
+                <input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="updateSiteMeta('${site.subdomain}', 'title', this.value)">
+                <input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="updateSiteMeta('${site.subdomain}', 'description', this.value)">
             </div>
             <div class="site-meta">
                 <span>${site.file_count} files</span>
@@ -201,6 +209,56 @@ function copySiteURL(url) {
     }).catch(() => {
         showError('Failed to copy');
     });
+}
+
+function escapeAttr(str) {
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;');
+}
+
+async function patchSite(subdomain, data, authHeader) {
+    const response = await fetch(`/api/sites/${subdomain}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            ...authHeader
+        },
+        body: JSON.stringify(data)
+    });
+    return response;
+}
+
+async function toggleListed(subdomain, listed) {
+    const secret = localStorage.getItem('uploadSecret');
+    if (!secret) { showError('Please connect first'); return; }
+
+    try {
+        const response = await patchSite(subdomain, { listed }, { 'X-Upload-Secret': secret });
+        if (response.ok) {
+            showSuccess(listed ? 'Publicly listed' : 'Unlisted');
+        } else {
+            showError('Failed to update');
+            loadSites();
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+        loadSites();
+    }
+}
+
+async function updateSiteMeta(subdomain, field, value) {
+    const secret = localStorage.getItem('uploadSecret');
+    if (!secret) { showError('Please connect first'); return; }
+
+    try {
+        const response = await patchSite(subdomain, { [field]: value }, { 'X-Upload-Secret': secret });
+        if (response.ok) {
+            showSuccess('Updated');
+        } else {
+            showError('Failed to update');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    }
 }
 
 async function deleteSite(subdomain) {
@@ -400,8 +458,16 @@ function displayAdminSites(sites) {
             <div class="site-header">
                 <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
                 <div class="site-actions">
+                    <label class="listed-toggle" title="${site.listed ? 'Publicly listed' : 'Not listed'}">
+                        <input type="checkbox" ${site.listed ? 'checked' : ''} onchange="adminToggleListed('${site.subdomain}', this.checked)">
+                        Listed
+                    </label>
                     <button onclick="adminDeleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
                 </div>
+            </div>
+            <div class="site-editable">
+                <input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'title', this.value)">
+                <input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'description', this.value)">
             </div>
             <div class="site-meta">
                 <span>${site.file_count} files</span>
@@ -412,6 +478,40 @@ function displayAdminSites(sites) {
             </div>
         </div>
     `).join('');
+}
+
+async function adminToggleListed(subdomain, listed) {
+    const secret = localStorage.getItem('adminSecret');
+    if (!secret) { showError('Admin secret not found'); return; }
+
+    try {
+        const response = await patchSite(subdomain, { listed }, { 'X-Admin-Secret': secret });
+        if (response.ok) {
+            showSuccess(listed ? 'Publicly listed' : 'Unlisted');
+        } else {
+            showError('Failed to update');
+            loadAdminSites();
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+        loadAdminSites();
+    }
+}
+
+async function adminUpdateMeta(subdomain, field, value) {
+    const secret = localStorage.getItem('adminSecret');
+    if (!secret) { showError('Admin secret not found'); return; }
+
+    try {
+        const response = await patchSite(subdomain, { [field]: value }, { 'X-Admin-Secret': secret });
+        if (response.ok) {
+            showSuccess('Updated');
+        } else {
+            showError('Failed to update');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    }
 }
 
 async function adminDeleteSite(subdomain) {
