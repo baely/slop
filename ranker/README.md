@@ -4,11 +4,12 @@ A pairwise comparison ranking tool. Add items, compare them head-to-head, and ge
 
 ## Features
 
-- **Step 1**: Name your ranking and add items
+- **Step 1**: Name your ranking and add items (single or bulk, newline-separated)
 - **Step 2**: Choose between pairs of items until a full ranking is determined
 - **Undo**: Step back your last pick during comparisons (button or Ctrl+Z)
-- **Results**: View your final ranked list
-- **History**: Past rankings stored in localStorage — view, re-rank, or delete
+- **Resume**: In-progress rankings persist across page refreshes
+- **Results**: View your final ranked list with comparison count
+- **History**: Past rankings stored in localStorage — view, re-rank, or delete (includes comparison counts)
 
 ## Keyboard Shortcuts (during comparison)
 
@@ -19,5 +20,5 @@ A pairwise comparison ranking tool. Add items, compare them head-to-head, and ge
 ## Deployment
 
 ```sh
-staticer deploy --domain ranker.baileys.app --expires never
+staticer deploy --domain ranker.baileys.app --expires never --replace
 ```
