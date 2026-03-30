@@ -334,7 +334,7 @@ th.sorted .sort-arrow { opacity: 1; color: #111; }
       <div class="logo">SP</div>
       <div>
         <h1>Statement Parser</h1>
-        <p class="subtitle">ANZ Plus PDF to CSV</p>
+        <p class="subtitle">ANZ Statement PDF to CSV</p>
       </div>
     </div>
     <div class="header-right">
@@ -650,6 +650,8 @@ const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7,
 
 const DATE_RE = /^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i;
 const MONEY_RE = /^\$[\d,]+\.\d{2}$/;
+// Bare number like 2,000.00 or 0.00 (no $ prefix, used in Access Advantage)
+const BARE_MONEY_RE = /^[\d,]+\.\d{2}$/;
 
 async function parsePDF(buffer, fileName) {
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
@@ -680,6 +682,227 @@ async function parsePDF(buffer, fileName) {
     }
   }
 
+  // Detect statement type
+  const allText = allLines.slice(0, 20).map(l => l.join(' ')).join('\n');
+  const isAccessAdvantage = allText.includes('ACCESS ADVANTAGE');
+
+  if (isAccessAdvantage) {
+    return parseAccessAdvantage(allLines, fileName);
+  } else {
+    return parseANZPlus(allLines, fileName);
+  }
+}
+
+// ─── ANZ Access Advantage Parser ───
+function parseAccessAdvantage(allLines, fileName) {
+  const metadata = { period: '', bsb: '', accountNumber: '', accountName: '' };
+
+  // Extract metadata
+  for (const line of allLines) {
+    const text = line.join(' ');
+
+    // Period: "03 SEPTEMBER 2021 TO 03 NOVEMBER 2021"
+    const periodMatch = text.match(/(\d{1,2}\s+\w+\s+\d{4})\s+TO\s+(\d{1,2}\s+\w+\s+\d{4})/i);
+    if (periodMatch && !metadata.period) metadata.period = `${periodMatch[1]} - ${periodMatch[2]}`;
+
+    // BSB: "013-723"
+    const bsbMatch = text.match(/\b(\d{3}-\d{3})\b/);
+    if (bsbMatch && !metadata.bsb) metadata.bsb = bsbMatch[1].replace(/-/g, '');
+
+    // Account number: "6431-95366" or "Account Number 6431-95366"
+    const accMatch = text.match(/(\d{4}-\d{5})/);
+    if (accMatch && !metadata.accountNumber) metadata.accountNumber = accMatch[1].replace(/-/g, '');
+
+    // Account name
+    if (text.match(/^BUTLER\s/i) && !metadata.accountName) metadata.accountName = text;
+  }
+
+  const transactions = [];
+  let inTransactions = false;
+  let currentYear = null;
+
+  for (let i = 0; i < allLines.length; i++) {
+    const line = allLines[i];
+    const text = line.join(' ');
+
+    // Detect transaction header
+    if (text.includes('Transaction Details') && line.includes('Withdrawals ($)') && line.includes('Deposits ($)')) {
+      inTransactions = true;
+      continue;
+    }
+
+    if (!inTransactions) continue;
+
+    // Year line: "2021 | blank | blank"
+    const yearMatch = line[0] && line[0].match(/^(20\d{2})$/);
+    if (yearMatch) {
+      currentYear = parseInt(yearMatch[1]);
+      continue;
+    }
+
+    // Stop conditions
+    if (text.includes('TOTALS AT END OF') || text.includes('Fee Summary') ||
+        text.includes('Australia and New Zealand') ||
+        (text.includes('Page') && text.includes('of'))) {
+      if (text.includes('TOTALS AT END OF PERIOD') || text.includes('Fee Summary')) {
+        inTransactions = false;
+      }
+      continue;
+    }
+
+    // Skip structural lines
+    if (text.includes('ANZ ACCESS ADVANTAGE') || text.includes('Account Number') ||
+        text.includes('Transaction Details') || text.includes('Please retain')) {
+      continue;
+    }
+
+    // Transaction line: "DD MON | DESCRIPTION | withdrawal_or_blank | deposit_or_blank | balance"
+    const accessDateMatch = line[0] && line[0].match(/^(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i);
+    if (!accessDateMatch || !currentYear) continue;
+
+    const day = parseInt(accessDateMatch[1]);
+    const month = MONTHS[accessDateMatch[2].toLowerCase()];
+    const year = currentYear;
+    const dateObj = new Date(year, month, day);
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    // Parse remaining tokens: description, then withdrawal/deposit/balance values
+    const rest = line.slice(1).filter(t => t !== 'blank');
+    const descParts = [];
+    const moneyValues = [];
+
+    for (const token of rest) {
+      if (BARE_MONEY_RE.test(token)) {
+        moneyValues.push(parseFloat(token.replace(/,/g, '')));
+      } else if (MONEY_RE.test(token)) {
+        moneyValues.push(parseFloat(token.replace(/[$,]/g, '')));
+      } else {
+        if (moneyValues.length === 0) {
+          descParts.push(token);
+        }
+      }
+    }
+
+    let description = descParts.join(' ');
+
+    // Skip OPENING BALANCE line
+    if (description.includes('OPENING BALANCE')) continue;
+
+    // Lookahead for continuation lines and effective dates
+    let effectiveDate = '';
+    for (let j = i + 1; j < allLines.length; j++) {
+      const nextLine = allLines[j];
+      const nextText = nextLine.join(' ');
+
+      // Stop at next transaction or structural element
+      if (nextLine[0] && /^\d{2}\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i.test(nextLine[0])) break;
+      if (nextLine[0] && /^20\d{2}$/.test(nextLine[0])) break;
+      if (nextText.includes('TOTALS') || nextText.includes('Fee Summary') ||
+          nextText.includes('Australia and New Zealand') ||
+          (nextText.includes('Page') && nextText.includes('of')) ||
+          nextText.includes('ANZ ACCESS ADVANTAGE') || nextText.includes('Account Number') ||
+          nextText.includes('Transaction Details') ||
+          (nextLine.includes('Withdrawals ($)') && nextLine.includes('Deposits ($)'))) break;
+
+      // Effective date: "EFFECTIVE DATE 20 NOV 2021"
+      const effMatch = nextText.match(/EFFECTIVE DATE\s+(\d{1,2})\s+(\w{3})\s+(\d{4})/i);
+      if (effMatch) {
+        const ed = effMatch[1].padStart(2, '0');
+        const em = String(MONTHS[effMatch[2].toLowerCase()] + 1).padStart(2, '0');
+        effectiveDate = `${ed}/${em}/${effMatch[3]}`;
+        continue;
+      }
+
+      // Continuation description
+      const contTokens = nextLine.filter(t => t !== 'blank' && !BARE_MONEY_RE.test(t) && !MONEY_RE.test(t));
+      if (contTokens.length > 0) {
+        description += ' ' + contTokens.join(' ');
+      }
+    }
+
+    // Determine credit/debit from column position
+    // Access Advantage columns: Withdrawals | Deposits | Balance
+    // With blank filtering, we get 1-3 money values
+    let credit = null, debit = null, balance = null;
+
+    if (moneyValues.length === 3) {
+      debit = moneyValues[0];
+      credit = moneyValues[1];
+      balance = moneyValues[2];
+    } else if (moneyValues.length === 2) {
+      balance = moneyValues[1];
+      const amount = moneyValues[0];
+      // Use description heuristic
+      const descUpper = description.toUpperCase();
+      const isDeposit = descUpper.includes('PAY/SALARY') || descUpper.includes('PAYMENT FROM') ||
+        descUpper.includes('FUNDS TFER') && descUpper.includes('FROM') ||
+        descUpper.includes('TRANSFER') && descUpper.includes('FROM');
+      if (isDeposit) {
+        credit = amount;
+      } else {
+        debit = amount;
+      }
+    } else if (moneyValues.length === 1) {
+      // Only withdrawal or deposit, no balance shown
+      const amount = moneyValues[0];
+      const descUpper = description.toUpperCase();
+      const isDeposit = descUpper.includes('PAY/SALARY') || descUpper.includes('PAYMENT FROM') ||
+        descUpper.includes('FUNDS TFER') && descUpper.includes('FROM') ||
+        descUpper.includes('TRANSFER') && descUpper.includes('FROM');
+      if (isDeposit) {
+        credit = amount;
+      } else {
+        debit = amount;
+      }
+    }
+
+    let effectiveDateObj = null;
+    if (effectiveDate) {
+      const [ed, em, ey] = effectiveDate.split('/');
+      effectiveDateObj = new Date(parseInt(ey), parseInt(em) - 1, parseInt(ed));
+    }
+
+    transactions.push({
+      date: dateStr,
+      dateObj,
+      description: description.trim(),
+      credit,
+      debit,
+      balance,
+      effectiveDate,
+      effectiveDateObj,
+      statementPeriod: metadata.period,
+      bsb: metadata.bsb,
+      accountNumber: metadata.accountNumber,
+      accountName: metadata.accountName || 'BUTLER BAILEY',
+      source: fileName
+    });
+  }
+
+  // Second pass: balance-based correction
+  for (let i = 0; i < transactions.length - 1; i++) {
+    const curr = transactions[i];
+    const prev = transactions[i - 1]; // chronologically earlier (Access Advantage is chronological)
+    if (i > 0 && curr.balance != null && prev.balance != null && (curr.credit || curr.debit)) {
+      const amount = curr.credit || curr.debit;
+      const diff = curr.balance - prev.balance;
+      if (Math.abs(Math.abs(diff) - amount) < 0.01) {
+        if (diff > 0) {
+          curr.credit = amount;
+          curr.debit = null;
+        } else {
+          curr.debit = amount;
+          curr.credit = null;
+        }
+      }
+    }
+  }
+
+  return transactions;
+}
+
+// ─── ANZ Plus Parser ───
+function parseANZPlus(allLines, fileName) {
   const metadata = { period: '', bsb: '', accountNumber: '', accountName: '' };
   for (const line of allLines.slice(0, 30)) {
     const text = line.join(' ');
@@ -710,19 +933,19 @@ async function parsePDF(buffer, fileName) {
 
   // Old format date header: "Thu, 31st March 2022 | Credit | Debit | Balance"
   const OLD_DATE_RE = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\w{2}\s+(\w+)\s+(\d{4})$/;
-  let currentDate = null; // for old format where date is a section header
+  let currentDate = null;
 
   for (let i = 0; i < allLines.length; i++) {
     const line = allLines[i];
     const text = line.join(' ');
 
-    // New format header: "Date | Description | Credit | Debit | Balance"
+    // New format header
     if (line.includes('Date') && line.includes('Description') && line.includes('Balance')) {
       inTransactions = true;
       continue;
     }
 
-    // Old format date header: "Wed, 22nd December 2021 | Credit | Debit | Balance"
+    // Old format date header
     const oldHeaderMatch = line[0] && line[0].match(OLD_DATE_RE);
     if (oldHeaderMatch && line.includes('Credit') && line.includes('Balance')) {
       const day = parseInt(oldHeaderMatch[2]);
@@ -735,7 +958,6 @@ async function parsePDF(buffer, fileName) {
 
     if (!inTransactions) continue;
 
-    // Footer / page breaks
     if (text.includes('Australia and New Zealand Banking') ||
         text.includes('Opening Balance') ||
         text.includes('Closing Balance') ||
@@ -750,7 +972,7 @@ async function parsePDF(buffer, fileName) {
       continue;
     }
 
-    // Check for old format date section header (appears mid-page for new date groups)
+    // Mid-page old date header
     const oldDateMatch = line[0] && line[0].match(OLD_DATE_RE);
     if (oldDateMatch && line.some(t => t === 'Credit' || t === 'Balance')) {
       const day = parseInt(oldDateMatch[2]);
@@ -761,14 +983,11 @@ async function parsePDF(buffer, fileName) {
       continue;
     }
 
-    // Determine date: new format has "DD Mon" prefix, old format uses currentDate
-    let day, month, year, dateObj, dateStr, rest;
-
+    let day, month, year, rest;
     const dateCheck = line.slice(0, 1).join('');
     const dateMatch = dateCheck.match(DATE_RE);
 
     if (dateMatch) {
-      // New format: date on each transaction line
       day = parseInt(dateMatch[1]);
       const monthStr = dateMatch[2].toLowerCase();
       month = MONTHS[monthStr];
@@ -780,24 +999,17 @@ async function parsePDF(buffer, fileName) {
       }
       rest = line.slice(1);
     } else if (currentDate) {
-      // Old format: use section date header
       day = currentDate.day;
       month = currentDate.month;
       year = currentDate.year;
-      rest = line; // entire line is description + amounts
-
-      // Skip lines that don't look like transactions (no money values)
-      const hasMoney = line.some(t => MONEY_RE.test(t));
-      if (!hasMoney) {
-        // Could be continuation text - handled by lookahead below
-        continue;
-      }
+      rest = line;
+      if (!line.some(t => MONEY_RE.test(t))) continue;
     } else {
       continue;
     }
 
-    dateObj = new Date(year, month, day);
-    dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateObj = new Date(year, month, day);
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
     const descParts = [];
     const moneyValues = [];
@@ -806,9 +1018,7 @@ async function parsePDF(buffer, fileName) {
       if (MONEY_RE.test(token)) {
         moneyValues.push(parseFloat(token.replace(/[$,]/g, '')));
       } else {
-        if (moneyValues.length === 0) {
-          descParts.push(token);
-        }
+        if (moneyValues.length === 0) descParts.push(token);
       }
     }
 
@@ -819,7 +1029,6 @@ async function parsePDF(buffer, fileName) {
       const nextLine = allLines[j];
       const nextText = nextLine.join(' ');
 
-      // Stop conditions
       if (DATE_RE.test(nextLine[0])) break;
       if (nextLine[0] && OLD_DATE_RE.test(nextLine[0])) break;
       if (nextText.includes('Australia and New Zealand') ||
@@ -831,32 +1040,22 @@ async function parsePDF(buffer, fileName) {
           (nextText.includes('Page ') && nextText.includes(' of ')) ||
           (nextLine.includes('Date') && nextLine.includes('Description'))) break;
 
-      // Stop if next line has money values (it's the next transaction in old format)
       if (nextLine.some(t => MONEY_RE.test(t))) {
-        // But first check for effective date on this line
         const effMatch = nextText.match(/Effective Date\s+(\d{2}\/\d{2}\/\d{4})/);
-        if (effMatch) {
-          effectiveDate = effMatch[1];
-        }
+        if (effMatch) effectiveDate = effMatch[1];
         break;
       }
 
       const effMatch = nextText.match(/Effective Date\s+(\d{2}\/\d{2}\/\d{4})/);
-      if (effMatch) {
-        effectiveDate = effMatch[1];
-        continue;
-      }
+      if (effMatch) { effectiveDate = effMatch[1]; continue; }
 
-      // Continuation description text
       const hasOnlyText = nextLine.every(t => !MONEY_RE.test(t));
       if (hasOnlyText && nextLine.length > 0) {
         description += ' ' + nextLine.join(' ');
       }
     }
 
-    let credit = null;
-    let debit = null;
-    let balance = null;
+    let credit = null, debit = null, balance = null;
 
     if (moneyValues.length >= 2) {
       balance = moneyValues[moneyValues.length - 1];
@@ -868,16 +1067,10 @@ async function parsePDF(buffer, fileName) {
         descUpper.includes('CREDIT') || descUpper.includes('REFUND') ||
         descUpper.includes('CASHBACK');
 
-      if (isCreditDesc) {
-        credit = amount;
-      } else {
-        debit = amount;
-      }
+      if (isCreditDesc) { credit = amount; } else { debit = amount; }
 
       if (moneyValues.length === 3) {
-        credit = moneyValues[0];
-        debit = moneyValues[1];
-        balance = moneyValues[2];
+        credit = moneyValues[0]; debit = moneyValues[1]; balance = moneyValues[2];
       }
     } else if (moneyValues.length === 1) {
       balance = moneyValues[0];
@@ -890,14 +1083,10 @@ async function parsePDF(buffer, fileName) {
     }
 
     transactions.push({
-      date: dateStr,
-      dateObj,
+      date: dateStr, dateObj,
       description: description.trim(),
-      credit,
-      debit,
-      balance,
-      effectiveDate,
-      effectiveDateObj,
+      credit, debit, balance,
+      effectiveDate, effectiveDateObj,
       statementPeriod: metadata.period,
       bsb: metadata.bsb,
       accountNumber: metadata.accountNumber,
@@ -906,7 +1095,7 @@ async function parsePDF(buffer, fileName) {
     });
   }
 
-  // Second pass: use balance differences to correct credit/debit
+  // Second pass: balance-based correction (reverse chronological)
   for (let i = 0; i < transactions.length - 1; i++) {
     const curr = transactions[i];
     const next = transactions[i + 1];
@@ -914,13 +1103,8 @@ async function parsePDF(buffer, fileName) {
       const amount = curr.credit || curr.debit;
       const diff = curr.balance - next.balance;
       if (Math.abs(Math.abs(diff) - amount) < 0.01) {
-        if (diff > 0) {
-          curr.credit = amount;
-          curr.debit = null;
-        } else {
-          curr.debit = amount;
-          curr.credit = null;
-        }
+        if (diff > 0) { curr.credit = amount; curr.debit = null; }
+        else { curr.debit = amount; curr.credit = null; }
       }
     }
   }
