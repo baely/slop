@@ -5,593 +5,416 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Statement Parser</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs" type="module"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0b;
-    --surface: #111113;
-    --surface-2: #19191d;
-    --surface-3: #222228;
-    --border: #2a2a32;
-    --border-hover: #3a3a45;
-    --text: #e8e8ed;
-    --text-muted: #7a7a88;
-    --text-dim: #4a4a55;
-    --accent: #c4f042;
-    --accent-dim: #c4f04220;
-    --red: #ff6b6b;
-    --red-dim: #ff6b6b15;
-    --green: #4ecdc4;
-    --green-dim: #4ecdc415;
-    --blue: #6c9bff;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Instrument Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  .noise {
-    position: fixed;
-    inset: 0;
-    opacity: 0.03;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    z-index: 9999;
-  }
-
-  header {
-    padding: 40px 48px 0;
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-  }
-
-  h1 {
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    font-size: 15px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-  }
-
-  .subtitle {
-    font-size: 13px;
-    color: var(--text-dim);
-    font-family: 'DM Mono', monospace;
-    font-weight: 300;
-  }
-
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 32px 48px 80px;
-  }
-
-  /* Drop Zone */
-  .drop-zone {
-    border: 1px dashed var(--border);
-    border-radius: 12px;
-    padding: 64px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    background: var(--surface);
-  }
-
-  .drop-zone::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at center, var(--accent-dim), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: var(--surface-2);
-  }
-
-  .drop-zone:hover::before, .drop-zone.dragover::before {
-    opacity: 1;
-  }
-
-  .drop-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 20px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-dim);
-    position: relative;
-    z-index: 1;
-    transition: all 0.3s ease;
-  }
-
-  .drop-zone:hover .drop-icon {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .drop-label {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text-muted);
-    position: relative;
-    z-index: 1;
-    margin-bottom: 6px;
-  }
-
-  .drop-hint {
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    color: var(--text-dim);
-    position: relative;
-    z-index: 1;
-  }
-
-  #file-input { display: none; }
-
-  /* Stats Bar */
-  .stats-bar {
-    display: flex;
-    gap: 1px;
-    background: var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 24px 0;
-  }
-
-  .stat {
-    flex: 1;
-    background: var(--surface);
-    padding: 20px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .stat:first-child { border-radius: 10px 0 0 10px; }
-  .stat:last-child { border-radius: 0 10px 10px 0; }
-
-  .stat-label {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    font-weight: 400;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-  }
-
-  .stat-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-
-  .stat-value.green { color: var(--green); }
-  .stat-value.red { color: var(--red); }
-
-  /* File List */
-  .file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin: 24px 0;
-  }
-
-  .file-item {
-    display: grid;
-    grid-template-columns: 20px 1fr 120px 80px;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    background: var(--surface);
-    border-radius: 6px;
-    font-size: 13px;
-    animation: fadeSlideIn 0.25s ease both;
-  }
-
-  .file-item .icon {
-    width: 16px;
-    height: 16px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .file-item .icon.done { color: var(--accent); }
-  .file-item .icon.error { color: var(--red); }
-
-  .file-item .name {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .file-item .txn-count {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--text-dim);
-    text-align: right;
-  }
-
-  .file-item .status {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    text-align: right;
-    color: var(--text-dim);
-  }
-
-  .file-item .status.done { color: var(--accent); }
-  .file-item .status.error { color: var(--red); }
-
-  /* Actions */
-  .actions {
-    display: flex;
-    gap: 12px;
-    margin: 32px 0 24px;
-    align-items: center;
-  }
-
-  button {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 8px;
-    padding: 12px 24px;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #0a0a0b;
-  }
-
-  .btn-primary:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .btn-secondary {
-    background: var(--surface-2);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    border-color: var(--border-hover);
-    color: var(--text);
-  }
-
-  .spacer { flex: 1; }
-
-  /* Transaction Table */
-  .table-wrap {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    background: var(--surface);
-  }
-
-  .table-header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .table-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    font-weight: 400;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-  }
-
-  .table-filter {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .table-filter input {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--text);
-    outline: none;
-    width: 240px;
-    transition: border-color 0.2s;
-  }
-
-  .table-filter input:focus {
-    border-color: var(--accent);
-  }
-
-  .table-filter input::placeholder {
-    color: var(--text-dim);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  thead th {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-  }
-
-  thead th:hover {
-    color: var(--text-muted);
-  }
-
-  thead th.amount-col,
-  td.amount-col {
-    text-align: right;
-  }
-
-  tbody tr {
-    transition: background 0.15s ease;
-  }
-
-  tbody tr:hover {
-    background: var(--surface-2);
-  }
-
-  td {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 400px;
-  }
-
-  td.date-col {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-    min-width: 100px;
-  }
-
-  td.desc-col {
-    color: var(--text);
-    font-size: 13px;
-    max-width: 500px;
-  }
-
-  td.amount-col {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-  td.amount-col.credit { color: var(--green); }
-  td.amount-col.debit { color: var(--red); }
-  td.amount-col.balance { color: var(--text-muted); }
-
-  .table-scroll {
-    max-height: 600px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--surface-3) transparent;
-  }
-
-  .table-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .table-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .table-scroll::-webkit-scrollbar-thumb {
-    background: var(--surface-3);
-    border-radius: 3px;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 80px 40px;
-    color: var(--text-dim);
-    font-size: 13px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* Progress */
-  .progress-bar {
-    height: 2px;
-    background: var(--surface-3);
-    border-radius: 1px;
-    overflow: hidden;
-    margin: 16px 0;
-    display: none;
-  }
-
-  .progress-bar.active { display: block; }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 1px;
-    transition: width 0.3s ease;
-    width: 0%;
-  }
-
-  /* Animations */
-  @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .spinner {
-    width: 14px;
-    height: 14px;
-    border: 1.5px solid var(--text-dim);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  .hidden { display: none !important; }
-
-  /* Sort indicator */
-  th .sort-arrow {
-    font-size: 10px;
-    margin-left: 4px;
-    opacity: 0.4;
-  }
-
-  th.sorted .sort-arrow {
-    opacity: 1;
-    color: var(--accent);
-  }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #fff;
+  min-height: 100vh;
+  padding: 24px 16px;
+  color: #111;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.container { max-width: 900px; margin: 0 auto; }
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+header h1 { font-size: 18px; font-weight: 600; }
+.subtitle { color: #999; font-size: 12px; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-count {
+  color: #999;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #555;
+}
+.btn:hover:not(:disabled) { border-color: #999; color: #111; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-primary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.btn-primary:hover:not(:disabled) { background: #333; border-color: #333; color: #fff; }
+
+.btn-small { padding: 4px 10px; font-size: 11px; }
+
+/* Cards */
+.card {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+  margin-bottom: 14px;
+}
+
+/* Drop zone */
+.drop-zone {
+  border: 1px dashed #ddd;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.15s;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: #111;
+  background: #f5f5f5;
+}
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.drop-icon { width: 32px; height: 32px; color: #bbb; }
+.drop-zone p { color: #555; font-size: 13px; }
+.drop-hint { color: #bbb; font-size: 11px; }
+#file-input { display: none; }
+
+/* Progress */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  overflow: hidden;
+  margin-top: 14px;
+  display: none;
+}
+.progress-bar.active { display: block; }
+.progress-fill {
+  height: 100%;
+  background: #111;
+  width: 0%;
+  transition: width 0.3s;
+  animation: progress-pulse 1.5s ease-in-out infinite;
+}
+@keyframes progress-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* File list */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  animation: fadeIn 0.2s ease both;
+}
+.file-item .icon { width: 16px; height: 16px; color: #bbb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.file-item .icon.done { color: #111; }
+.file-item .icon.error { color: #c00; }
+.file-item .name { flex: 1; font-size: 12px; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .txn-count { font-family: 'Courier New', monospace; font-size: 11px; color: #999; }
+.file-item .status { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #bbb; width: 48px; text-align: right; }
+.file-item .status.done { color: #111; }
+.file-item .status.error { color: #c00; }
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-item {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 14px;
+  text-align: center;
+}
+.stat-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.stat-value.green { color: #1a8a5c; }
+.stat-value.red { color: #c00; }
+.stat-label {
+  display: block;
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* Table */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.filter-input {
+  padding: 6px 9px;
+  border: 1px solid #ddd;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+  color: #111;
+  outline: none;
+  width: 220px;
+}
+.filter-input:focus { border-color: #111; }
+.filter-input::placeholder { color: #bbb; }
+
+.table-scroll {
+  overflow-x: auto;
+  max-height: 560px;
+  overflow-y: auto;
+}
+.table-scroll::-webkit-scrollbar { width: 4px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: #ddd; }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+thead th:hover { color: #555; }
+
+th.amount-col, td.amount-col { text-align: right; }
+
+tbody tr { transition: background 0.1s; }
+tbody tr:hover { background: #fafafa; }
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 380px;
+  font-size: 12px;
+}
+
+td.date-col {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #999;
+}
+
+td.desc-col { color: #111; }
+
+td.amount-col {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+td.amount-col.credit { color: #1a8a5c; }
+td.amount-col.debit { color: #c00; }
+td.amount-col.balance { color: #555; }
+
+.empty-state {
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+th .sort-arrow {
+  font-size: 8px;
+  margin-left: 2px;
+  opacity: 0.3;
+}
+th.sorted .sort-arrow { opacity: 1; color: #111; }
+
+.hidden { display: none !important; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 12px; height: 12px;
+  border: 1.5px solid #ddd;
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .header-right .btn:not(.btn-primary) { display: none; }
+}
 </style>
 </head>
 <body>
-<div class="noise"></div>
-
-<header>
-  <h1>Statement Parser</h1>
-  <span class="subtitle">ANZ Plus / PDF to CSV</span>
-</header>
 
 <div class="container">
-  <div class="drop-zone" id="drop-zone">
-    <div class="drop-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="12" y1="18" x2="12" y2="12"/>
-        <line x1="9" y1="15" x2="12" y2="12"/>
-        <line x1="15" y1="15" x2="12" y2="12"/>
-      </svg>
-    </div>
-    <div class="drop-label">Drop statement PDFs here</div>
-    <div class="drop-hint">or click to browse</div>
-    <input type="file" id="file-input" multiple accept=".pdf">
-  </div>
-
-  <div class="progress-bar" id="progress-bar">
-    <div class="progress-fill" id="progress-fill"></div>
-  </div>
-
-  <div id="file-list" class="file-list"></div>
-
-  <div id="stats-bar" class="stats-bar hidden">
-    <div class="stat">
-      <span class="stat-label">Statements</span>
-      <span class="stat-value" id="stat-files">0</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Transactions</span>
-      <span class="stat-value" id="stat-txns">0</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Total Credits</span>
-      <span class="stat-value green" id="stat-credits">$0.00</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Total Debits</span>
-      <span class="stat-value red" id="stat-debits">$0.00</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Date Range</span>
-      <span class="stat-value" id="stat-range" style="font-size:14px">—</span>
-    </div>
-  </div>
-
-  <div id="actions" class="actions hidden">
-    <button class="btn-primary" id="btn-export">Export CSV</button>
-    <button class="btn-secondary" id="btn-clear">Clear All</button>
-    <div class="spacer"></div>
-    <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)" id="showing-count"></span>
-  </div>
-
-  <div id="table-section" class="hidden">
-    <div class="table-wrap">
-      <div class="table-header-bar">
-        <span class="table-title">Transactions</span>
-        <div class="table-filter">
-          <input type="text" id="filter-input" placeholder="Filter by description...">
-        </div>
+  <header>
+    <div class="header-left">
+      <div class="logo">SP</div>
+      <div>
+        <h1>Statement Parser</h1>
+        <p class="subtitle">ANZ Plus PDF to CSV</p>
       </div>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th data-sort="date" class="sorted">Date <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="description">Description <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="credit" class="amount-col">Credit <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="debit" class="amount-col">Debit <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="balance" class="amount-col">Balance <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="effectiveDate">Effective Date <span class="sort-arrow">&#9660;</span></th>
-              <th data-sort="source">Source <span class="sort-arrow">&#9660;</span></th>
-            </tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
+    </div>
+    <div class="header-right">
+      <span class="header-count hidden" id="header-count"></span>
+      <button class="btn btn-small hidden" id="btn-clear">Clear</button>
+      <button class="btn btn-primary" id="btn-export" disabled>Export CSV</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>Upload</h2>
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-zone-content">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="12" y2="12"/>
+          <line x1="15" y1="15" x2="12" y2="12"/>
+        </svg>
+        <p>Drop statement PDFs here</p>
+        <span class="drop-hint">or click to browse</span>
+      </div>
+      <input type="file" id="file-input" multiple accept=".pdf">
+    </div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div id="file-list" class="file-list"></div>
+  </div>
+
+  <div id="stats-section" class="hidden">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-value" id="stat-files">0</span>
+        <span class="stat-label">Statements</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="stat-txns">0</span>
+        <span class="stat-label">Transactions</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value green" id="stat-credits">$0.00</span>
+        <span class="stat-label">Credits</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value red" id="stat-debits">$0.00</span>
+        <span class="stat-label">Debits</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="stat-range" style="font-size:0.85rem">—</span>
+        <span class="stat-label">Date Range</span>
       </div>
     </div>
   </div>
 
-  <div id="empty-state" class="empty-state hidden">
-    No transactions found. Try uploading different statement files.
+  <div id="table-card" class="card hidden">
+    <div class="table-header">
+      <h2>Transactions</h2>
+      <input type="text" class="filter-input" id="filter-input" placeholder="Filter by description...">
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="date" class="sorted">Date <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="description">Description <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="credit" class="amount-col">Credit <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="debit" class="amount-col">Debit <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="balance" class="amount-col">Balance <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="effectiveDate">Eff. Date <span class="sort-arrow">&#9660;</span></th>
+            <th data-sort="source">Source <span class="sort-arrow">&#9660;</span></th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
   </div>
+
+  <div id="empty-state" class="empty-state hidden">No transactions found.</div>
 </div>
 
 <script type="module">
@@ -602,21 +425,21 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const fileListEl = document.getElementById('file-list');
-const statsBar = document.getElementById('stats-bar');
-const actionsEl = document.getElementById('actions');
-const tableSection = document.getElementById('table-section');
+const statsSection = document.getElementById('stats-section');
+const tableCard = document.getElementById('table-card');
 const tableBody = document.getElementById('table-body');
 const filterInput = document.getElementById('filter-input');
 const progressBar = document.getElementById('progress-bar');
 const progressFill = document.getElementById('progress-fill');
 const emptyState = document.getElementById('empty-state');
-const showingCount = document.getElementById('showing-count');
+const headerCount = document.getElementById('header-count');
+const btnExport = document.getElementById('btn-export');
+const btnClear = document.getElementById('btn-clear');
 
 let allTransactions = [];
 let sortField = 'date';
 let sortDir = 'desc';
 
-// Drag and drop
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -630,7 +453,6 @@ fileInput.addEventListener('change', () => {
   if (fileInput.files.length) processFiles(Array.from(fileInput.files));
 });
 
-// Sort headers
 document.querySelectorAll('thead th[data-sort]').forEach(th => {
   th.addEventListener('click', () => {
     const field = th.dataset.sort;
@@ -648,15 +470,16 @@ document.querySelectorAll('thead th[data-sort]').forEach(th => {
 });
 
 filterInput.addEventListener('input', () => renderTable());
-
-document.getElementById('btn-export').addEventListener('click', exportCSV);
-document.getElementById('btn-clear').addEventListener('click', () => {
+btnExport.addEventListener('click', exportCSV);
+btnClear.addEventListener('click', () => {
   allTransactions = [];
   fileListEl.innerHTML = '';
-  statsBar.classList.add('hidden');
-  actionsEl.classList.add('hidden');
-  tableSection.classList.add('hidden');
+  statsSection.classList.add('hidden');
+  tableCard.classList.add('hidden');
   emptyState.classList.add('hidden');
+  headerCount.classList.add('hidden');
+  btnClear.classList.add('hidden');
+  btnExport.disabled = true;
   updateStats();
 });
 
@@ -693,9 +516,8 @@ function addFileItem(name) {
     <div class="icon"><div class="spinner"></div></div>
     <div class="name">${escapeHtml(name)}</div>
     <div class="txn-count"></div>
-    <div class="status">parsing...</div>
+    <div class="status">...</div>
   `;
-  el.style.animationDelay = `${fileListEl.children.length * 0.03}s`;
   fileListEl.appendChild(el);
   return el;
 }
@@ -735,8 +557,11 @@ function updateStats() {
       const fmt = d => d.toLocaleDateString('en-AU', { month: 'short', year: '2-digit' });
       document.getElementById('stat-range').textContent = `${fmt(dates[0])} — ${fmt(dates[dates.length - 1])}`;
     }
-    statsBar.classList.remove('hidden');
-    actionsEl.classList.remove('hidden');
+    headerCount.textContent = `${txns.length.toLocaleString()} transactions`;
+    headerCount.classList.remove('hidden');
+    btnClear.classList.remove('hidden');
+    btnExport.disabled = false;
+    statsSection.classList.remove('hidden');
   }
 }
 
@@ -752,7 +577,6 @@ function renderTable() {
     txns = txns.filter(t => t.description.toLowerCase().includes(filter));
   }
 
-  // Sort
   txns = [...txns].sort((a, b) => {
     let av, bv;
     switch (sortField) {
@@ -770,14 +594,12 @@ function renderTable() {
     return 0;
   });
 
-  showingCount.textContent = `${txns.length.toLocaleString()} of ${allTransactions.length.toLocaleString()}`;
-
   if (txns.length === 0 && allTransactions.length > 0) {
-    tableSection.classList.add('hidden');
+    tableCard.classList.add('hidden');
     emptyState.classList.remove('hidden');
   } else if (txns.length > 0) {
     emptyState.classList.add('hidden');
-    tableSection.classList.remove('hidden');
+    tableCard.classList.remove('hidden');
   }
 
   tableBody.innerHTML = txns.map(t => `
@@ -822,7 +644,7 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-// PDF Parser — uses item order within y-grouped lines (x-positions are unreliable in these PDFs)
+// ─── PDF Parser ───
 const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
   january: 0, february: 1, march: 2, april: 3, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
 
@@ -832,7 +654,6 @@ const MONEY_RE = /^\$[\d,]+\.\d{2}$/;
 async function parsePDF(buffer, fileName) {
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-  // Extract all text items from all pages, grouped into lines by y-position
   const allLines = [];
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
@@ -840,11 +661,10 @@ async function parsePDF(buffer, fileName) {
     const items = content.items.filter(item => item.str.trim());
     if (!items.length) continue;
 
-    // Sort by y descending (top of page first), preserving item order for same y
     items.sort((a, b) => {
       const dy = b.transform[5] - a.transform[5];
       if (Math.abs(dy) > 3) return dy;
-      return 0; // preserve original order for items on same line
+      return 0;
     });
 
     let currentY = null;
@@ -860,14 +680,12 @@ async function parsePDF(buffer, fileName) {
     }
   }
 
-  // Extract metadata from early lines
   const metadata = { period: '', bsb: '', accountNumber: '', accountName: '' };
   for (const line of allLines.slice(0, 30)) {
     const text = line.join(' ');
     const periodMatch = text.match(/(\d{1,2}\s+\w+\s+\d{4}\s*-\s*\d{1,2}\s+\w+\s+\d{4})/);
     if (periodMatch && !metadata.period) metadata.period = periodMatch[1];
 
-    // Look for BSB and account number on the line after the header labels
     if (line.some(t => /^\d{3}\s\d{3}$/.test(t)) && line.some(t => /^\d{3}\s\d{3}\s\d{3}$/.test(t))) {
       for (const t of line) {
         if (/^\d{3}\s\d{3}$/.test(t) && !metadata.bsb) metadata.bsb = t.replace(/\s/g, '');
@@ -877,7 +695,6 @@ async function parsePDF(buffer, fileName) {
   }
   if (!metadata.bsb) metadata.bsb = '014111';
 
-  // Parse statement dates for year resolution
   let statementStartDate = null;
   let statementEndDate = null;
   if (metadata.period) {
@@ -888,7 +705,6 @@ async function parsePDF(buffer, fileName) {
     }
   }
 
-  // Parse transactions
   const transactions = [];
   let inTransactions = false;
 
@@ -896,7 +712,6 @@ async function parsePDF(buffer, fileName) {
     const line = allLines[i];
     const text = line.join(' ');
 
-    // Detect table header
     if (line.includes('Date') && line.includes('Description') && line.includes('Balance')) {
       inTransactions = true;
       continue;
@@ -904,7 +719,6 @@ async function parsePDF(buffer, fileName) {
 
     if (!inTransactions) continue;
 
-    // Stop at footer / page breaks
     if (text.includes('Australia and New Zealand Banking') ||
         text.includes('Opening Balance') ||
         text.includes('Closing Balance') ||
@@ -914,12 +728,10 @@ async function parsePDF(buffer, fileName) {
       continue;
     }
 
-    // Skip page header reprints
     if (text.includes('ANZ Plus') || text.includes('Account Statement')) {
       continue;
     }
 
-    // Check if this line starts a transaction (date pattern)
     const dateCheck = line.slice(0, 1).join('');
     const dateMatch = dateCheck.match(DATE_RE);
     if (!dateMatch) continue;
@@ -928,7 +740,6 @@ async function parsePDF(buffer, fileName) {
     const monthStr = dateMatch[2].toLowerCase();
     const month = MONTHS[monthStr];
 
-    // Resolve year
     let year = statementEndDate ? statementEndDate.getFullYear() : new Date().getFullYear();
     if (statementStartDate && statementEndDate && statementStartDate.getFullYear() !== statementEndDate.getFullYear()) {
       if (month >= 10 && statementEndDate.getMonth() <= 2) {
@@ -939,8 +750,7 @@ async function parsePDF(buffer, fileName) {
     const dateObj = new Date(year, month, day);
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-    // Separate description tokens from money tokens (order matters)
-    const rest = line.slice(1); // everything after "27 Feb"
+    const rest = line.slice(1);
     const descParts = [];
     const moneyValues = [];
 
@@ -948,8 +758,6 @@ async function parsePDF(buffer, fileName) {
       if (MONEY_RE.test(token)) {
         moneyValues.push(parseFloat(token.replace(/[$,]/g, '')));
       } else {
-        // Only add to description if we haven't started seeing money yet
-        // (avoids grabbing tokens that appear after amounts on rare formatting)
         if (moneyValues.length === 0) {
           descParts.push(token);
         }
@@ -958,13 +766,11 @@ async function parsePDF(buffer, fileName) {
 
     let description = descParts.join(' ');
 
-    // Look ahead for continuation lines (extra description, effective date)
     let effectiveDate = '';
     for (let j = i + 1; j < allLines.length; j++) {
       const nextLine = allLines[j];
       const nextText = nextLine.join(' ');
 
-      // Next transaction or structural element
       if (DATE_RE.test(nextLine[0])) break;
       if (nextText.includes('Australia and New Zealand') ||
           nextText.includes('ANZ Plus') ||
@@ -980,15 +786,12 @@ async function parsePDF(buffer, fileName) {
         continue;
       }
 
-      // Continuation description (no money values on this line)
       const hasOnlyText = nextLine.every(t => !MONEY_RE.test(t));
       if (hasOnlyText && nextLine.length > 0) {
         description += ' ' + nextLine.join(' ');
       }
     }
 
-    // Determine credit vs debit from money values
-    // Last value is always balance, preceding value(s) are credit or debit
     let credit = null;
     let debit = null;
     let balance = null;
@@ -997,50 +800,18 @@ async function parsePDF(buffer, fileName) {
       balance = moneyValues[moneyValues.length - 1];
       const amount = moneyValues[moneyValues.length - 2];
 
-      // If there's a previous transaction, compare balances to determine direction
-      if (transactions.length > 0) {
-        const prevBalance = transactions[transactions.length - 1].balance;
-        if (prevBalance != null) {
-          // Transactions are in reverse chronological order in the PDF
-          // so "previous" in array is actually later in time
-          // balance > prevBalance means this txn added money (credit from perspective of going backwards)
-          // Actually: the PDF lists newest first. So prevBalance is from a LATER transaction.
-          // If current balance > prev balance, money was removed between this and next (debit of the next, but we already recorded that)
-          // Let's just use: if balance - amount ≈ some reasonable prior, it's complex.
-          // Simpler: check if balance + amount matches a nearby balance, or balance - amount
-          // Actually simplest: the PDF shows transactions newest-first.
-          // For the CURRENT txn: if this amount was debited, then the balance BEFORE this txn was balance + amount
-          // If credited, balance before was balance - amount
-          // We don't know the "before" balance directly, but we DO know the next row's balance (which is chronologically earlier)
+      const descUpper = description.toUpperCase();
+      const isCreditDesc = descUpper.includes('PAY/SALARY') || descUpper.includes('PAYMENT FROM') ||
+        descUpper.includes('TRANSFER FROM') || descUpper.includes('INTEREST') ||
+        descUpper.includes('CREDIT') || descUpper.includes('REFUND') ||
+        descUpper.includes('CASHBACK');
 
-          // Let's use heuristic: description keywords
-          const descUpper = description.toUpperCase();
-          const isCreditDesc = descUpper.includes('PAY/SALARY') || descUpper.includes('PAYMENT FROM') ||
-            descUpper.includes('TRANSFER FROM') || descUpper.includes('INTEREST') ||
-            descUpper.includes('CREDIT') || descUpper.includes('REFUND') ||
-            descUpper.includes('CASHBACK');
-
-          if (isCreditDesc) {
-            credit = amount;
-          } else {
-            debit = amount;
-          }
-        }
+      if (isCreditDesc) {
+        credit = amount;
       } else {
-        // First transaction - use description heuristic
-        const descUpper = description.toUpperCase();
-        const isCreditDesc = descUpper.includes('PAY/SALARY') || descUpper.includes('PAYMENT FROM') ||
-          descUpper.includes('TRANSFER FROM') || descUpper.includes('INTEREST') ||
-          descUpper.includes('CREDIT') || descUpper.includes('REFUND') ||
-          descUpper.includes('CASHBACK');
-        if (isCreditDesc) {
-          credit = amount;
-        } else {
-          debit = amount;
-        }
+        debit = amount;
       }
 
-      // Handle 3 money values: credit, debit, balance (rare but possible)
       if (moneyValues.length === 3) {
         credit = moneyValues[0];
         debit = moneyValues[1];
@@ -1073,16 +844,13 @@ async function parsePDF(buffer, fileName) {
     });
   }
 
-  // Second pass: use balance differences to correct credit/debit assignment
-  // Transactions are in reverse chronological order (newest first)
+  // Second pass: use balance differences to correct credit/debit
   for (let i = 0; i < transactions.length - 1; i++) {
     const curr = transactions[i];
-    const next = transactions[i + 1]; // chronologically earlier
+    const next = transactions[i + 1];
     if (curr.balance != null && next.balance != null && (curr.credit || curr.debit)) {
       const amount = curr.credit || curr.debit;
       const diff = curr.balance - next.balance;
-      // diff > 0 means balance increased from earlier to later = credit
-      // diff < 0 means balance decreased = debit
       if (Math.abs(Math.abs(diff) - amount) < 0.01) {
         if (diff > 0) {
           curr.credit = amount;
