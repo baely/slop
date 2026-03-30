@@ -708,22 +708,40 @@ async function parsePDF(buffer, fileName) {
   const transactions = [];
   let inTransactions = false;
 
+  // Old format date header: "Thu, 31st March 2022 | Credit | Debit | Balance"
+  const OLD_DATE_RE = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\w{2}\s+(\w+)\s+(\d{4})$/;
+  let currentDate = null; // for old format where date is a section header
+
   for (let i = 0; i < allLines.length; i++) {
     const line = allLines[i];
     const text = line.join(' ');
 
+    // New format header: "Date | Description | Credit | Debit | Balance"
     if (line.includes('Date') && line.includes('Description') && line.includes('Balance')) {
+      inTransactions = true;
+      continue;
+    }
+
+    // Old format date header: "Wed, 22nd December 2021 | Credit | Debit | Balance"
+    const oldHeaderMatch = line[0] && line[0].match(OLD_DATE_RE);
+    if (oldHeaderMatch && line.includes('Credit') && line.includes('Balance')) {
+      const day = parseInt(oldHeaderMatch[2]);
+      const month = MONTHS[oldHeaderMatch[3].toLowerCase()];
+      const year = parseInt(oldHeaderMatch[4]);
+      currentDate = { day, month, year };
       inTransactions = true;
       continue;
     }
 
     if (!inTransactions) continue;
 
+    // Footer / page breaks
     if (text.includes('Australia and New Zealand Banking') ||
         text.includes('Opening Balance') ||
         text.includes('Closing Balance') ||
         text.match(/^Page\s/) || text.includes('Page ') && text.includes(' of ') ||
-        text.includes('Please check your statement')) {
+        text.includes('Please check your statement') ||
+        text.includes('Account Opened')) {
       inTransactions = false;
       continue;
     }
@@ -732,25 +750,55 @@ async function parsePDF(buffer, fileName) {
       continue;
     }
 
-    const dateCheck = line.slice(0, 1).join('');
-    const dateMatch = dateCheck.match(DATE_RE);
-    if (!dateMatch) continue;
-
-    const day = parseInt(dateMatch[1]);
-    const monthStr = dateMatch[2].toLowerCase();
-    const month = MONTHS[monthStr];
-
-    let year = statementEndDate ? statementEndDate.getFullYear() : new Date().getFullYear();
-    if (statementStartDate && statementEndDate && statementStartDate.getFullYear() !== statementEndDate.getFullYear()) {
-      if (month >= 10 && statementEndDate.getMonth() <= 2) {
-        year = statementStartDate.getFullYear();
-      }
+    // Check for old format date section header (appears mid-page for new date groups)
+    const oldDateMatch = line[0] && line[0].match(OLD_DATE_RE);
+    if (oldDateMatch && line.some(t => t === 'Credit' || t === 'Balance')) {
+      const day = parseInt(oldDateMatch[2]);
+      const month = MONTHS[oldDateMatch[3].toLowerCase()];
+      const year = parseInt(oldDateMatch[4]);
+      currentDate = { day, month, year };
+      inTransactions = true;
+      continue;
     }
 
-    const dateObj = new Date(year, month, day);
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    // Determine date: new format has "DD Mon" prefix, old format uses currentDate
+    let day, month, year, dateObj, dateStr, rest;
 
-    const rest = line.slice(1);
+    const dateCheck = line.slice(0, 1).join('');
+    const dateMatch = dateCheck.match(DATE_RE);
+
+    if (dateMatch) {
+      // New format: date on each transaction line
+      day = parseInt(dateMatch[1]);
+      const monthStr = dateMatch[2].toLowerCase();
+      month = MONTHS[monthStr];
+      year = statementEndDate ? statementEndDate.getFullYear() : new Date().getFullYear();
+      if (statementStartDate && statementEndDate && statementStartDate.getFullYear() !== statementEndDate.getFullYear()) {
+        if (month >= 10 && statementEndDate.getMonth() <= 2) {
+          year = statementStartDate.getFullYear();
+        }
+      }
+      rest = line.slice(1);
+    } else if (currentDate) {
+      // Old format: use section date header
+      day = currentDate.day;
+      month = currentDate.month;
+      year = currentDate.year;
+      rest = line; // entire line is description + amounts
+
+      // Skip lines that don't look like transactions (no money values)
+      const hasMoney = line.some(t => MONEY_RE.test(t));
+      if (!hasMoney) {
+        // Could be continuation text - handled by lookahead below
+        continue;
+      }
+    } else {
+      continue;
+    }
+
+    dateObj = new Date(year, month, day);
+    dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
     const descParts = [];
     const moneyValues = [];
 
@@ -771,14 +819,27 @@ async function parsePDF(buffer, fileName) {
       const nextLine = allLines[j];
       const nextText = nextLine.join(' ');
 
+      // Stop conditions
       if (DATE_RE.test(nextLine[0])) break;
+      if (nextLine[0] && OLD_DATE_RE.test(nextLine[0])) break;
       if (nextText.includes('Australia and New Zealand') ||
           nextText.includes('ANZ Plus') ||
           nextText.includes('Account Statement') ||
           nextText.includes('Opening Balance') ||
           nextText.includes('Closing Balance') ||
+          nextText.includes('Account Opened') ||
           (nextText.includes('Page ') && nextText.includes(' of ')) ||
           (nextLine.includes('Date') && nextLine.includes('Description'))) break;
+
+      // Stop if next line has money values (it's the next transaction in old format)
+      if (nextLine.some(t => MONEY_RE.test(t))) {
+        // But first check for effective date on this line
+        const effMatch = nextText.match(/Effective Date\s+(\d{2}\/\d{2}\/\d{4})/);
+        if (effMatch) {
+          effectiveDate = effMatch[1];
+        }
+        break;
+      }
 
       const effMatch = nextText.match(/Effective Date\s+(\d{2}\/\d{2}\/\d{4})/);
       if (effMatch) {
@@ -786,6 +847,7 @@ async function parsePDF(buffer, fileName) {
         continue;
       }
 
+      // Continuation description text
       const hasOnlyText = nextLine.every(t => !MONEY_RE.test(t));
       if (hasOnlyText && nextLine.length > 0) {
         description += ' ' + nextLine.join(' ');
