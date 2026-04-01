@@ -531,6 +531,18 @@ input[type="text"]:focus { border-color: #111; }
       <div class="step-line"></div>
       <div class="step-dot"></div>
     </div>
+    <div id="resumeBanner" style="display:none;padding:12px 14px;border:1px solid #ddd;margin-bottom:20px;background:#fafafa">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:13px" id="resumeName"></div>
+          <div style="color:#999;font-size:11px" id="resumeInfo"></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary" onclick="resumeSession()" style="font-size:11px;padding:6px 12px">Resume</button>
+          <button class="btn-ghost" onclick="dismissResume()" style="font-size:11px">&times;</button>
+        </div>
+      </div>
+    </div>
     <div class="section-label">Step 1</div>
     <div class="section-title">Set up your ranking</div>
     <div class="section-subtitle">Name your ranking and add at least two items to compare.</div>
@@ -542,10 +554,15 @@ input[type="text"]:focus { border-color: #111; }
 
     <div class="input-group">
       <label>Add items</label>
-      <div class="add-row">
+      <div class="add-row" id="singleAddRow">
         <input type="text" id="itemInput" placeholder="Type an item and press Enter" autocomplete="off">
         <button class="btn btn-secondary" onclick="addItem()">Add</button>
       </div>
+      <div id="bulkAddRow" style="display:none">
+        <textarea id="bulkInput" placeholder="One item per line" rows="6" style="width:100%;padding:7px 9px;background:#fff;border:1px solid #ddd;color:#111;font-family:system-ui,-apple-system,sans-serif;font-size:13px;outline:none;resize:vertical;transition:border-color 0.15s;"></textarea>
+        <button class="btn btn-secondary" onclick="addBulkItems()" style="margin-top:6px">Add All</button>
+      </div>
+      <button class="btn-ghost" onclick="toggleBulkMode()" id="bulkToggle" style="margin-top:6px;font-size:11px">Bulk add</button>
     </div>
 
     <ul class="item-list" id="itemList"></ul>
@@ -800,6 +817,7 @@ function startRanking() {
   if (items.length < 2) return;
   currentRankingName = rankingNameInput.value.trim() || 'Untitled ranking';
   ranker = new MergeSortRanker(items);
+  saveSession();
   showView('compareView');
   renderComparison();
 }
@@ -831,12 +849,14 @@ function choose(side) {
 
   setTimeout(() => {
     ranker.choose(side);
+    saveSession();
     renderComparison();
   }, 180);
 }
 
 function undoChoice() {
   if (ranker.undo()) {
+    saveSession();
     renderComparison();
     // Show toast
     const toast = document.getElementById('undoToast');
@@ -885,9 +905,11 @@ function saveAndDone() {
     name: currentRankingName,
     date: new Date().toISOString(),
     items: [...items],
-    result: [...currentResult]
+    result: [...currentResult],
+    comparisons: ranker.completedComparisons
   });
   localStorage.setItem('ranker_history', JSON.stringify(history));
+  clearSession();
   showHistory();
 }
 
@@ -914,6 +936,7 @@ function showHistory() {
         <div class="history-card-date">${formatDate(h.date)}</div>
       </div>
       <div class="history-card-items">${h.result.slice(0, 5).map((r, i) => `${i + 1}. ${esc(r)}`).join(' &middot; ')}${h.result.length > 5 ? ' &hellip;' : ''}</div>
+      <div class="history-card-items" style="margin-top:2px">${h.comparisons != null ? h.comparisons + ' comparisons' : ''}</div>
       <div class="history-card-actions">
         <button class="btn-ghost" onclick="event.stopPropagation(); rerankFromHistory(${idx})">Re-rank</button>
         <button class="btn-danger" onclick="event.stopPropagation(); deleteHistory(${idx})">Delete</button>
@@ -930,7 +953,7 @@ function viewHistoryDetail(idx) {
   content.innerHTML = `
     <button class="history-back" onclick="showHistory()">&#8592; Back</button>
     <div class="section-title" style="margin-bottom:4px">${esc(h.name)}</div>
-    <div class="section-subtitle">${formatDate(h.date)} &middot; ${h.result.length} items</div>
+    <div class="section-subtitle">${formatDate(h.date)} &middot; ${h.result.length} items${h.comparisons != null ? ' &middot; ' + h.comparisons + ' comparisons' : ''}</div>
     <ol class="results-list">
       ${h.result.map((item, i) => `
         <li class="result-item">
@@ -968,10 +991,109 @@ function goHome() {
   items = [];
   currentResult = null;
   ranker = null;
+  clearSession();
   rankingNameInput.value = '';
   renderItems();
   showView('setupView');
   rankingNameInput.focus();
+}
+
+// ─── Bulk Add ───
+let bulkMode = false;
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  document.getElementById('singleAddRow').style.display = bulkMode ? 'none' : 'flex';
+  document.getElementById('bulkAddRow').style.display = bulkMode ? 'block' : 'none';
+  document.getElementById('bulkToggle').textContent = bulkMode ? 'Single add' : 'Bulk add';
+  if (bulkMode) document.getElementById('bulkInput').focus();
+  else itemInput.focus();
+}
+
+function addBulkItems() {
+  const text = document.getElementById('bulkInput').value;
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  let added = 0;
+  for (const line of lines) {
+    if (!items.includes(line)) {
+      items.push(line);
+      added++;
+    }
+  }
+  document.getElementById('bulkInput').value = '';
+  renderItems();
+  if (added > 0) toggleBulkMode();
+}
+
+// ─── Session Persistence ───
+function saveSession() {
+  const session = {
+    name: currentRankingName,
+    items: items,
+    ranker: {
+      original: ranker.original,
+      runs: ranker.runs,
+      nextRuns: ranker.nextRuns,
+      pairIndex: ranker.pairIndex,
+      left: ranker.left,
+      right: ranker.right,
+      leftIdx: ranker.leftIdx,
+      rightIdx: ranker.rightIdx,
+      merged: ranker.merged,
+      history: ranker.history,
+      done: ranker.done,
+      result: ranker.result,
+      completedComparisons: ranker.completedComparisons,
+      maxComparisons: ranker.maxComparisons
+    }
+  };
+  localStorage.setItem('ranker_session', JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem('ranker_session');
+}
+
+function loadSession() {
+  try {
+    const data = JSON.parse(localStorage.getItem('ranker_session'));
+    if (!data || !data.ranker) return null;
+    return data;
+  } catch { return null; }
+}
+
+function resumeSession() {
+  const session = loadSession();
+  if (!session) return;
+  items = session.items;
+  currentRankingName = session.name;
+  rankingNameInput.value = session.name;
+  renderItems();
+
+  // Reconstruct ranker without running constructor logic
+  ranker = Object.create(MergeSortRanker.prototype);
+  const s = session.ranker;
+  ranker.original = s.original;
+  ranker.runs = s.runs;
+  ranker.nextRuns = s.nextRuns;
+  ranker.pairIndex = s.pairIndex;
+  ranker.left = s.left;
+  ranker.right = s.right;
+  ranker.leftIdx = s.leftIdx;
+  ranker.rightIdx = s.rightIdx;
+  ranker.merged = s.merged;
+  ranker.history = s.history;
+  ranker.done = s.done;
+  ranker.result = s.result;
+  ranker.completedComparisons = s.completedComparisons;
+  ranker.maxComparisons = s.maxComparisons;
+
+  if (ranker.done) {
+    currentResult = ranker.result;
+    showResults();
+  } else {
+    showView('compareView');
+    renderComparison();
+  }
 }
 
 // ─── Helpers ───
@@ -980,6 +1102,25 @@ function esc(s) {
   d.textContent = s;
   return d.innerHTML;
 }
+
+function dismissResume() {
+  clearSession();
+  document.getElementById('resumeBanner').style.display = 'none';
+}
+
+// ─── Init ───
+(function init() {
+  const session = loadSession();
+  if (session) {
+    const banner = document.getElementById('resumeBanner');
+    document.getElementById('resumeName').textContent = session.name || 'Untitled ranking';
+    const comp = session.ranker.completedComparisons;
+    const total = session.ranker.maxComparisons;
+    document.getElementById('resumeInfo').textContent =
+      `${session.items.length} items \u00b7 ${comp}/${total} comparisons`;
+    banner.style.display = 'block';
+  }
+})();
 
 function formatDate(iso) {
   const d = new Date(iso);
