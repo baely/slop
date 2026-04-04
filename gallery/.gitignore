@@ -1,0 +1,5 @@
+Bailey Butler */
+dist/
+.thumbs_tmp/
+__pycache__/
+metadata.json
