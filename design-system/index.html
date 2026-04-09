@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>slop design system</title>
+<style>
+/* ========================================
+   RESET — the foundation of every slop app
+   ======================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ========================================
+   DESIGN TOKENS
+   ======================================== */
+:root {
+  /* Light mode */
+  --bg: #ffffff;
+  --surface-1: #fafafa;
+  --surface-2: #f5f5f5;
+  --surface-3: #f0f0f0;
+  --text: #111111;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+  --text-placeholder: #bbbbbb;
+  --border: #e0e0e0;
+  --border-light: #dddddd;
+
+  /* Semantic */
+  --success: #2ecc71;
+  --success-dark: #1a8a5c;
+  --danger: #e74c3c;
+  --danger-dark: #cc0000;
+  --info: #3498db;
+  --warning: #f39c12;
+
+  /* Typography */
+  --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Courier New', monospace;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 10px;
+  --sp-5: 12px;
+  --sp-6: 14px;
+  --sp-7: 16px;
+  --sp-8: 20px;
+  --sp-9: 24px;
+  --sp-10: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Transitions */
+  --transition: all 0.15s;
+  --transition-slow: all 0.3s;
+
+  /* Layout */
+  --sidebar-w: 220px;
+}
+
+/* Dark mode tokens */
+[data-theme="dark"] {
+  --bg: #0f1114;
+  --surface-1: #181b20;
+  --surface-2: #1e2228;
+  --surface-3: #2a2f38;
+  --text: #d4d8e0;
+  --text-secondary: #7a8294;
+  --text-muted: #4a5060;
+  --text-placeholder: #4a5060;
+  --border: #2a2f38;
+  --border-light: #363d49;
+}
+
+/* ========================================
+   BASE
+   ======================================== */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 32px;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* ========================================
+   LAYOUT
+   ======================================== */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo-text {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-logo-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  padding: 12px 0;
+  flex: 1;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 12px 16px 6px;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.sidebar-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.sidebar-link.active {
+  color: var(--text);
+  font-weight: 500;
+  background: var(--surface-2);
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover { color: var(--text); }
+
+.theme-toggle-track {
+  width: 32px;
+  height: 18px;
+  background: var(--border);
+  border-radius: 9px;
+  position: relative;
+  transition: var(--transition);
+}
+
+.theme-toggle-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--text);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: var(--transition);
+}
+
+[data-theme="dark"] .theme-toggle-thumb {
+  left: 16px;
+}
+
+/* Main content */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-width: 0;
+}
+
+.content {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ========================================
+   HERO
+   ======================================== */
+.hero {
+  padding: 48px 0 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+
+.hero h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 520px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ========================================
+   SECTIONS
+   ======================================== */
+.section {
+  margin-bottom: 56px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.subsection {
+  margin-bottom: 32px;
+}
+
+.subsection-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.subsection-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* ========================================
+   EXAMPLE BLOCKS
+   ======================================== */
+.example {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.example-render {
+  padding: 24px;
+  background: var(--bg);
+}
+
+.example-render.dark-bg {
+  background: #0f1114;
+  color: #d4d8e0;
+}
+
+.example-render.surface-bg {
+  background: var(--surface-1);
+}
+
+.example-code {
+  border-top: 1px solid var(--border);
+  background: var(--surface-1);
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+
+.example-code.open {
+  max-height: 2000px;
+}
+
+.example-code pre {
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  color: var(--text-secondary);
+  white-space: pre;
+}
+
+.example-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.example-toggle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.example-toggle:hover {
+  color: var(--text);
+}
+
+/* ========================================
+   COLOR SWATCHES
+   ======================================== */
+.swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.swatch {
+  width: 72px;
+  text-align: center;
+}
+
+.swatch-color {
+  width: 72px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.swatch-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+
+.swatch-hex {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Wide swatches for semantic colors */
+.swatch-wide {
+  flex: 1;
+  min-width: 100px;
+}
+
+.swatch-wide .swatch-color {
+  width: 100%;
+}
+
+/* ========================================
+   TOKEN TABLE
+   ======================================== */
+.token-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.token-table th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+
+.token-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--surface-2);
+  vertical-align: middle;
+}
+
+.token-table tr:hover td {
+  background: var(--surface-1);
+}
+
+.token-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.token-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   SPACING SCALE
+   ======================================== */
+.spacing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.spacing-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 60px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.spacing-bar {
+  height: 20px;
+  background: var(--text);
+  border-radius: 2px;
+  opacity: 0.12;
+}
+
+.spacing-px {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   TYPE SCALE
+   ======================================== */
+.type-sample {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.type-sample:last-child { border-bottom: none; }
+
+.type-meta {
+  width: 80px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.type-text {
+  flex: 1;
+}
+
+/* ========================================
+   COMPONENT EXAMPLES (inside example blocks)
+   ======================================== */
+
+/* Buttons shown in example */
+.demo-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border-light);
+}
+.btn-secondary:hover {
+  border-color: var(--text);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover { color: var(--text); }
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+.btn-danger:hover { opacity: 0.85; }
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 10px;
+}
+
+/* Inputs */
+.demo-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+}
+
+.input {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.input::placeholder { color: var(--text-placeholder); }
+.input:focus { border-color: var(--text); }
+
+.input-mono {
+  font-family: var(--font-mono);
+}
+
+.input-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* Cards */
+.demo-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--bg);
+}
+
+.demo-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.demo-card-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.demo-card-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.demo-card-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.demo-card-row .demo-card {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Dark card variant */
+.demo-card.dark {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #d4d8e0;
+}
+
+.demo-card.dark .demo-card-title { color: #e0e0e0; }
+.demo-card.dark .demo-card-text { color: #7a8294; }
+.demo-card.dark .demo-card-meta { color: #4a5060; }
+
+/* Header demo */
+.demo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.demo-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.demo-header-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.demo-header-nav {
+  display: flex;
+  gap: 6px;
+}
+
+/* Table demo */
+.demo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.demo-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+  position: sticky;
+  top: 0;
+}
+
+.demo-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.demo-table tr:hover td {
+  background: var(--surface-1);
+  transition: var(--transition);
+}
+
+.demo-table .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.demo-table .text-muted {
+  color: var(--text-muted);
+}
+
+.demo-table .text-success {
+  color: var(--success-dark);
+}
+
+.demo-table .text-danger {
+  color: var(--danger);
+}
+
+/* Modal demo */
+.demo-modal-wrap {
+  position: relative;
+  height: 260px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.demo-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+
+.demo-modal {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 340px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.demo-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.demo-modal-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.demo-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Status indicators */
+.demo-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.demo-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.demo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.demo-dot.success { background: var(--success); }
+.demo-dot.danger { background: var(--danger); }
+.demo-dot.info { background: var(--info); }
+.demo-dot.warning { background: var(--warning); }
+.demo-dot.muted { background: var(--text-muted); }
+
+.demo-dot.pulse {
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+  gap: 5px;
+}
+
+.demo-badge.success { background: #e8f9ef; color: var(--success-dark); }
+.demo-badge.danger { background: #fdeaea; color: var(--danger); }
+.demo-badge.info { background: #e8f1f9; color: var(--info); }
+.demo-badge.warning { background: #fef5e7; color: #b87a00; }
+.demo-badge.neutral { background: var(--surface-2); color: var(--text-secondary); }
+
+[data-theme="dark"] .demo-badge.success { background: #1a3a28; color: #6ae8a0; }
+[data-theme="dark"] .demo-badge.danger { background: #3a1a1a; color: #e86a6a; }
+[data-theme="dark"] .demo-badge.info { background: #1a2a3a; color: #6ab8e8; }
+[data-theme="dark"] .demo-badge.warning { background: #3a2a1a; color: #e8c46a; }
+
+/* ========================================
+   KITCHEN SINK — mini app demo
+   ======================================== */
+.kitchen-sink {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.ks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ks-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ks-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ks-body {
+  padding: 20px 16px;
+}
+
+.ks-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.ks-search {
+  flex: 1;
+  max-width: 280px;
+}
+
+.ks-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.ks-stat {
+  flex: 1;
+  padding: 12px;
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-2);
+}
+
+.ks-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.ks-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.ks-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ks-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-2);
+  transition: var(--transition);
+}
+
+.ks-list-item:last-child { border-bottom: none; }
+.ks-list-item:hover { background: var(--surface-1); }
+
+.ks-list-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ks-list-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ks-list-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ks-list-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ks-list-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   RADIUS DEMO
+   ======================================== */
+.radius-grid {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radius-sample {
+  text-align: center;
+}
+
+.radius-box {
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--text);
+  opacity: 0.25;
+  margin-bottom: 8px;
+}
+
+.radius-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.radius-name {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ========================================
+   PRINCIPLES
+   ======================================== */
+.principles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.principle {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.principle-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.principle-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ========================================
+   TABS
+   ======================================== */
+.demo-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.demo-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: var(--surface-2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.demo-tab + .demo-tab {
+  border-left: 1px solid var(--border);
+}
+
+.demo-tab:hover { color: var(--text); }
+
+.demo-tab.active {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* ========================================
+   TOAST
+   ======================================== */
+.demo-toast-stage {
+  position: relative;
+  height: 100px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 16px;
+}
+
+.demo-toast {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s;
+}
+
+.demo-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ========================================
+   TOOLTIP
+   ======================================== */
+.demo-tooltip-target {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.demo-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.demo-tooltip-target:hover .demo-tooltip {
+  opacity: 1;
+}
+
+/* ========================================
+   LOADING
+   ======================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.demo-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.demo-spinner-lg {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+.demo-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-placeholder);
+  font-size: 13px;
+}
+
+.demo-empty-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ========================================
+   DROP ZONE
+   ======================================== */
+.demo-dropzone {
+  border: 1px dashed var(--border);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.demo-dropzone:hover,
+.demo-dropzone.dragover {
+  border-color: var(--text);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.demo-dropzone-hint {
+  font-size: 11px;
+  color: var(--text-placeholder);
+  margin-top: 6px;
+}
+
+/* ========================================
+   COLLAPSIBLE
+   ======================================== */
+.demo-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.demo-panel + .demo-panel {
+  margin-top: -1px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.demo-panel:first-child ~ .demo-panel:not(:last-child) {
+  border-radius: 0;
+}
+
+.demo-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.demo-panel-header:hover {
+  background: var(--surface-1);
+}
+
+.demo-panel-chevron {
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.demo-panel.collapsed .demo-panel-chevron {
+  transform: rotate(-90deg);
+}
+
+.demo-panel-body {
+  padding: 0 14px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.demo-panel.collapsed .demo-panel-body {
+  display: none;
+}
+
+/* ========================================
+   PROGRESS BAR
+   ======================================== */
+.demo-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.demo-progress-bar {
+  height: 100%;
+  background: var(--text);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.demo-progress-bar.success { background: var(--success); }
+.demo-progress-bar.danger { background: var(--danger); }
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+.demo-scrollbox {
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.demo-scrollbox::-webkit-scrollbar { width: 4px; }
+.demo-scrollbox::-webkit-scrollbar-track { background: transparent; }
+.demo-scrollbox::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.demo-anim-item {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-bottom: 6px;
+  opacity: 0;
+}
+
+.demo-anim-item.play {
+  animation: slideIn 0.2s ease forwards;
+}
+
+/* ========================================
+   COPY BUTTON
+   ======================================== */
+.copy-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: var(--transition);
+}
+
+.copy-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 720px) {
+  .sidebar {
+    display: none;
+  }
+  .main {
+    margin-left: 0;
+  }
+  .content {
+    padding: 24px 16px 60px;
+  }
+  .principles-grid {
+    grid-template-columns: 1fr;
+  }
+  .ks-stats {
+    flex-direction: column;
+  }
+  .demo-card-row {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div>
+          <div class="sidebar-logo-text">slop</div>
+          <div class="sidebar-logo-sub">design system</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Foundation</div>
+      <a href="#principles" class="sidebar-link">Principles</a>
+      <a href="#colors" class="sidebar-link">Colors</a>
+      <a href="#typography" class="sidebar-link">Typography</a>
+      <a href="#spacing" class="sidebar-link">Spacing</a>
+      <a href="#radii" class="sidebar-link">Border Radius</a>
+      <a href="#transitions" class="sidebar-link">Transitions</a>
+      <div class="sidebar-section-label">Components</div>
+      <a href="#buttons" class="sidebar-link">Buttons</a>
+      <a href="#inputs" class="sidebar-link">Inputs</a>
+      <a href="#cards" class="sidebar-link">Cards</a>
+      <a href="#headers" class="sidebar-link">Headers</a>
+      <a href="#tables" class="sidebar-link">Tables</a>
+      <a href="#modals" class="sidebar-link">Modals</a>
+      <a href="#status" class="sidebar-link">Status Indicators</a>
+      <a href="#tabs" class="sidebar-link">Tabs</a>
+      <a href="#toasts" class="sidebar-link">Toasts</a>
+      <a href="#tooltips" class="sidebar-link">Tooltips</a>
+      <a href="#loading" class="sidebar-link">Loading</a>
+      <a href="#empty" class="sidebar-link">Empty States</a>
+      <a href="#dropzone" class="sidebar-link">Drop Zones</a>
+      <a href="#collapsible" class="sidebar-link">Collapsible Panels</a>
+      <a href="#progress" class="sidebar-link">Progress Bars</a>
+      <div class="sidebar-section-label">Patterns</div>
+      <a href="#scrollbars" class="sidebar-link">Scrollbars</a>
+      <a href="#animations" class="sidebar-link">Animations</a>
+      <a href="#layout" class="sidebar-link">Layout</a>
+      <a href="#reset" class="sidebar-link">Reset</a>
+      <a href="#tokens" class="sidebar-link">CSS Variables</a>
+      <a href="#kitchen-sink" class="sidebar-link">Kitchen Sink</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
+        <span id="theme-label">Dark mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="content">
+
+      <!-- HERO -->
+      <div class="hero" id="top">
+        <h1>slop design system</h1>
+        <p>The shared design language extracted from ~10 vibe-coded applications. Minimal, functional, and built entirely with vanilla HTML, CSS, and JS.</p>
+        <div class="hero-meta">
+          <span>v1.0</span>
+          <span>System UI</span>
+          <span>Base-4 Spacing</span>
+          <span>No Frameworks</span>
+        </div>
+      </div>
+
+      <!-- PRINCIPLES -->
+      <section class="section" id="principles">
+        <h2 class="section-title">Principles</h2>
+        <p class="section-desc">Six rules that hold across every project in the repo.</p>
+        <div class="principles-grid">
+          <div class="principle">
+            <div class="principle-title">Minimal &amp; functional</div>
+            <div class="principle-desc">Every element earns its place. No decoration for its own sake. If removing it changes nothing, remove it.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-title">Generous whitespace</div>
+            <div class="principle-desc">Let content breathe. Spacing does more for hierarchy than bold type or color ever will.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-title">Clear typographic hierarchy</div>
+            <div class="principle-desc">Size, weight, and color establish importance. Uppercase + letter-spacing for labels. Monospace for data.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-title">Subtle animation</div>
+            <div class="principle-desc">0.15s transitions on interactive elements. Motion confirms interaction without drawing attention to itself.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-title">Flexbox-first layout</div>
+            <div class="principle-desc">Flexbox handles nearly all layout needs. Grid only when the content is truly two-dimensional.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-title">No frameworks</div>
+            <div class="principle-desc">Vanilla HTML, CSS, and JS. No build step, no dependencies, no abstractions between intent and output.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLORS -->
+      <section class="section" id="colors">
+        <h2 class="section-title">Colors</h2>
+        <p class="section-desc">A neutral base palette with semantic accents. Most apps use light mode; dark mode is available for map/media-heavy interfaces.</p>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Light Mode</h3>
+          <div class="swatch-grid">
+            <div class="swatch">
+              <div class="swatch-color" style="background:#ffffff"></div>
+              <div class="swatch-label">bg</div>
+              <div class="swatch-hex">#ffffff</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#fafafa"></div>
+              <div class="swatch-label">surface-1</div>
+              <div class="swatch-hex">#fafafa</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#f5f5f5"></div>
+              <div class="swatch-label">surface-2</div>
+              <div class="swatch-hex">#f5f5f5</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#f0f0f0"></div>
+              <div class="swatch-label">surface-3</div>
+              <div class="swatch-hex">#f0f0f0</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#e0e0e0"></div>
+              <div class="swatch-label">border</div>
+              <div class="swatch-hex">#e0e0e0</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#dddddd"></div>
+              <div class="swatch-label">border-light</div>
+              <div class="swatch-hex">#dddddd</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#111111"></div>
+              <div class="swatch-label">text</div>
+              <div class="swatch-hex">#111111</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#555555"></div>
+              <div class="swatch-label">text-2</div>
+              <div class="swatch-hex">#555555</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#999999"></div>
+              <div class="swatch-label">muted</div>
+              <div class="swatch-hex">#999999</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Dark Mode</h3>
+          <div class="swatch-grid">
+            <div class="swatch">
+              <div class="swatch-color" style="background:#0f1114; border-color:#333"></div>
+              <div class="swatch-label">bg</div>
+              <div class="swatch-hex">#0f1114</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#181b20; border-color:#333"></div>
+              <div class="swatch-label">surface-1</div>
+              <div class="swatch-hex">#181b20</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#1e2228; border-color:#333"></div>
+              <div class="swatch-label">surface-2</div>
+              <div class="swatch-hex">#1e2228</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#2a2f38; border-color:#444"></div>
+              <div class="swatch-label">border</div>
+              <div class="swatch-hex">#2a2f38</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#d4d8e0; border-color:#444"></div>
+              <div class="swatch-label">text</div>
+              <div class="swatch-hex">#d4d8e0</div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:#7a8294; border-color:#444"></div>
+              <div class="swatch-label">muted</div>
+              <div class="swatch-hex">#7a8294</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Semantic</h3>
+          <div class="swatch-grid">
+            <div class="swatch swatch-wide">
+              <div class="swatch-color" style="background:#2ecc71"></div>
+              <div class="swatch-label">Success</div>
+              <div class="swatch-hex">#2ecc71</div>
+            </div>
+            <div class="swatch swatch-wide">
+              <div class="swatch-color" style="background:#e74c3c"></div>
+              <div class="swatch-label">Danger</div>
+              <div class="swatch-hex">#e74c3c</div>
+            </div>
+            <div class="swatch swatch-wide">
+              <div class="swatch-color" style="background:#3498db"></div>
+              <div class="swatch-label">Info</div>
+              <div class="swatch-hex">#3498db</div>
+            </div>
+            <div class="swatch swatch-wide">
+              <div class="swatch-color" style="background:#f39c12"></div>
+              <div class="swatch-label">Warning</div>
+              <div class="swatch-hex">#f39c12</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TYPOGRAPHY -->
+      <section class="section" id="typography">
+        <h2 class="section-title">Typography</h2>
+        <p class="section-desc">System UI for interface text, monospace for data display. A tight scale from 10px labels to 18px headings covers every need.</p>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Type Scale</h3>
+          <div style="margin-bottom:20px">
+            <div class="type-sample">
+              <div class="type-meta">18px / 600</div>
+              <div class="type-text" style="font-size:18px; font-weight:600">Section heading</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">16px / 600</div>
+              <div class="type-text" style="font-size:16px; font-weight:600">Page title</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">14px / 600</div>
+              <div class="type-text" style="font-size:14px; font-weight:600">Subsection heading</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">13px / 400</div>
+              <div class="type-text" style="font-size:13px; font-weight:400">Body text &mdash; the default for all interface copy. Comfortable reading at this scale.</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">12px / 400</div>
+              <div class="type-text" style="font-size:12px; font-weight:400; color:var(--text-secondary)">Secondary text, descriptions, and metadata</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">11px / 600</div>
+              <div class="type-text" style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted)">UPPERCASE LABEL</div>
+            </div>
+            <div class="type-sample">
+              <div class="type-meta">10px / 600</div>
+              <div class="type-text" style="font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted)">SECTION LABEL &bull; CAPTION</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Font Stacks</h3>
+          <table class="token-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="token-name">--font-ui</td>
+                <td class="token-value">system-ui, -apple-system, sans-serif</td>
+                <td>All interface text</td>
+              </tr>
+              <tr>
+                <td class="token-name">--font-mono</td>
+                <td class="token-value">'Courier New', monospace</td>
+                <td>Data, code, values</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Monospace</h3>
+          <div class="example">
+            <div class="example-render">
+              <div style="font-family:var(--font-mono); display:flex; flex-direction:column; gap:6px">
+                <span style="font-size:13px">$1,234.56</span>
+                <span style="font-size:12px; color:var(--text-secondary)">2026-04-09 14:30:00</span>
+                <span style="font-size:11px; color:var(--text-muted)">abc123def456</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SPACING -->
+      <section class="section" id="spacing">
+        <h2 class="section-title">Spacing</h2>
+        <p class="section-desc">A base-4 scale. Use smaller values (4&ndash;8px) for tight component internals, mid values (10&ndash;16px) for component padding, and larger values (20&ndash;32px) for section separation.</p>
+
+        <div style="margin-bottom:20px">
+          <div class="spacing-row"><div class="spacing-label">--sp-1</div><div class="spacing-bar" style="width:4px"></div><div class="spacing-px">4px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-2</div><div class="spacing-bar" style="width:6px"></div><div class="spacing-px">6px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-3</div><div class="spacing-bar" style="width:8px"></div><div class="spacing-px">8px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-4</div><div class="spacing-bar" style="width:10px"></div><div class="spacing-px">10px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-5</div><div class="spacing-bar" style="width:12px"></div><div class="spacing-px">12px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-6</div><div class="spacing-bar" style="width:14px"></div><div class="spacing-px">14px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-7</div><div class="spacing-bar" style="width:16px"></div><div class="spacing-px">16px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-8</div><div class="spacing-bar" style="width:20px"></div><div class="spacing-px">20px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-9</div><div class="spacing-bar" style="width:24px"></div><div class="spacing-px">24px</div></div>
+          <div class="spacing-row"><div class="spacing-label">--sp-10</div><div class="spacing-bar" style="width:32px"></div><div class="spacing-px">32px</div></div>
+        </div>
+      </section>
+
+      <!-- BORDER RADIUS -->
+      <section class="section" id="radii">
+        <h2 class="section-title">Border Radius</h2>
+        <p class="section-desc">Three fixed values cover all component needs. The standard is 6px.</p>
+
+        <div class="radius-grid">
+          <div class="radius-sample">
+            <div class="radius-box" style="border-radius:4px"></div>
+            <div class="radius-label">4px</div>
+            <div class="radius-name">small</div>
+          </div>
+          <div class="radius-sample">
+            <div class="radius-box" style="border-radius:6px"></div>
+            <div class="radius-label">6px</div>
+            <div class="radius-name">medium</div>
+          </div>
+          <div class="radius-sample">
+            <div class="radius-box" style="border-radius:8px"></div>
+            <div class="radius-label">8px</div>
+            <div class="radius-name">large</div>
+          </div>
+          <div class="radius-sample">
+            <div class="radius-box" style="border-radius:50%"></div>
+            <div class="radius-label">50%</div>
+            <div class="radius-name">circle</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSITIONS -->
+      <section class="section" id="transitions">
+        <h2 class="section-title">Transitions</h2>
+        <p class="section-desc">Every interactive element gets a transition. The standard is 0.15s &mdash; fast enough to feel instant, slow enough to feel smooth.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="display:flex; gap:24px; align-items:center">
+              <div>
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:8px">0.15s &mdash; Standard</div>
+                <div style="width:80px; height:40px; background:var(--surface-2); border-radius:var(--radius-md); cursor:pointer; transition:all 0.15s; border:1px solid var(--border)" onmouseover="this.style.background='var(--text)'; this.style.borderColor='var(--text)'" onmouseout="this.style.background='var(--surface-2)'; this.style.borderColor='var(--border)'"></div>
+              </div>
+              <div>
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:8px">0.3s &mdash; Slow</div>
+                <div style="width:80px; height:40px; background:var(--surface-2); border-radius:var(--radius-md); cursor:pointer; transition:all 0.3s; border:1px solid var(--border)" onmouseover="this.style.background='var(--text)'; this.style.borderColor='var(--text)'" onmouseout="this.style.background='var(--surface-2)'; this.style.borderColor='var(--border)'"></div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>/* Standard — buttons, inputs, links */
+transition: all 0.15s;
+
+/* Slow — panels, modals, large state changes */
+transition: all 0.3s;</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUTTONS -->
+      <section class="section" id="buttons">
+        <h2 class="section-title">Buttons</h2>
+        <p class="section-desc">Uppercase labels with letter-spacing. Primary is black-on-white (inverted in dark mode). Secondary uses an outline.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-btn-row">
+              <button class="btn btn-primary">Primary</button>
+              <button class="btn btn-secondary">Secondary</button>
+              <button class="btn btn-ghost">Ghost</button>
+              <button class="btn btn-danger">Danger</button>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #111;
+  border-color: #ddd;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #555;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: #fff;
+}</pre>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Small Variant</h3>
+          <div class="example">
+            <div class="example-render">
+              <div class="demo-btn-row">
+                <button class="btn btn-primary btn-sm">Save</button>
+                <button class="btn btn-secondary btn-sm">Cancel</button>
+                <button class="btn btn-danger btn-sm">Delete</button>
+              </div>
+            </div>
+            <div class="example-toolbar">
+              <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+            </div>
+            <div class="example-code">
+<pre>.btn-sm {
+  padding: 5px 10px;
+  font-size: 10px;
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INPUTS -->
+      <section class="section" id="inputs">
+        <h2 class="section-title">Inputs</h2>
+        <p class="section-desc">Simple border inputs that darken on focus. Monospace variant for data entry.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-input-row">
+              <div>
+                <div class="input-label">Name</div>
+                <input class="input" type="text" placeholder="Enter a name...">
+              </div>
+              <div>
+                <div class="input-label">Amount</div>
+                <input class="input input-mono" type="text" placeholder="0.00" style="max-width:160px">
+              </div>
+              <div>
+                <div class="input-label">Search</div>
+                <input class="input" type="text" placeholder="Search items...">
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.input {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  outline: none;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.input::placeholder { color: #bbb; }
+.input:focus { border-color: #111; }
+
+.input-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #555;
+  margin-bottom: 4px;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARDS -->
+      <section class="section" id="cards">
+        <h2 class="section-title">Cards</h2>
+        <p class="section-desc">Bordered containers with consistent padding. Light and dark variants.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-card-row">
+              <div class="demo-card">
+                <div class="demo-card-title">Card Title</div>
+                <div class="demo-card-text">Body text with secondary color. Cards group related content with a light border and consistent padding.</div>
+                <div class="demo-card-meta">Updated 2 hours ago</div>
+              </div>
+              <div class="demo-card">
+                <div class="demo-card-title">Another Card</div>
+                <div class="demo-card-text">Cards sit side by side in a flex row. They share equal width and wrap on smaller screens.</div>
+                <div class="demo-card-meta">3 items</div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.card {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+  background: #fff;
+}
+
+.card-title { font-size: 14px; font-weight: 600; }
+.card-text  { font-size: 12px; color: #555; }
+.card-meta  { font-size: 11px; color: #999; }</pre>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Dark Variant</h3>
+          <div class="example">
+            <div class="example-render dark-bg">
+              <div class="demo-card dark">
+                <div class="demo-card-title">Dark Card</div>
+                <div class="demo-card-text">Used in dark-mode interfaces like maps or media apps. Background #1a1a1a, border #333.</div>
+                <div class="demo-card-meta">Dark mode</div>
+              </div>
+            </div>
+            <div class="example-toolbar">
+              <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+            </div>
+            <div class="example-code">
+<pre>.card.dark {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #d4d8e0;
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HEADERS -->
+      <section class="section" id="headers">
+        <h2 class="section-title">Headers</h2>
+        <p class="section-desc">Flex row with space-between. Title on the left, actions on the right. Bottom border separates from content.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-header">
+              <div class="demo-header-left">
+                <div class="demo-header-title">App Name</div>
+              </div>
+              <div class="demo-header-nav">
+                <button class="btn btn-secondary btn-sm">Settings</button>
+                <button class="btn btn-primary btn-sm">New Item</button>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header-title {
+  font-size: 14px;
+  font-weight: 600;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABLES -->
+      <section class="section" id="tables">
+        <h2 class="section-title">Tables</h2>
+        <p class="section-desc">Collapsed borders, sticky headers, row hover. Uppercase header labels with muted color.</p>
+
+        <div class="example">
+          <div class="example-render" style="padding:0">
+            <div style="max-height:220px; overflow-y:auto">
+              <table class="demo-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Grocery Store</td>
+                    <td class="mono text-muted">2026-04-08</td>
+                    <td class="mono text-danger">-$42.50</td>
+                    <td><span class="demo-badge success">Complete</span></td>
+                  </tr>
+                  <tr>
+                    <td>Direct Deposit</td>
+                    <td class="mono text-muted">2026-04-07</td>
+                    <td class="mono text-success">+$2,400.00</td>
+                    <td><span class="demo-badge success">Complete</span></td>
+                  </tr>
+                  <tr>
+                    <td>Electric Bill</td>
+                    <td class="mono text-muted">2026-04-05</td>
+                    <td class="mono text-danger">-$128.00</td>
+                    <td><span class="demo-badge warning">Pending</span></td>
+                  </tr>
+                  <tr>
+                    <td>Coffee Shop</td>
+                    <td class="mono text-muted">2026-04-04</td>
+                    <td class="mono text-danger">-$6.75</td>
+                    <td><span class="demo-badge success">Complete</span></td>
+                  </tr>
+                  <tr>
+                    <td>Subscription</td>
+                    <td class="mono text-muted">2026-04-01</td>
+                    <td class="mono text-danger">-$14.99</td>
+                    <td><span class="demo-badge neutral">Recurring</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+}
+
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+tr:hover td {
+  background: #fafafa;
+  transition: all 0.15s;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODALS -->
+      <section class="section" id="modals">
+        <h2 class="section-title">Modals</h2>
+        <p class="section-desc">Centered over a dark backdrop. Large border-radius, subtle shadow. Actions right-aligned.</p>
+
+        <div class="example">
+          <div class="example-render" style="padding:0">
+            <div class="demo-modal-wrap">
+              <div class="demo-modal-backdrop"></div>
+              <div class="demo-modal">
+                <div class="demo-modal-title">Delete Item</div>
+                <div class="demo-modal-body">Are you sure you want to delete this item? This action cannot be undone.</div>
+                <div class="demo-modal-actions">
+                  <button class="btn btn-secondary btn-sm">Cancel</button>
+                  <button class="btn btn-danger btn-sm">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+
+.modal {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  width: 340px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATUS -->
+      <section class="section" id="status">
+        <h2 class="section-title">Status Indicators</h2>
+        <p class="section-desc">Colored dots for inline status. Badges for labeled states. Pulsing dot for active/live states.</p>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Dots</h3>
+          <div class="example">
+            <div class="example-render">
+              <div class="demo-status-row">
+                <div class="demo-status"><div class="demo-dot success pulse"></div> Connected</div>
+                <div class="demo-status"><div class="demo-dot danger"></div> Error</div>
+                <div class="demo-status"><div class="demo-dot info"></div> Syncing</div>
+                <div class="demo-status"><div class="demo-dot warning"></div> Warning</div>
+                <div class="demo-status"><div class="demo-dot muted"></div> Offline</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-title">Badges</h3>
+          <div class="example">
+            <div class="example-render">
+              <div class="demo-status-row">
+                <span class="demo-badge success">Complete</span>
+                <span class="demo-badge danger">Failed</span>
+                <span class="demo-badge info">In Progress</span>
+                <span class="demo-badge warning">Pending</span>
+                <span class="demo-badge neutral">Draft</span>
+              </div>
+            </div>
+            <div class="example-toolbar">
+              <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+            </div>
+            <div class="example-code">
+<pre>.badge {
+  display: inline-flex;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+}
+
+.badge.success { background: #e8f9ef; color: #1a8a5c; }
+.badge.danger  { background: #fdeaea; color: #e74c3c; }
+.badge.info    { background: #e8f1f9; color: #3498db; }
+.badge.warning { background: #fef5e7; color: #b87a00; }
+.badge.neutral { background: #f5f5f5; color: #555; }
+
+/* Dark mode */
+.badge.success { background: #1a3a28; color: #6ae8a0; }
+.badge.danger  { background: #3a1a1a; color: #e86a6a; }</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYOUT -->
+      <section class="section" id="layout">
+        <h2 class="section-title">Layout</h2>
+        <p class="section-desc">A centered container with max-width is the standard pattern. 640px for content-focused apps, wider for data-heavy interfaces.</p>
+
+        <div class="example">
+          <div class="example-render surface-bg">
+            <div style="border:1px dashed var(--border); border-radius:var(--radius-md); max-width:640px; margin:0 auto; padding:20px; text-align:center">
+              <div style="font-size:12px; color:var(--text-muted); font-family:var(--font-mono)">max-width: 640px; margin: 0 auto;</div>
+              <div style="font-size:11px; color:var(--text-placeholder); margin-top:4px">Content area</div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .container {
+    padding: 16px 12px;
+  }
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESET -->
+      <section class="section" id="reset">
+        <h2 class="section-title">Reset</h2>
+        <p class="section-desc">Every slop app starts with the same three-line reset.</p>
+
+        <div class="example">
+          <div class="example-render" style="padding:16px">
+            <pre style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary)">* { margin: 0; padding: 0; box-sizing: border-box; }</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOKENS -->
+      <section class="section" id="tokens">
+        <h2 class="section-title">CSS Variables</h2>
+        <p class="section-desc">The complete token set. Copy into any new project's <code style="font-family:var(--font-mono); background:var(--surface-2); padding:1px 5px; border-radius:3px; font-size:12px">:root</code> block.</p>
+
+        <div class="example">
+          <div class="example-render" style="padding:16px">
+<pre style="font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--text-secondary)">:root {
+  <span style="color:var(--text-muted)">/* Backgrounds */</span>
+  --bg: #ffffff;
+  --surface-1: #fafafa;
+  --surface-2: #f5f5f5;
+  --surface-3: #f0f0f0;
+
+  <span style="color:var(--text-muted)">/* Text */</span>
+  --text: #111111;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+  --text-placeholder: #bbbbbb;
+
+  <span style="color:var(--text-muted)">/* Borders */</span>
+  --border: #e0e0e0;
+  --border-light: #dddddd;
+
+  <span style="color:var(--text-muted)">/* Semantic */</span>
+  --success: #2ecc71;
+  --success-dark: #1a8a5c;
+  --danger: #e74c3c;
+  --danger-dark: #cc0000;
+  --info: #3498db;
+  --warning: #f39c12;
+
+  <span style="color:var(--text-muted)">/* Typography */</span>
+  --font-ui: system-ui, -apple-system, sans-serif;
+  --font-mono: 'Courier New', monospace;
+
+  <span style="color:var(--text-muted)">/* Spacing */</span>
+  --sp-1: 4px;   --sp-2: 6px;   --sp-3: 8px;
+  --sp-4: 10px;  --sp-5: 12px;  --sp-6: 14px;
+  --sp-7: 16px;  --sp-8: 20px;  --sp-9: 24px;
+  --sp-10: 32px;
+
+  <span style="color:var(--text-muted)">/* Radii */</span>
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  <span style="color:var(--text-muted)">/* Transitions */</span>
+  --transition: all 0.15s;
+  --transition-slow: all 0.3s;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABS -->
+      <section class="section" id="tabs">
+        <h2 class="section-title">Tabs</h2>
+        <p class="section-desc">Segmented controls for switching views or modes. Active tab inverts to black. Used in 4+ projects for duration pickers, mode selectors, and filter controls.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-tabs" style="max-width:360px">
+              <button class="demo-tab active" onclick="activateTab(this)">All</button>
+              <button class="demo-tab" onclick="activateTab(this)">Active</button>
+              <button class="demo-tab" onclick="activateTab(this)">Archived</button>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: #f5f5f5;
+  font-size: 13px;
+  font-weight: 500;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab + .tab { border-left: 1px solid #e0e0e0; }
+.tab:hover { color: #111; }
+.tab.active { background: #111; color: #fff; }</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOASTS -->
+      <section class="section" id="toasts">
+        <h2 class="section-title">Toasts</h2>
+        <p class="section-desc">Temporary feedback messages. Slide up from the bottom-right, auto-dismiss after a few seconds.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-toast-stage">
+              <button class="btn btn-secondary btn-sm" onclick="showDemoToast()" style="position:absolute; top:16px; left:16px">Trigger toast</button>
+              <div class="demo-toast" id="demo-toast">Item saved successfully.</div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOOLTIPS -->
+      <section class="section" id="tooltips">
+        <h2 class="section-title">Tooltips</h2>
+        <p class="section-desc">Hover hints for extra context. Pure CSS using a child element and :hover opacity toggle.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="display:flex; gap:16px; padding-top:28px">
+              <div class="demo-tooltip-target">
+                Hover me
+                <div class="demo-tooltip">Additional context here</div>
+              </div>
+              <div class="demo-tooltip-target">
+                Status: OK
+                <div class="demo-tooltip">Last checked 3 min ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.target:hover .tooltip { opacity: 1; }</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOADING -->
+      <section class="section" id="loading">
+        <h2 class="section-title">Loading</h2>
+        <p class="section-desc">A simple border-spinner. Top-border colored, rest transparent. Two sizes.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="display:flex; gap:24px; align-items:center">
+              <div style="display:flex; align-items:center; gap:8px">
+                <div class="demo-spinner"></div>
+                <span style="font-size:12px; color:var(--text-secondary)">Loading...</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px">
+                <div class="demo-spinner demo-spinner-lg"></div>
+                <span style="font-size:12px; color:var(--text-secondary)">Processing file</span>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #ddd;
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.spinner-lg {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- EMPTY STATES -->
+      <section class="section" id="empty">
+        <h2 class="section-title">Empty States</h2>
+        <p class="section-desc">Shown when a list or view has no data. Centered, muted text. Appears in 5+ projects.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden">
+              <div style="padding:8px 12px; border-bottom:1px solid var(--border); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); background:var(--surface-1)">Items</div>
+              <div class="demo-empty">
+                No items yet
+                <div class="demo-empty-hint">Add your first item to get started</div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #bbb;
+  font-size: 13px;
+}
+
+.empty-hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 6px;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DROP ZONES -->
+      <section class="section" id="dropzone">
+        <h2 class="section-title">Drop Zones</h2>
+        <p class="section-desc">File upload areas. Dashed border that solidifies on hover/dragover. Used in statement-parser, ranker, gpxer, and others.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-dropzone" ondragover="this.classList.add('dragover'); event.preventDefault()" ondragleave="this.classList.remove('dragover')" ondrop="this.classList.remove('dragover'); event.preventDefault()">
+              Drop file here or click to upload
+              <div class="demo-dropzone-hint">Supports CSV, JSON, GPX</div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.drop-zone {
+  border: 1px dashed #ddd;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  border-radius: 6px;
+  transition: all 0.15s;
+  color: #999;
+  font-size: 13px;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: #111;
+  background: #f5f5f5;
+  color: #111;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLLAPSIBLE -->
+      <section class="section" id="collapsible">
+        <h2 class="section-title">Collapsible Panels</h2>
+        <p class="section-desc">Expandable sections with a chevron indicator. Click header to toggle. Used in gpxer, trackui, and others for organizing sidebar content.</p>
+
+        <div class="example">
+          <div class="example-render" style="padding:0">
+            <div class="demo-panel" onclick="this.classList.toggle('collapsed')" style="border-radius:var(--radius-md) var(--radius-md) 0 0">
+              <div class="demo-panel-header">
+                <span>Waypoints</span>
+                <span class="demo-panel-chevron">&#9660;</span>
+              </div>
+              <div class="demo-panel-body">3 waypoints loaded. Drag to reorder, click to edit coordinates.</div>
+            </div>
+            <div class="demo-panel collapsed" onclick="this.classList.toggle('collapsed')" style="border-radius:0 0 var(--radius-md) var(--radius-md)">
+              <div class="demo-panel-header">
+                <span>Settings</span>
+                <span class="demo-panel-chevron">&#9660;</span>
+              </div>
+              <div class="demo-panel-body">Configure export format, coordinate system, and display preferences.</div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.panel { border-bottom: 1px solid #e0e0e0; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.panel-chevron {
+  color: #999;
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.panel.collapsed .panel-chevron {
+  transform: rotate(-90deg);
+}
+
+.panel.collapsed .panel-body {
+  display: none;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROGRESS BARS -->
+      <section class="section" id="progress">
+        <h2 class="section-title">Progress Bars</h2>
+        <p class="section-desc">Thin 4px bars. Default is black, semantic variants for success/danger. Animated width transition.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="display:flex; flex-direction:column; gap:14px">
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px">
+                  <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted)">Progress</span>
+                  <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary)">72%</span>
+                </div>
+                <div class="demo-progress"><div class="demo-progress-bar" style="width:72%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px">
+                  <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted)">Upload</span>
+                  <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary)">100%</span>
+                </div>
+                <div class="demo-progress"><div class="demo-progress-bar success" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px">
+                  <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted)">Errors</span>
+                  <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary)">3/10</span>
+                </div>
+                <div class="demo-progress"><div class="demo-progress-bar danger" style="width:30%"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.progress {
+  width: 100%;
+  height: 4px;
+  background: #f0f0f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #111;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.progress-bar.success { background: #2ecc71; }
+.progress-bar.danger  { background: #e74c3c; }</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCROLLBARS -->
+      <section class="section" id="scrollbars">
+        <h2 class="section-title">Scrollbars</h2>
+        <p class="section-desc">Thin 4px scrollbars on WebKit browsers. Transparent track, subtle gray thumb. Used in 3+ projects for scrollable panels and tables.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div class="demo-scrollbox">
+              <p>This container has custom scrollbar styling. Scroll down to see the thin, unobtrusive scrollbar that matches the system aesthetic.</p>
+              <p style="margin-top:10px">Line 1: The quick brown fox jumps over the lazy dog.</p>
+              <p>Line 2: Pack my box with five dozen liquor jugs.</p>
+              <p>Line 3: How vexingly quick daft zebras jump.</p>
+              <p>Line 4: The five boxing wizards jump quickly.</p>
+              <p>Line 5: Sphinx of black quartz, judge my vow.</p>
+              <p>Line 6: Two driven jocks help fax my big quiz.</p>
+              <p>Line 7: Jackdaws love my big sphinx of quartz.</p>
+              <p>Line 8: A quick movement of the enemy will jeopardize six gunboats.</p>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>.scrollable::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 2px;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANIMATIONS -->
+      <section class="section" id="animations">
+        <h2 class="section-title">Animations</h2>
+        <p class="section-desc">Two standard entrance animations. fadeIn for subtle reveals, slideIn for list items. Used in 3+ projects.</p>
+
+        <div class="example">
+          <div class="example-render">
+            <div style="display:flex; gap:16px; align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:10px">slideIn</div>
+                <div id="anim-container"></div>
+                <button class="btn btn-secondary btn-sm" onclick="playSlideIn()" style="margin-top:10px">Replay</button>
+              </div>
+            </div>
+          </div>
+          <div class="example-toolbar">
+            <button class="example-toggle" onclick="toggleCode(this)">view css</button>
+          </div>
+          <div class="example-code">
+<pre>@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger with animation-delay */
+.item:nth-child(1) { animation-delay: 0s; }
+.item:nth-child(2) { animation-delay: 0.05s; }
+.item:nth-child(3) { animation-delay: 0.1s; }</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- KITCHEN SINK -->
+      <section class="section" id="kitchen-sink">
+        <h2 class="section-title">Kitchen Sink</h2>
+        <p class="section-desc">A realistic mini-app built entirely from the system above. This is what a typical slop project looks like.</p>
+
+        <div class="kitchen-sink">
+          <div class="ks-header">
+            <div class="ks-header-left">
+              <div class="ks-title">Tracker</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm">Export</button>
+              <button class="btn btn-primary btn-sm">Add Entry</button>
+            </div>
+          </div>
+          <div class="ks-body">
+            <div class="ks-stats">
+              <div class="ks-stat">
+                <div class="ks-stat-value">247</div>
+                <div class="ks-stat-label">Total Entries</div>
+              </div>
+              <div class="ks-stat">
+                <div class="ks-stat-value" style="color:var(--success-dark)">+12</div>
+                <div class="ks-stat-label">This Week</div>
+              </div>
+              <div class="ks-stat">
+                <div class="ks-stat-value">89%</div>
+                <div class="ks-stat-label">Completion</div>
+              </div>
+            </div>
+
+            <div class="ks-toolbar">
+              <div class="ks-search">
+                <input class="input" type="text" placeholder="Search entries...">
+              </div>
+              <div style="display:flex; gap:6px">
+                <span class="demo-badge neutral">All</span>
+                <span class="demo-badge success">Active</span>
+                <span class="demo-badge warning">Pending</span>
+              </div>
+            </div>
+
+            <div class="ks-list">
+              <div class="ks-list-item">
+                <div class="ks-list-left">
+                  <div class="demo-dot success pulse"></div>
+                  <div>
+                    <div class="ks-list-name">Deploy pipeline v2</div>
+                    <div class="ks-list-sub">Started 3 hours ago</div>
+                  </div>
+                </div>
+                <div class="ks-list-right">
+                  <span class="demo-badge success">Active</span>
+                </div>
+              </div>
+              <div class="ks-list-item">
+                <div class="ks-list-left">
+                  <div class="demo-dot warning"></div>
+                  <div>
+                    <div class="ks-list-name">Database migration</div>
+                    <div class="ks-list-sub">Scheduled for tomorrow</div>
+                  </div>
+                </div>
+                <div class="ks-list-right">
+                  <div class="ks-list-value">14 tables</div>
+                  <span class="demo-badge warning">Pending</span>
+                </div>
+              </div>
+              <div class="ks-list-item">
+                <div class="ks-list-left">
+                  <div class="demo-dot muted"></div>
+                  <div>
+                    <div class="ks-list-name">Auth service refactor</div>
+                    <div class="ks-list-sub">Completed Apr 7</div>
+                  </div>
+                </div>
+                <div class="ks-list-right">
+                  <div class="ks-list-value">3 files</div>
+                  <span class="demo-badge neutral">Done</span>
+                </div>
+              </div>
+              <div class="ks-list-item">
+                <div class="ks-list-left">
+                  <div class="demo-dot danger"></div>
+                  <div>
+                    <div class="ks-list-name">CDN cache invalidation</div>
+                    <div class="ks-list-sub">Failed 20 min ago</div>
+                  </div>
+                </div>
+                <div class="ks-list-right">
+                  <span class="demo-badge danger">Failed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? '' : 'dark');
+  document.getElementById('theme-label').textContent = isDark ? 'Dark mode' : 'Light mode';
+}
+
+// Code toggle
+function toggleCode(btn) {
+  const code = btn.closest('.example').querySelector('.example-code');
+  const isOpen = code.classList.contains('open');
+  code.classList.toggle('open');
+  btn.textContent = isOpen ? 'view css' : 'hide css';
+}
+
+// Active sidebar link on scroll
+const sections = document.querySelectorAll('.section, .hero');
+const links = document.querySelectorAll('.sidebar-link');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const id = entry.target.id;
+      const active = document.querySelector(`.sidebar-link[href="#${id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => { if (s.id) observer.observe(s); });
+
+// Tab demo
+function activateTab(el) {
+  el.parentElement.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Toast demo
+function showDemoToast() {
+  const t = document.getElementById('demo-toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Animation demo
+function playSlideIn() {
+  const c = document.getElementById('anim-container');
+  c.innerHTML = '';
+  ['First item', 'Second item', 'Third item'].forEach((text, i) => {
+    const d = document.createElement('div');
+    d.className = 'demo-anim-item';
+    d.textContent = text;
+    c.appendChild(d);
+    setTimeout(() => d.classList.add('play'), i * 80);
+  });
+}
+playSlideIn();
+</script>
+</body>
+</html>
