@@ -25,7 +25,7 @@ func newDatabase(dbPath string, logger *slog.Logger) (*database, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(2)
+	db.SetMaxOpenConns(10)
 
 	d := &database{
 		db:     db,
