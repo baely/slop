@@ -20,10 +20,12 @@ type database struct {
 
 // newDatabase creates a new database connection and initializes schema
 func newDatabase(dbPath string, logger *slog.Logger) (*database, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(2)
 
 	d := &database{
 		db:     db,
