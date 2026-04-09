@@ -29,7 +29,7 @@ services:
       - staticer-data:/app/data
       - staticer-sites:/app/sites
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
