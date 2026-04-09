@@ -148,6 +148,12 @@ func (s *Server) subdomainRouter(apiMux http.Handler) http.Handler {
 			return
 		}
 
+		site, err := s.store.GetSiteByCustomDomain("blog.baileys.dev")
+		if err == nil {
+			s.serveSite(w, r, site.Subdomain)
+			return
+		}
+
 		// Unknown host
 		http.NotFound(w, r)
 	})
