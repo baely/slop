@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -22,12 +25,22 @@ type cached struct {
 	contactID      int
 	sourceID       string
 	conversationID int
+	aliasID        string
+	name           string
+}
+
+type Message struct {
+	ID          int    `json:"id"`
+	Content     string `json:"content"`
+	MessageType int    `json:"message_type"`
+	CreatedAt   int64  `json:"created_at"`
 }
 
 var (
-	cfg     config
-	cache   = map[string]*cached{}
-	cacheMu sync.Mutex
+	cfg       config
+	cache     = map[string]*cached{} // keyed by name
+	aliasByID = map[string]*cached{} // keyed by internal alias
+	cacheMu   sync.Mutex
 )
 
 func main() {
@@ -46,6 +59,7 @@ func main() {
 		port = "8080"
 	}
 
+	http.HandleFunc("/conversations/", conversationHandler)
 	http.HandleFunc("/", handler)
 	log.Printf("listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -76,6 +90,7 @@ const indexPage = `<!DOCTYPE html>
   button:disabled { opacity: 0.4; cursor: not-allowed; }
   #result { margin-top: 12px; padding: 6px 10px; font-size: 12px; display: none; }
   #result.ok { display: block; background: #fff; border: 1px solid #ddd; color: #111; }
+  #result.ok a { color: #111; }
   #result.err { display: block; background: #fff8f8; border: 1px solid #f5c0c0; color: #c00; }
 </style>
 </head>
@@ -119,12 +134,13 @@ document.getElementById('f').addEventListener('submit', async function(e) {
         message: document.getElementById('message').value
       })
     });
-    const text = await r.text();
     if (r.ok) {
-      res.textContent = 'Message sent!';
+      const data = await r.json();
+      res.innerHTML = 'Message sent! <a href="' + data.url + '">' + data.url + '</a>';
       res.className = 'ok';
       document.getElementById('message').value = '';
     } else {
+      const text = await r.text();
       res.textContent = 'Error: ' + text.trim();
       res.className = 'err';
     }
@@ -139,12 +155,28 @@ document.getElementById('f').addEventListener('submit', async function(e) {
 </body>
 </html>`
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+func conversationURL(r *http.Request, alias string) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		if r.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+	return scheme + "://" + r.Host + "/conversations/" + alias
+}
 
+func setCORSHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+
+	setCORSHeaders(w)
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
@@ -193,9 +225,91 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("sent message from %q to conversation %d", req.Name, c.conversationID)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "ok")
+	log.Printf("sent message from %q to conversation %d (alias %s)", req.Name, c.conversationID, c.aliasID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"url": conversationURL(r, c.aliasID),
+	})
+}
+
+func conversationHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+
+	setCORSHeaders(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	alias := strings.TrimPrefix(r.URL.Path, "/conversations/")
+	alias = strings.TrimSuffix(alias, "/")
+	if alias == "" {
+		http.Error(w, "conversation id required", http.StatusBadRequest)
+		return
+	}
+
+	cacheMu.Lock()
+	c, ok := aliasByID[alias]
+	cacheMu.Unlock()
+
+	if !ok {
+		http.Error(w, "conversation not found", http.StatusNotFound)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		messages, err := getMessages(c.conversationID)
+		if err != nil {
+			log.Printf("get messages error: %v", err)
+			http.Error(w, "failed to get messages", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"name":     c.name,
+			"messages": messages,
+			"url":      conversationURL(r, alias),
+		})
+
+	case http.MethodPost:
+		var req struct {
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Printf("rejected: invalid json: %v", err)
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+		if req.Message == "" {
+			http.Error(w, "message is required", http.StatusBadRequest)
+			return
+		}
+
+		if err := sendMessage(c.conversationID, req.Message); err != nil {
+			log.Printf("message error: %v", err)
+			http.Error(w, "failed to send message", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("sent message to conversation %d (alias %s) as %q", c.conversationID, alias, c.name)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"url": conversationURL(r, alias),
+		})
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func generateAlias() (string, error) {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func getOrCreate(name string) (*cached, error) {
@@ -203,7 +317,7 @@ func getOrCreate(name string) (*cached, error) {
 	defer cacheMu.Unlock()
 
 	if c, ok := cache[name]; ok {
-		log.Printf("cache hit for %q: contact=%d conversation=%d", name, c.contactID, c.conversationID)
+		log.Printf("cache hit for %q: contact=%d conversation=%d alias=%s", name, c.contactID, c.conversationID, c.aliasID)
 		return c, nil
 	}
 
@@ -220,12 +334,20 @@ func getOrCreate(name string) (*cached, error) {
 	}
 	log.Printf("created conversation %d for %q", convID, name)
 
+	alias, err := generateAlias()
+	if err != nil {
+		return nil, fmt.Errorf("generate alias: %w", err)
+	}
+
 	c := &cached{
 		contactID:      contactID,
 		sourceID:       sourceID,
 		conversationID: convID,
+		aliasID:        alias,
+		name:           name,
 	}
 	cache[name] = c
+	aliasByID[alias] = c
 	return c, nil
 }
 
@@ -317,13 +439,44 @@ func sendMessage(conversationID int, content string) error {
 	return nil
 }
 
-func chatwootRequest(method, url string, body []byte) (*http.Response, error) {
-	log.Printf("chatwoot: %s %s body=%s", method, url, body)
-	req, err := http.NewRequest(method, url, bytes.NewReader(body))
+func getMessages(conversationID int) ([]Message, error) {
+	url := fmt.Sprintf("%s/api/v1/accounts/%s/conversations/%d/messages", cfg.baseURL, cfg.accountID, conversationID)
+	resp, err := chatwootRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s %s", resp.Status, data)
+	}
+
+	var result struct {
+		Payload struct {
+			Messages []Message `json:"messages"`
+		} `json:"payload"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("parse response: %w\nbody: %s", err, data)
+	}
+
+	return result.Payload.Messages, nil
+}
+
+func chatwootRequest(method, url string, body []byte) (*http.Response, error) {
+	log.Printf("chatwoot: %s %s", method, url)
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
+	}
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("api_access_token", cfg.token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
