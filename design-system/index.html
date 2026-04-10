@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System v1.1</title>
+<style>
+/* Reset for showcase page */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: auto; overflow: auto; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111; background: #fff; }
+
+/* Showcase layout */
+.showcase { max-width: 900px; margin: 0 auto; padding: 48px 32px; }
+.showcase-header { border-bottom: 1px solid #e0e0e0; padding-bottom: 24px; margin-bottom: 40px; }
+.showcase-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.showcase-version { display: inline-block; font-size: 10px; font-family: 'Courier New', monospace; color: #999; border: 1px solid #e0e0e0; padding: 2px 8px; margin-left: 10px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.08em; }
+.showcase-subtitle { color: #888; font-size: 12px; margin-top: 6px; }
+
+.section { margin-bottom: 48px; }
+.section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #999; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+.component-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.component-label { font-size: 10px; font-family: 'Courier New', monospace; color: #bbb; display: block; margin-top: 6px; }
+
+.demo-block { border: 1px solid #e0e0e0; padding: 24px; margin-bottom: 16px; background: #fafafa; }
+.demo-block-label { font-size: 10px; font-family: 'Courier New', monospace; color: #bbb; margin-bottom: 12px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.color-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-swatch { width: 64px; }
+.color-box { height: 40px; border: 1px solid #e0e0e0; margin-bottom: 4px; }
+.color-name { font-size: 10px; font-family: 'Courier New', monospace; color: #888; }
+
+/* Import design system classes */
+.hidden { display: none !important; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 11px; color: #999; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input { width: 100%; padding: 7px 9px; border: 1px solid #ddd; font-size: 13px; font-family: inherit; color: #111; outline: none; }
+.form-group input:focus { border-color: #111; }
+.error-msg { font-size: 12px; color: #c00; border: 1px solid #f5c0c0; background: #fff8f8; padding: 6px 10px; margin-bottom: 10px; }
+
+.btn-primary { display: inline-block; padding: 8px 16px; background: #111; color: #fff; border: 1px solid #111; font-size: 12px; font-family: inherit; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.btn-primary:hover:not(:disabled) { background: #333; border-color: #333; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary.block { display: block; width: 100%; }
+.btn-secondary-outline { padding: 6px 14px; background: #fff; border: 1px solid #ddd; font-size: 12px; font-family: inherit; color: #555; cursor: pointer; }
+.btn-secondary-outline:hover { border-color: #999; color: #111; }
+.btn-danger { padding: 4px 10px; background: transparent; border: 1px solid #f5c0c0; color: #c00; font-size: 11px; font-family: inherit; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
+.btn-danger:hover { background: #fff8f8; }
+.btn-sidebar { display: block; width: 100%; padding: 6px 8px; background: #fff; border: 1px solid #ddd; font-size: 12px; font-family: inherit; color: #111; cursor: pointer; text-align: left; }
+.btn-sidebar:hover { background: #f5f5f5; }
+
+.note-list { list-style: none; padding: 4px; border: 1px solid #e0e0e0; }
+.note-item { padding: 6px 8px; cursor: pointer; border-left: 2px solid transparent; margin-bottom: 1px; }
+.note-item:hover { background: #f5f5f5; }
+.note-item.active { border-left-color: #111; background: #f0f0f0; font-weight: 600; }
+.note-item-title { display: block; font-size: 12px; font-weight: 500; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-item-date { display: block; font-family: 'Courier New', monospace; font-size: 10px; color: #aaa; margin-top: 2px; }
+
+.mode-toggle { display: inline-flex; border: 1px solid #ddd; }
+.mode-btn { padding: 3px 10px; border: none; background: transparent; font-size: 11px; font-family: inherit; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; cursor: pointer; }
+.mode-btn + .mode-btn { border-left: 1px solid #ddd; }
+.mode-btn.active { background: #111; color: #fff; }
+
+.folder-item { display: flex; align-items: center; gap: 5px; padding: 5px 8px; cursor: pointer; font-size: 12px; color: #555; user-select: none; border-left: 2px solid transparent; border: 1px solid #e0e0e0; margin-bottom: 2px; }
+.folder-item:hover { background: #f0f0f0; }
+.folder-arrow { font-size: 8px; color: #aaa; flex-shrink: 0; width: 10px; text-align: center; }
+.folder-name { font-weight: 600; color: #444; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.editor-stats { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid #e0e0e0; background: #fafafa; font-size: 11px; font-family: 'Courier New', monospace; color: #999; letter-spacing: 0.02em; }
+.stats-sep { color: #ddd; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; }
+
+.overlay-demo { position: relative; border: 1px solid #e0e0e0; height: 300px; overflow: hidden; background: #fff; display: flex; align-items: center; justify-content: center; }
+.overlay-card { width: 340px; padding: 32px; border: 1px solid #ddd; background: #fff; }
+.diary-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.overlay-subtitle { color: #666; margin-bottom: 20px; font-size: 12px; }
+
+.app-demo { height: 360px; display: flex; border: 1px solid #e0e0e0; overflow: hidden; }
+#sidebar-demo { width: 220px; min-width: 220px; display: flex; flex-direction: column; border-right: 1px solid #e0e0e0; background: #fafafa; }
+.sidebar-header { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+.sidebar-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #999; }
+.sidebar-actions { padding: 8px; border-bottom: 1px solid #e0e0e0; }
+.sidebar-footer { padding: 8px; border-top: 1px solid #e0e0e0; display: flex; flex-direction: column; gap: 4px; }
+.editor-panel-demo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.editor-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+.note-status { margin-left: auto; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; }
+.note-status.unsaved { color: #111; }
+.editor-content { flex: 1; padding: 24px; overflow-y: auto; }
+.editor-content p { font-size: 15px; line-height: 1.65; color: #111; margin-bottom: 8px; }
+.editor-stats-bar { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-top: 1px solid #e0e0e0; background: #fafafa; flex-shrink: 0; font-size: 11px; font-family: 'Courier New', monospace; color: #999; }
+</style>
+</head>
+<body>
+
+<div class="showcase">
+  <div class="showcase-header">
+    <div>
+      <span class="showcase-title">Design System</span>
+      <span class="showcase-version">v1.1</span>
+    </div>
+    <p class="showcase-subtitle">Minimal, high-contrast component library — system-ui, #111 on #fff</p>
+  </div>
+
+  <!-- Colors -->
+  <div class="section">
+    <div class="section-title">Palette</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-box" style="background:#111"></div>
+        <div class="color-name">#111</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#333"></div>
+        <div class="color-name">#333</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#555"></div>
+        <div class="color-name">#555</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#777"></div>
+        <div class="color-name">#777</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#999"></div>
+        <div class="color-name">#999</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#aaa"></div>
+        <div class="color-name">#aaa</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#bbb"></div>
+        <div class="color-name">#bbb</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#ddd"></div>
+        <div class="color-name">#ddd</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#e0e0e0"></div>
+        <div class="color-name">#e0e0e0</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#f0f0f0"></div>
+        <div class="color-name">#f0f0f0</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#f5f5f5"></div>
+        <div class="color-name">#f5f5f5</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#fafafa"></div>
+        <div class="color-name">#fafafa</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#fff"></div>
+        <div class="color-name">#fff</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#c00"></div>
+        <div class="color-name">#c00</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#f5c0c0"></div>
+        <div class="color-name">#f5c0c0</div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-box" style="background:#fff8f8"></div>
+        <div class="color-name">#fff8f8</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="section">
+    <div class="section-title">Buttons</div>
+    <div class="component-row">
+      <div>
+        <button class="btn-primary">Primary</button>
+        <span class="component-label">.btn-primary</span>
+      </div>
+      <div>
+        <button class="btn-primary" disabled>Disabled</button>
+        <span class="component-label">.btn-primary:disabled</span>
+      </div>
+      <div>
+        <button class="btn-secondary-outline">Secondary</button>
+        <span class="component-label">.btn-secondary-outline</span>
+      </div>
+      <div>
+        <button class="btn-danger">Delete</button>
+        <span class="component-label">.btn-danger</span>
+      </div>
+    </div>
+    <div class="demo-block" style="width: 220px;">
+      <span class="demo-block-label">.btn-sidebar (in sidebar context)</span>
+      <button class="btn-sidebar">New note</button>
+      <button class="btn-sidebar" style="color:#777; margin-top:4px;">Lock</button>
+    </div>
+    <div class="demo-block" style="width: 220px;">
+      <span class="demo-block-label">.btn-primary.block (full-width)</span>
+      <button class="btn-primary block">Sign in</button>
+    </div>
+  </div>
+
+  <!-- Forms -->
+  <div class="section">
+    <div class="section-title">Forms</div>
+    <div style="max-width: 340px;">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" placeholder="Enter username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" placeholder="Enter password">
+      </div>
+      <div class="error-msg">Invalid username or password.</div>
+    </div>
+  </div>
+
+  <!-- Mode Toggle -->
+  <div class="section">
+    <div class="section-title">Mode Toggle</div>
+    <div class="component-row">
+      <div>
+        <div class="mode-toggle">
+          <button class="mode-btn active">Edit</button>
+          <button class="mode-btn">Preview</button>
+        </div>
+        <span class="component-label">.mode-toggle / .mode-btn</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note List -->
+  <div class="section">
+    <div class="section-title">Note List</div>
+    <ul class="note-list" style="max-width: 220px;">
+      <li class="note-item active">
+        <span class="note-item-title">Meeting notes</span>
+        <span class="note-item-date">2026-04-10</span>
+      </li>
+      <li class="note-item">
+        <span class="note-item-title">Ideas for the weekend project</span>
+        <span class="note-item-date">2026-04-09</span>
+      </li>
+      <li class="note-item">
+        <span class="note-item-title">Shopping list</span>
+        <span class="note-item-date">2026-04-08</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Folder Tree -->
+  <div class="section">
+    <div class="section-title">Folder Tree</div>
+    <div style="max-width: 220px;">
+      <div class="folder-item">
+        <span class="folder-arrow">▶</span>
+        <span class="folder-name">Work</span>
+      </div>
+      <div class="folder-item" style="padding-left: 22px;">
+        <span class="folder-arrow"></span>
+        <span class="folder-name">Projects</span>
+      </div>
+      <div class="folder-item">
+        <span class="folder-arrow">▼</span>
+        <span class="folder-name">Personal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="section">
+    <div class="section-title">Stats Bar</div>
+    <div class="editor-stats">
+      <span>142 words</span>
+      <span class="stats-sep">·</span>
+      <span>892 chars</span>
+      <span class="stats-sep">·</span>
+      <span>1 min read</span>
+    </div>
+  </div>
+
+  <!-- Overlay / Auth -->
+  <div class="section">
+    <div class="section-title">Overlay (Login)</div>
+    <div class="overlay-demo">
+      <div class="overlay-card">
+        <div class="diary-title">My Diary</div>
+        <div class="overlay-subtitle">Sign in to continue</div>
+        <div class="form-group">
+          <label>Passphrase</label>
+          <input type="password" placeholder="Enter passphrase">
+        </div>
+        <button class="btn-primary block">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Layout -->
+  <div class="section">
+    <div class="section-title">App Layout (Sidebar + Editor)</div>
+    <div class="app-demo">
+      <div id="sidebar-demo">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Diary</div>
+        </div>
+        <div class="sidebar-actions">
+          <button class="btn-sidebar">+ New note</button>
+        </div>
+        <ul class="note-list">
+          <li class="note-item active">
+            <span class="note-item-title">Today's entry</span>
+            <span class="note-item-date">2026-04-10</span>
+          </li>
+          <li class="note-item">
+            <span class="note-item-title">Yesterday</span>
+            <span class="note-item-date">2026-04-09</span>
+          </li>
+        </ul>
+        <div class="sidebar-footer">
+          <button class="btn-sidebar" style="color:#777;">Lock</button>
+        </div>
+      </div>
+      <div class="editor-panel-demo">
+        <div class="editor-toolbar">
+          <div class="mode-toggle">
+            <button class="mode-btn active">Edit</button>
+            <button class="mode-btn">Preview</button>
+          </div>
+          <span class="note-status unsaved">Unsaved</span>
+        </div>
+        <div class="editor-content">
+          <p>Start typing your note here...</p>
+        </div>
+        <div class="editor-stats-bar">
+          <span>0 words</span>
+          <span style="color:#ddd">·</span>
+          <span>0 chars</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <div class="section">
+    <div class="section-title">Typography (Preview)</div>
+    <div style="max-width: 700px; font-size: 15px; line-height: 1.7; color: #111; border: 1px solid #e0e0e0; padding: 32px;">
+      <h1 style="font-size:1.5rem; font-weight:700; margin:0 0 6px;">Heading 1</h1>
+      <h2 style="font-size:1.2rem; font-weight:700; margin:20px 0 6px;">Heading 2</h2>
+      <h3 style="font-size:1rem; font-weight:700; margin:20px 0 6px;">Heading 3</h3>
+      <p style="margin-bottom:10px;">Body text. The quick brown fox jumps over the lazy dog. This is what paragraphs look like with <strong>bold text</strong> and <em>italic text</em> inline.</p>
+      <blockquote style="border-left:3px solid #ddd; padding-left:14px; color:#666; margin:10px 0;">
+        A blockquote pulls text out to give it emphasis and visual separation.
+      </blockquote>
+      <p style="margin-bottom:10px;">Inline <code style="font-family:'Courier New',monospace; font-size:0.875em; background:#f5f5f5; border:1px solid #e8e8e8; padding:1px 4px;">code</code> looks like this.</p>
+      <pre style="background:#f5f5f5; border:1px solid #e8e8e8; padding:12px; margin:10px 0; overflow-x:auto;"><code style="font-family:'Courier New',monospace; font-size:0.875em;">// Code block
+const greeting = "Hello, world!";
+console.log(greeting);</code></pre>
+      <ul style="padding-left:24px; margin-bottom:10px;">
+        <li>Unordered list item</li>
+        <li>Another list item</li>
+      </ul>
+      <ol style="padding-left:24px; margin-bottom:10px;">
+        <li>Ordered list item</li>
+        <li>Another ordered item</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
