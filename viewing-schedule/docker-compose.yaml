@@ -1,0 +1,27 @@
+services:
+  viewing-schedule:
+    build: .
+    image: viewing-schedule:latest
+    container_name: viewing-schedule
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      ADDR: ":8080"
+      DB_PATH: "/data/viewing.db"
+      TMDB_TOKEN: "${TMDB_TOKEN:-}"
+      TITLE: "${TITLE:-Viewing Schedule}"
+      DATE_RANGE: "${DATE_RANGE:-}"
+      # Set TRUST_PROXY=1 when running behind a reverse proxy that sets
+      # X-Forwarded-For. The admin panel uses the resulting client IP to
+      # gate access to the 10.x.x.x and 192.168.x.x ranges.
+      TRUST_PROXY: "${TRUST_PROXY:-0}"
+      # Letterboxd diary sync (history view + CSV export). Leave empty to
+      # disable. SYNC_INTERVAL accepts Go duration syntax (30m, 1h, 6h, ...).
+      LETTERBOXD_USER: "${LETTERBOXD_USER:-}"
+      SYNC_INTERVAL: "${SYNC_INTERVAL:-6h}"
+    volumes:
+      - viewing-data:/data
+
+volumes:
+  viewing-data:

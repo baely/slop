@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}} — Admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111; background: #f7f7f8; margin: 0; }
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+h1 { font-size: 18px; font-weight: 600; }
+.badge { font-size: 10px; padding: 2px 6px; background: #111; color: #fff; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+.badge.warn { background: #c33; }
+.card { background: #fff; border: 1px solid #e6e6e8; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+.card h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+form.entry-form { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 8px; align-items: end; }
+form.entry-form label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 3px; }
+form.entry-form input, form.entry-form textarea { width: 100%; padding: 6px 8px; font: inherit; border: 1px solid #d4d4d8; border-radius: 4px; background: #fff; }
+form.entry-form .row-full { grid-column: 1 / -1; }
+form.entry-form .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+button { padding: 6px 12px; font: inherit; border: 1px solid #111; background: #111; color: #fff; border-radius: 4px; cursor: pointer; }
+button.secondary { background: #fff; color: #111; }
+button.danger { border-color: #c33; background: #c33; color: #fff; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 12px; }
+th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; font-weight: 600; }
+td.movies { color: #444; }
+td.movies .m { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+td.movies img { width: 22px; height: 33px; object-fit: cover; border-radius: 1px; }
+td.actions { width: 1%; white-space: nowrap; }
+.muted { color: #888; }
+.empty { color: #999; padding: 16px; text-align: center; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>{{.Title}} — Admin</h1>
+    <div>
+      {{if .HasTMDB}}<span class="badge">TMDB enabled</span>{{else}}<span class="badge warn">TMDB token missing</span>{{end}}
+    </div>
+  </header>
+
+  {{if .Flash}}
+  <div class="card" style="background:#eef9ee;border-color:#bde0bd;color:#244;">
+    {{.Flash}}
+  </div>
+  {{end}}
+
+  <div class="card">
+    <h2>Add or update entry</h2>
+    <form class="entry-form" method="POST" action="/admin/entries">
+      <div>
+        <label for="date">Date</label>
+        <input type="date" id="date" name="date" required>
+      </div>
+      <div>
+        <label for="movie1">Movie 1</label>
+        <input type="text" id="movie1" name="movie1" placeholder="The Apartment (1960)">
+      </div>
+      <div>
+        <label for="movie2">Movie 2 (optional)</label>
+        <input type="text" id="movie2" name="movie2" placeholder="Title (Year)">
+      </div>
+      <div class="row-full">
+        <label for="reason">Reason / note</label>
+        <textarea id="reason" name="reason" rows="2" placeholder="Why these films tonight?"></textarea>
+      </div>
+      <div class="actions">
+        <button type="submit">Save entry</button>
+      </div>
+    </form>
+    <p class="muted" style="margin-top:8px;font-size:11px;">Title format: <code>Name (Year)</code>. TMDB metadata is fetched automatically when a token is configured.</p>
+  </div>
+
+  {{if .HasSync}}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">Letterboxd diary sync</h2>
+      <span class="muted" style="font-size:11px;">user <code>{{.SyncUser}}</code>{{if .SyncInterval}} · auto every {{.SyncInterval}}{{else}} · auto-sync disabled{{end}}</span>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <div class="muted" style="font-size:12px;">
+        <strong>{{.SyncCount}}</strong> viewings stored ·
+        last sync {{if .LastSync}}<strong>{{.LastSync}}</strong>{{else}}<em>never</em>{{end}}
+      </div>
+      <div style="display:flex;gap:6px;margin-left:auto;">
+        <form method="POST" action="/admin/sync" title="Stop after seeing already-known viewings">
+          <button type="submit">Sync now</button>
+        </form>
+        <form method="POST" action="/admin/sync"
+              onsubmit="return confirm('Re-scrape the entire diary? This is slow for long histories.');"
+              title="Re-scrape everything">
+          <input type="hidden" name="force" value="1">
+          <button type="submit" class="secondary">Force full sync</button>
+        </form>
+        <a href="/admin/viewings.csv" class="secondary"
+           style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid #111;border-radius:4px;text-decoration:none;color:#111;background:#fff;">
+          Download CSV
+        </a>
+        <a href="/history" class="secondary"
+           style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid #111;border-radius:4px;text-decoration:none;color:#111;background:#fff;">
+          View history →
+        </a>
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  {{if .HasLetterboxd}}
+  <div class="card">
+    <h2>Import from Letterboxd</h2>
+    <form method="POST" action="/admin/letterboxd/preview" class="entry-form">
+      <div style="grid-column: 1 / -1;">
+        <label for="lb-url">Letterboxd URL</label>
+        <input type="text" id="lb-url" name="url" placeholder="https://letterboxd.com/baely/watchlist/" required>
+      </div>
+      <div>
+        <label for="lb-start">Start date</label>
+        <input type="date" id="lb-start" name="start_date">
+      </div>
+      <div>
+        <label for="lb-cadence">Cadence</label>
+        <select id="lb-cadence" name="cadence" style="width:100%;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;font:inherit;">
+          <option value="weekly" selected>Weekly</option>
+          <option value="weekdays">Weekdays</option>
+          <option value="daily">Daily</option>
+        </select>
+      </div>
+      <div></div>
+      <div class="actions">
+        <button type="submit" class="secondary">Preview films</button>
+      </div>
+    </form>
+    <p class="muted" style="margin-top:8px;font-size:11px;">
+      Supports any user page that lists films: <code>/&lt;user&gt;/watchlist/</code>,
+      <code>/&lt;user&gt;/films/</code>, <code>/&lt;user&gt;/films/diary/</code>,
+      or <code>/&lt;user&gt;/list/&lt;slug&gt;/</code>. Pagination is followed automatically.
+    </p>
+  </div>
+  {{end}}
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">Schedule ({{len .Entries}})</h2>
+      {{if .HasTMDB}}
+      <div style="display:flex;gap:6px;">
+        <form method="POST" action="/admin/refresh-tmdb" title="Re-enrich entries missing TMDB metadata">
+          <button type="submit" class="secondary">Refresh missing TMDB</button>
+        </form>
+        <form method="POST" action="/admin/refresh-tmdb"
+              onsubmit="return confirm('Re-fetch TMDB metadata for ALL entries (including already enriched ones)?');"
+              title="Re-fetch TMDB metadata for all entries">
+          <input type="hidden" name="force" value="1">
+          <button type="submit" class="secondary">Re-enrich all</button>
+        </form>
+      </div>
+      {{end}}
+    </div>
+    {{if .Entries}}
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Movies</th><th>Reason</th><th></th></tr>
+      </thead>
+      <tbody>
+        {{range .Entries}}
+        <tr>
+          <td><strong>{{.Date}}</strong><div class="muted">{{.Day}}</div></td>
+          <td class="movies">
+            {{range .Movies}}
+              <div class="m">
+                {{if .Poster}}<img src="{{.Poster}}" alt="">{{end}}
+                <div>
+                  <div>{{if .TMDBTitle}}{{.TMDBTitle}}{{else}}{{.Title}}{{end}} {{if .Year}}<span class="muted">({{.Year}})</span>{{end}}</div>
+                  {{if .Director}}<div class="muted" style="font-size:10px;">{{.Director}}{{if .Runtime}} · {{.Runtime}}m{{end}}</div>{{end}}
+                </div>
+              </div>
+            {{else}}
+              <span class="muted">No movies</span>
+            {{end}}
+          </td>
+          <td><span class="muted">{{.Reason}}</span></td>
+          <td class="actions">
+            <form method="POST" action="/admin/entries/delete" onsubmit="return confirm('Delete entry on {{.Date}}?');">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" class="danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <div class="empty">No entries yet. Add one above.</div>
+    {{end}}
+  </div>
+
+  <p class="muted" style="font-size:11px;text-align:center;">
+    Admin access is restricted to private network ranges (10.0.0.0/8, 192.168.0.0/16) and loopback.
+  </p>
+</div>
+</body>
+</html>

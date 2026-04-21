@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}} — Letterboxd Import</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111; background: #f7f7f8; margin: 0; }
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+h1 { font-size: 18px; font-weight: 600; }
+a { color: #0070cc; }
+.card { background: #fff; border: 1px solid #e6e6e8; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+.card h2 { font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+.muted { color: #888; font-size: 11px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 6px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; font-size: 12px; }
+th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; font-weight: 600; }
+input[type="date"], input[type="text"] { font: inherit; padding: 4px 6px; border: 1px solid #d4d4d8; border-radius: 3px; }
+input[type="date"] { width: 130px; }
+input[type="text"] { width: 100%; }
+button { padding: 6px 14px; font: inherit; border: 1px solid #111; background: #111; color: #fff; border-radius: 4px; cursor: pointer; }
+button.secondary { background: #fff; color: #111; }
+.actions { display: flex; gap: 8px; align-items: center; }
+.row-toggle { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Letterboxd import preview</h1>
+    <a href="/admin">&larr; back to admin</a>
+  </header>
+
+  <div class="card">
+    <div class="muted">Source: <a href="{{.SourceURL}}" target="_blank" rel="noreferrer">{{.SourceURL}}</a></div>
+    <div class="muted">Found {{len .Films}} films · start {{.StartDate}} · cadence {{.Cadence}}</div>
+    {{if not .HasTMDB}}<div class="muted" style="color:#c33;">TMDB token not configured — imported entries will save without posters/metadata.</div>{{end}}
+  </div>
+
+  <form method="POST" action="/admin/letterboxd/import">
+    <input type="hidden" name="count" value="{{len .Films}}">
+    <input type="hidden" name="source" value="{{.SourceURL}}">
+
+    <div class="card">
+      <div class="row-toggle">
+        <label><input type="checkbox" id="toggle-all" checked> Select all</label>
+        <span class="muted">Edit dates and titles below before importing.</span>
+      </div>
+      <table>
+        <thead><tr><th></th><th>Date</th><th>Title</th><th>Letterboxd</th></tr></thead>
+        <tbody>
+          {{range .Films}}
+          <tr>
+            <td><input type="checkbox" name="include_{{.Index}}" value="1" checked class="incl"></td>
+            <td><input type="date" name="date_{{.Index}}" value="{{.Date}}" required></td>
+            <td><input type="text" name="title_{{.Index}}" value="{{.FullTitle}}" required></td>
+            <td><a href="{{.Link}}" target="_blank" rel="noreferrer" class="muted">{{.Slug}}</a></td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card actions">
+      <button type="submit">Import {{len .Films}} films</button>
+      <a href="/admin" class="muted">Cancel</a>
+    </div>
+  </form>
+</div>
+<script>
+document.getElementById('toggle-all').addEventListener('change', function(e){
+  document.querySelectorAll('.incl').forEach(c => c.checked = e.target.checked);
+});
+</script>
+</body>
+</html>
