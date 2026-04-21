@@ -11,10 +11,9 @@ COPY . .
 ENV CGO_ENABLED=0 GOOS=linux
 RUN go build -trimpath -ldflags="-s -w" -o /out/viewing-schedule ./cmd/server
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:latest
 WORKDIR /app
 COPY --from=build /out/viewing-schedule /app/viewing-schedule
-USER nonroot:nonroot
 EXPOSE 8080
 ENV ADDR=":8080" DB_PATH="/data/viewing.db"
 VOLUME ["/data"]

@@ -1,11 +1,7 @@
 services:
-  viewing-schedule:
+  viewing:
     build: .
-    image: viewing-schedule:latest
-    container_name: viewing-schedule
     restart: unless-stopped
-    ports:
-      - "${PORT:-8080}:8080"
     environment:
       ADDR: ":8080"
       DB_PATH: "/data/viewing.db"
@@ -20,6 +16,10 @@ services:
       # disable. SYNC_INTERVAL accepts Go duration syntax (30m, 1h, 6h, ...).
       LETTERBOXD_USER: "${LETTERBOXD_USER:-}"
       SYNC_INTERVAL: "${SYNC_INTERVAL:-6h}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.viewing.rule=Host(`viewing.baileys.app`)
+      - traefik.http.services.viewing.loadbalancer.server.port=8080
     volumes:
       - viewing-data:/data
 
