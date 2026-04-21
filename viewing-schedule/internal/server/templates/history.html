@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}} — History</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; color: #111; background: #fff; -webkit-font-smoothing: antialiased; }
+
+.app { max-width: 1100px; margin: 0 auto; padding: 24px 24px 96px; }
+
+header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 32px; height: 32px; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+.logo-text { font-size: 18px; font-weight: 600; color: #111; letter-spacing: -0.01em; }
+.subtitle { font-size: 11px; color: #999; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 8px; }
+
+.nav { display: flex; gap: 6px; align-items: center; font-size: 12px; flex-wrap: wrap; }
+.nav a { color: #666; text-decoration: none; padding: 4px 8px; border: 1px solid #e0e0e0; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.nav a.active { background: #111; color: #fff; border-color: #111; }
+
+.summary { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; color: #555; font-size: 12px; }
+.summary div { display: flex; flex-direction: column; }
+.summary strong { color: #111; font-size: 18px; font-weight: 600; }
+.summary span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; }
+
+/* Side month index, sticky */
+.layout { display: grid; grid-template-columns: 56px 1fr; gap: 24px; align-items: start; }
+.month-rail { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 4px; padding-top: 36px; }
+.month-rail a { display: block; padding: 6px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; color: #aaa; text-decoration: none; border-left: 2px solid transparent; transition: color 0.1s, border-color 0.1s, background 0.1s; }
+.month-rail a:hover { color: #111; }
+.month-rail a.has-data { color: #555; font-weight: 600; }
+.month-rail a.active { color: #fff; background: #111; border-color: #111; }
+.month-rail .count { font-size: 9px; color: #ccc; font-weight: 400; display: block; margin-top: 1px; }
+.month-rail a.has-data .count { color: #888; }
+.month-rail a.active .count { color: #ddd; }
+
+.months { display: flex; flex-direction: column; gap: 32px; }
+.month { scroll-margin-top: 16px; }
+.month-header { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid #e6e6e8; }
+.month-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.month-count { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.dow { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #bbb; text-align: center; padding: 4px 0 2px; }
+
+/* Base day cell - same shape regardless of how many films are in it. */
+.day {
+  aspect-ratio: 1/1;
+  background: #f7f7f8;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.day.empty { background: transparent; }
+
+/* The date badge sits on top of everything, top-left. */
+.day .date-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Empty days: just the date, no card chrome. */
+.day:not(.has-viewing) .date-badge { color: #bbb; }
+
+/* Days with viewings: poster strip fills the cell, date overlays it. */
+.day.has-viewing { background: #111; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.day.has-viewing:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); z-index: 3; }
+.day.has-viewing .date-badge {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.35));
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Today indicator: blue ring around the cell. */
+.day.today { box-shadow: inset 0 0 0 2px #0070cc, 0 1px 2px rgba(0,0,0,0.08); }
+.day.has-viewing.today { box-shadow: inset 0 0 0 2px #0070cc, 0 4px 12px rgba(0,0,0,0.12); }
+.day.today .date-badge { color: #0070cc; background: #fff; }
+.day.has-viewing.today .date-badge { color: #fff; background: #0070cc; }
+
+/* Poster strip: fills cell, splits adaptively based on count. */
+.day .strip { position: absolute; inset: 0; display: flex; gap: 1px; background: #111; }
+.day .strip .slot {
+  flex: 1 1 0;
+  position: relative;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+.day .strip .slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Fallback when there's no poster image: show short title. */
+.day .strip .slot .nofilm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 9px;
+  color: #888;
+  padding: 4px;
+  line-height: 1.2;
+}
+
+/* Bigger day cells on small viewports for readability */
+@media (min-width: 700px) {
+  .month-grid { gap: 8px; }
+}
+@media (max-width: 600px) {
+  .layout { grid-template-columns: 40px 1fr; gap: 12px; }
+  .app { padding: 16px 12px 64px; }
+  .month-rail a { font-size: 9px; }
+}
+
+.empty-state { text-align: center; padding: 64px 16px; color: #999; }
+.empty-state h2 { font-size: 16px; color: #555; margin-bottom: 8px; }
+.empty-state code { background: #f5f5f5; padding: 2px 6px; border-radius: 2px; font-family: ui-monospace, monospace; font-size: 12px; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-start; justify-content: center; padding: 32px 16px; z-index: 100; overflow-y: auto; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 6px; width: 100%; max-width: 720px; padding: 24px; box-shadow: 0 12px 36px rgba(0,0,0,0.3); }
+.modal h2 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin-bottom: 16px; }
+.viewing { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid #f0f0f0; }
+.viewing:first-of-type { border-top: none; padding-top: 0; }
+.viewing img { width: 110px; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.viewing .no-poster { width: 110px; aspect-ratio: 2/3; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 9px; text-transform: uppercase; }
+.v-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.v-info h3 .yr { font-weight: 400; color: #999; }
+.v-meta { font-size: 11px; color: #888; margin-bottom: 4px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.v-meta .stars { color: #f5a623; font-weight: 600; letter-spacing: 0.05em; }
+.v-meta .like { color: #c33; }
+.v-meta .rewatch { color: #888; font-style: italic; }
+.v-overview { font-size: 12px; color: #444; line-height: 1.5; margin-top: 8px; }
+.v-link { font-size: 11px; margin-top: 8px; }
+.v-link a { color: #0070cc; text-decoration: none; }
+.modal-close { float: right; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; padding: 0 4px; line-height: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">VS</div>
+      <div class="logo-text">{{.Title}}</div>
+      <span class="subtitle">History {{if .User}}· {{.User}}{{end}}</span>
+    </div>
+    <div class="nav">
+      <a href="/">← Schedule</a>
+      {{range .Years}}
+        <a href="/history?year={{.}}"{{if eq . $.Year}} class="active"{{end}}>{{.}}</a>
+      {{end}}
+    </div>
+  </header>
+
+  {{if not .HasAny}}
+  <div class="empty-state">
+    <h2>No viewings yet</h2>
+    <p>Set <code>LETTERBOXD_USER</code> and click <strong>Sync now</strong> on the admin panel to import your diary.</p>
+  </div>
+  {{else}}
+  <div class="summary" id="summary"></div>
+  <div class="layout">
+    <nav class="month-rail" id="rail" aria-label="Jump to month"></nav>
+    <div class="months" id="months"></div>
+  </div>
+  {{end}}
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modal-close" aria-label="Close">×</button>
+    <h2 id="modal-date"></h2>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const YEAR = {{.Year}};
+const TODAY = (() => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+})();
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function escapeHTML(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pad(n) { return String(n).padStart(2,'0'); }
+function dateStr(y,m,d) { return y + '-' + pad(m+1) + '-' + pad(d); }
+function stars(rating) {
+  if (!rating) return '';
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return '★'.repeat(full) + (half ? '½' : '');
+}
+function displayTitle(v) {
+  if (v.tmdb_title) return v.tmdb_title;
+  return String(v.title || '').replace(/\s*\(\d{4}\)\s*$/, '').trim();
+}
+
+function renderSummary(viewings) {
+  const totals = { count: 0, rated: 0, liked: 0, rewatch: 0, films: new Set() };
+  Object.values(viewings).forEach(arr => arr.forEach(v => {
+    totals.count++;
+    if (v.rating) totals.rated++;
+    if (v.liked) totals.liked++;
+    if (v.rewatch) totals.rewatch++;
+    if (v.slug) totals.films.add(v.slug);
+  }));
+  document.getElementById('summary').innerHTML =
+    '<div><strong>' + totals.count + '</strong><span>viewings</span></div>' +
+    '<div><strong>' + totals.films.size + '</strong><span>unique films</span></div>' +
+    '<div><strong>' + totals.rated + '</strong><span>rated</span></div>' +
+    '<div><strong>' + totals.liked + '</strong><span>liked</span></div>' +
+    '<div><strong>' + totals.rewatch + '</strong><span>rewatches</span></div>';
+}
+
+// Build a day cell. The cell shape is identical regardless of how many films
+// were watched that day:
+//   - 0 films: muted background + date number only
+//   - N films: poster strip fills the cell (N vertical slices), date overlays
+//     the top-left corner with a translucent badge for legibility
+function dayCellHTML(date, items, isToday) {
+  const dnum = parseInt(date.slice(8,10), 10);
+  const cls = ['day'];
+  if (items && items.length) cls.push('has-viewing');
+  if (isToday) cls.push('today');
+
+  const tooltip = items ? items.map(displayTitle).join(' · ') : '';
+  let inner = '<div class="date-badge">' + dnum + '</div>';
+  if (items && items.length) {
+    let slots = '';
+    items.slice(0, 3).forEach(v => {
+      if (v.poster) {
+        slots += '<div class="slot"><img src="' + escapeHTML(v.poster) + '" alt="' + escapeHTML(displayTitle(v)) + '"></div>';
+      } else {
+        slots += '<div class="slot"><div class="nofilm">' + escapeHTML(displayTitle(v)).slice(0, 24) + '</div></div>';
+      }
+    });
+    inner += '<div class="strip">' + slots + '</div>';
+  }
+  return '<div class="' + cls.join(' ') + '" data-date="' + date + '"' + (tooltip ? ' title="' + escapeHTML(tooltip) + '"' : '') + '>' + inner + '</div>';
+}
+
+function renderCalendar(viewings) {
+  renderSummary(viewings);
+
+  // Per-month counts.
+  const monthCounts = Array(12).fill(0);
+  Object.entries(viewings).forEach(([date, arr]) => {
+    const m = parseInt(date.slice(5,7), 10) - 1;
+    if (m >= 0 && m < 12) monthCounts[m] += arr.length;
+  });
+
+  // Side rail.
+  let rail = '';
+  for (let m = 0; m < 12; m++) {
+    const cls = ['rail-month'];
+    if (monthCounts[m] > 0) cls.push('has-data');
+    rail += '<a href="#m' + m + '" data-month="' + m + '" class="' + (monthCounts[m] > 0 ? 'has-data' : '') + '">' +
+      MONTHS_SHORT[m] + '<span class="count">' + (monthCounts[m] || '') + '</span></a>';
+  }
+  document.getElementById('rail').innerHTML = rail;
+
+  // Months.
+  let html = '';
+  for (let m = 0; m < 12; m++) {
+    html += '<section class="month" id="m' + m + '">';
+    html += '<div class="month-header">';
+    html += '<div class="month-title">' + MONTHS[m] + ' <span style="color:#bbb;font-weight:400;font-size:13px;">' + YEAR + '</span></div>';
+    html += '<div class="month-count">' + (monthCounts[m] ? monthCounts[m] + ' viewings' : '—') + '</div>';
+    html += '</div>';
+    html += '<div class="month-grid">';
+    DOW.forEach(d => { html += '<div class="dow">' + d + '</div>'; });
+
+    const first = new Date(YEAR, m, 1);
+    let weekday = (first.getDay() + 6) % 7; // Mon=0
+    for (let i = 0; i < weekday; i++) html += '<div class="day empty"></div>';
+    const daysInMonth = new Date(YEAR, m+1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = dateStr(YEAR, m, d);
+      const items = viewings[ds];
+      html += dayCellHTML(ds, items, ds === TODAY);
+    }
+    html += '</div></section>';
+  }
+  document.getElementById('months').innerHTML = html;
+
+  // Click handler.
+  document.getElementById('months').addEventListener('click', e => {
+    const t = e.target.closest('.day.has-viewing');
+    if (!t) return;
+    const ds = t.getAttribute('data-date');
+    openModal(ds, viewings[ds] || []);
+  });
+
+  // Scroll-spy for the side rail.
+  const railLinks = Array.from(document.querySelectorAll('.month-rail a'));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const m = entry.target.id.slice(1);
+        railLinks.forEach(a => a.classList.toggle('active', a.dataset.month === m));
+      }
+    });
+  }, { rootMargin: '-30% 0px -65% 0px', threshold: 0 });
+  document.querySelectorAll('.month').forEach(s => obs.observe(s));
+
+  // If today is in this year, scroll to its month on first paint.
+  if (TODAY.startsWith(String(YEAR) + '-')) {
+    const tm = parseInt(TODAY.slice(5,7), 10) - 1;
+    const target = document.getElementById('m' + tm);
+    if (target) target.scrollIntoView({ behavior: 'auto', block: 'start' });
+  }
+}
+
+function openModal(date, items) {
+  const d = new Date(date + 'T12:00:00');
+  document.getElementById('modal-date').textContent = d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const body = document.getElementById('modal-body');
+  let html = '';
+  items.forEach(v => {
+    html += '<div class="viewing">';
+    html += '<div>' + (v.poster_lg || v.poster ? '<img src="' + escapeHTML(v.poster_lg || v.poster) + '" alt="">' : '<div class="no-poster">No poster</div>') + '</div>';
+    html += '<div class="v-info">';
+    html += '<h3>' + escapeHTML(displayTitle(v)) + (v.year ? ' <span class="yr">(' + escapeHTML(v.year) + ')</span>' : '') + '</h3>';
+    const meta = [];
+    if (v.rating) meta.push('<span class="stars" title="' + v.rating + '/5">' + stars(v.rating) + '</span> <span style="color:#aaa;">' + v.rating.toFixed(1) + '</span>');
+    if (v.liked) meta.push('<span class="like">❤ liked</span>');
+    if (v.rewatch) meta.push('<span class="rewatch">↻ rewatch</span>');
+    if (meta.length) html += '<div class="v-meta">' + meta.join('') + '</div>';
+    const meta2 = [];
+    if (v.director) meta2.push(escapeHTML(v.director));
+    if (v.runtime) meta2.push(v.runtime + ' min');
+    if (v.genres && v.genres.length) meta2.push(escapeHTML(v.genres.slice(0,3).join(', ')));
+    if (meta2.length) html += '<div class="v-meta">' + meta2.join(' · ') + '</div>';
+    if (v.overview) html += '<div class="v-overview">' + escapeHTML(v.overview) + '</div>';
+    if (v.letterboxd_url) html += '<div class="v-link"><a href="' + escapeHTML(v.letterboxd_url) + '" target="_blank" rel="noreferrer">View on Letterboxd →</a></div>';
+    html += '</div></div>';
+  });
+  body.innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeModal(); });
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+{{if .HasAny}}
+fetch('/api/history?year=' + YEAR).then(r => r.json()).then(d => renderCalendar(d.viewings || {}));
+{{end}}
+</script>
+</body>
+</html>
