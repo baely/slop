@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cinema Companion — Browse</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>" />
+</head>
+<body data-page="browse">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">cinema</span>
+      <span class="brand-mark-thin">companion</span>
+    </div>
+    <nav class="site-nav">
+      <a href="/">dashboard</a>
+      <a href="/browse.html" class="active">browse</a>
+      <a href="/roulette.html">roulette</a>
+      <a href="/recap.html">recap</a>
+    </nav>
+    <div class="header-meta" id="header-meta"></div>
+  </header>
+
+  <main class="browse">
+    <section class="card">
+      <div class="browse-controls">
+        <input type="search" id="q" placeholder="search title, director, genre…" autocomplete="off" />
+        <div class="status-tabs">
+          <button class="tab active" data-status="all">all</button>
+          <button class="tab" data-status="watched">watched</button>
+          <button class="tab" data-status="rated">rated</button>
+          <button class="tab" data-status="watchlist">watchlist</button>
+          <button class="tab" data-status="liked">liked</button>
+          <button class="tab" data-status="favorite">favorites</button>
+        </div>
+        <span class="result-count muted" id="result-count"></span>
+      </div>
+    </section>
+
+    <section class="card no-pad">
+      <table class="film-table">
+        <thead>
+          <tr>
+            <th data-sort="title">title</th>
+            <th data-sort="year" class="num">year</th>
+            <th data-sort="rating" class="num">rating</th>
+            <th data-sort="runtime" class="num">runtime</th>
+            <th data-sort="director">director</th>
+            <th data-sort="genre">genre</th>
+            <th data-sort="watched_date" class="num">watched</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="pager" class="pager"></div>
+    </section>
+
+    <footer class="site-footer" id="site-footer"></footer>
+  </main>
+
+  <script type="module" src="/browse.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cinema Companion — Roulette</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>" />
+</head>
+<body data-page="roulette">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">cinema</span>
+      <span class="brand-mark-thin">companion</span>
+    </div>
+    <nav class="site-nav">
+      <a href="/">dashboard</a>
+      <a href="/browse.html">browse</a>
+      <a href="/roulette.html" class="active">roulette</a>
+      <a href="/recap.html">recap</a>
+    </nav>
+    <div class="header-meta" id="header-meta"></div>
+  </header>
+
+  <main class="roulette">
+    <section class="roulette-controls card">
+      <h2>spin a film from your watchlist</h2>
+      <p class="muted">tuned mode boosts directors and decades you've rated highly.</p>
+      <div class="filters">
+        <label>decade
+          <select id="filter-decade"><option value="">any</option></select>
+        </label>
+        <label>max runtime
+          <select id="filter-runtime">
+            <option value="">any</option>
+            <option value="90">≤ 90 min</option>
+            <option value="120">≤ 120 min</option>
+            <option value="150">≤ 150 min</option>
+            <option value="180">≤ 180 min</option>
+          </select>
+        </label>
+        <label>genre
+          <select id="filter-genre"><option value="">any</option></select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="filter-tuned" checked />
+          tuned to your taste
+        </label>
+      </div>
+      <div class="actions">
+        <button id="spin" class="primary">spin</button>
+        <span id="pool-size" class="muted"></span>
+      </div>
+    </section>
+
+    <section id="pick" class="pick">
+      <div class="pick-empty muted">spin to pick something to watch tonight.</div>
+    </section>
+
+    <section class="card">
+      <header><h2>full watchlist</h2><p>click a poster to inspect; uses the same filters above.</p></header>
+      <div class="poster-grid" id="watchlist-grid"></div>
+    </section>
+
+    <footer class="site-footer" id="site-footer"></footer>
+  </main>
+
+  <script type="module" src="/roulette.js"></script>
+</body>
+</html>

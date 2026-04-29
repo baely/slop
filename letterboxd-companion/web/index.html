@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cinema Companion — Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>" />
+</head>
+<body data-page="dashboard">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">cinema</span>
+      <span class="brand-mark-thin">companion</span>
+    </div>
+    <nav class="site-nav">
+      <a href="/" class="active">dashboard</a>
+      <a href="/browse.html">browse</a>
+      <a href="/roulette.html">roulette</a>
+      <a href="/recap.html">recap</a>
+    </nav>
+    <div class="header-meta" id="header-meta"></div>
+  </header>
+
+  <main class="dashboard">
+    <section class="hero">
+      <div class="hero-stats" id="hero-stats"></div>
+      <div class="hero-favs" id="hero-favs">
+        <h3>favorites</h3>
+        <div class="poster-row" id="favorite-posters"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>viewing activity</h2><p>diary entries by month — every bar is a month, year markers run along the bottom.</p></header>
+      <div id="month-chart" class="month-chart"></div>
+    </section>
+
+    <section class="card">
+      <header><h2>activity heatmap</h2><p>diary entries by date.</p></header>
+      <div id="heatmap" class="heatmap"></div>
+      <div class="heatmap-legend">
+        <span>less</span>
+        <span class="cell c0"></span>
+        <span class="cell c1"></span>
+        <span class="cell c2"></span>
+        <span class="cell c3"></span>
+        <span class="cell c4"></span>
+        <span>more</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>superlatives</h2><p>the small fun ones.</p></header>
+      <div id="superlatives" class="superlatives"></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <header><h2>ratings</h2><p>distribution of all rated films.</p></header>
+        <div id="rating-hist" class="hist"></div>
+      </div>
+      <div class="card">
+        <header><h2>watchlist progress</h2><p>cleared vs still pending.</p></header>
+        <div id="watchlist-progress"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>by decade</h2><p>films watched per decade — bar height is count, dot is your average rating.</p></header>
+      <div id="decade-chart"></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <header><h2>top directors</h2><p>most-watched, with your average rating.</p></header>
+        <ol id="top-directors" class="leaderboard"></ol>
+      </div>
+      <div class="card">
+        <header><h2>top genres</h2><p>by watched count.</p></header>
+        <ol id="top-genres" class="leaderboard"></ol>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>5★ hall of fame</h2><p>the perfect ones.</p></header>
+      <div class="poster-row" id="five-star"></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <header><h2>hot takes</h2><p>biggest gaps between your rating and TMDB's audience score.</p></header>
+        <ol id="hot-takes" class="takes-list"></ol>
+      </div>
+      <div class="card">
+        <header><h2>hidden gems</h2><p>films you rated 4★+ that the wider audience underrates.</p></header>
+        <ol id="hidden-gems" class="takes-list"></ol>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>language map</h2><p>where the films come from (by original language).</p></header>
+      <ol id="language-list" class="leaderboard"></ol>
+    </section>
+
+    <footer class="site-footer" id="site-footer"></footer>
+  </main>
+
+  <script type="module" src="/dashboard.js"></script>
+</body>
+</html>

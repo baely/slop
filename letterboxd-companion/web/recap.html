@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cinema Companion — Recap</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>" />
+</head>
+<body data-page="recap">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">cinema</span>
+      <span class="brand-mark-thin">companion</span>
+    </div>
+    <nav class="site-nav">
+      <a href="/">dashboard</a>
+      <a href="/browse.html">browse</a>
+      <a href="/roulette.html">roulette</a>
+      <a href="/recap.html" class="active">recap</a>
+    </nav>
+    <div class="header-meta" id="header-meta"></div>
+  </header>
+
+  <main class="recap">
+    <section class="recap-controls card">
+      <h2>recap</h2>
+      <p class="muted">a quick read of any window in your diary. presets cover each year you've logged.</p>
+      <div class="filters">
+        <label>preset
+          <select id="preset"></select>
+        </label>
+        <label>from
+          <input type="date" id="from" />
+        </label>
+        <label>to
+          <input type="date" id="to" />
+        </label>
+        <button id="apply">apply</button>
+      </div>
+    </section>
+
+    <section class="hero">
+      <div class="hero-stats" id="recap-stats"></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <header><h2>standouts</h2><p>everything you rated 4★ or higher in this window.</p></header>
+        <div class="poster-row" id="standouts"></div>
+      </div>
+      <div class="card">
+        <header><h2>by decade</h2><p>what eras filled this stretch.</p></header>
+        <div id="recap-decade"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>timeline</h2><p>each entry, in order.</p></header>
+      <ol id="timeline" class="timeline"></ol>
+    </section>
+
+    <footer class="site-footer" id="site-footer"></footer>
+  </main>
+
+  <script type="module" src="/recap.js"></script>
+</body>
+</html>
