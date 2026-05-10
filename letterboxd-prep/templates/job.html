@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job · Letterboxd Prep</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1><a href="/" style="color:inherit;">letterboxd <span class="accent">prep</span></a></h1>
+  <span class="meta" id="filename">{{.Filename}}</span>
+</header>
+
+<div class="container">
+  <div class="status-bar" id="statusbar">
+    <div class="stat">
+      <span class="n" id="s-total">{{.Total}}</span>
+      <span class="l">films</span>
+    </div>
+    <div class="stat auto">
+      <span class="n" id="s-auto">{{.Stats.Auto}}</span>
+      <span class="l">auto</span>
+    </div>
+    <div class="stat manual">
+      <span class="n" id="s-manual">{{.Stats.Manual}}</span>
+      <span class="l">manual</span>
+    </div>
+    <div class="stat skipped">
+      <span class="n" id="s-skipped">{{.Stats.Skipped}}</span>
+      <span class="l">skipped</span>
+    </div>
+    <div class="stat awaiting">
+      <span class="n" id="s-awaiting">{{.Stats.Awaiting}}</span>
+      <span class="l">to review</span>
+    </div>
+    <div class="stat errored">
+      <span class="n" id="s-errored">{{.Stats.Errored}}</span>
+      <span class="l">errors</span>
+    </div>
+    <div class="stat" style="margin-left:auto;">
+      <span class="n" id="s-state">{{.State}}</span>
+      <span class="l">status</span>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-bar" id="pbar"></div></div>
+
+  <div id="banner"></div>
+
+  <h2 class="section-title">To review</h2>
+  <div id="pending"></div>
+</div>
+
+<footer>baileys.app · vibe coded</footer>
+
+<script>
+  const jobID = "{{.JobID}}";
+  const pendingEl = document.getElementById('pending');
+  const banner = document.getElementById('banner');
+
+  const escapeHTML = s => (s == null ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+
+  function render(data) {
+    document.getElementById('s-total').textContent = data.total;
+    document.getElementById('s-auto').textContent = data.stats.Auto;
+    document.getElementById('s-manual').textContent = data.stats.Manual;
+    document.getElementById('s-skipped').textContent = data.stats.Skipped;
+    document.getElementById('s-awaiting').textContent = data.stats.Awaiting;
+    document.getElementById('s-errored').textContent = data.stats.Errored;
+    document.getElementById('s-state').textContent = data.state;
+    const total = data.total || 1;
+    const done = data.total - (data.stats.Awaiting || 0);
+    document.getElementById('pbar').style.width = (done * 100 / total) + '%';
+
+    if (data.state === 'ready') {
+      banner.innerHTML = `
+        <div class="banner ready">
+          <div>
+            <h3>All matched.</h3>
+            <p>${data.stats.Auto} auto · ${data.stats.Manual} manual · ${data.stats.Skipped} skipped</p>
+          </div>
+          <a class="btn" href="/jobs/${jobID}/download">Download ZIP</a>
+        </div>`;
+    } else if (data.state === 'error') {
+      banner.innerHTML = `<div class="banner error"><div><h3>Something broke.</h3><p>${escapeHTML(data.error)}</p></div></div>`;
+    } else {
+      banner.innerHTML = '';
+    }
+
+    if (!data.pending || data.pending.length === 0) {
+      pendingEl.innerHTML = data.state === 'processing'
+        ? '<div class="empty"><div class="big">Searching TMDB…</div><div>Conflicts will appear here as they\'re found.</div></div>'
+        : '<div class="empty"><div class="big">Nothing pending.</div><div>Your zip is ready below.</div></div>';
+      return;
+    }
+
+    pendingEl.innerHTML = data.pending.map(filmHTML).join('');
+    data.pending.forEach(f => wireFilm(f.key));
+  }
+
+  function filmHTML(f) {
+    const lbHref = f.uri || '#';
+    const cands = (f.candidates && f.candidates.length)
+      ? `<div class="candidates">${f.candidates.map(c => candidateHTML(c)).join('')}</div>`
+      : `<div class="candidates empty-state">No matches found. Try a manual search below or skip.</div>`;
+    const errMsg = f.error ? `<div style="color:var(--danger);font-size:13px;margin-bottom:8px;">${escapeHTML(f.error)}</div>` : '';
+    const lbAttr = f.uri ? `<a class="lb-link" href="${escapeHTML(lbHref)}" target="_blank" rel="noopener">letterboxd ↗</a>` : '';
+    return `
+      <div class="film" data-key="${escapeHTML(f.key)}">
+        <header>
+          <h3>${escapeHTML(f.name)}</h3>
+          <span class="year">${escapeHTML(f.year)}</span>
+          ${lbAttr}
+        </header>
+        ${errMsg}
+        ${cands}
+        <div class="controls">
+          <input type="text" placeholder="Search TMDB manually (title)" data-search>
+          <button class="btn ghost" data-action="search">Search</button>
+          <button class="btn danger" data-action="skip">Skip (no TMDB match)</button>
+        </div>
+      </div>`;
+  }
+
+  function candidateHTML(c) {
+    const poster = c.poster_url ? `style="background-image:url('${c.poster_url}')"` : '';
+    return `
+      <div class="candidate" data-cand-id="${c.id}">
+        <div class="poster" ${poster}></div>
+        <div class="body">
+          <h4>${escapeHTML(c.title)}</h4>
+          <div class="meta">${escapeHTML(c.year)}${c.original_title && c.original_title !== c.title ? ' · ' + escapeHTML(c.original_title) : ''}</div>
+          <div class="ov">${escapeHTML(c.overview)}</div>
+        </div>
+      </div>`;
+  }
+
+  function wireFilm(key) {
+    const el = pendingEl.querySelector(`.film[data-key="${cssEscape(key)}"]`);
+    if (!el) return;
+    el.querySelectorAll('.candidate').forEach(c => {
+      c.addEventListener('click', async () => {
+        const id = parseInt(c.getAttribute('data-cand-id'), 10);
+        c.classList.add('selecting');
+        await resolve(key, { tmdb_id: id, skip: false });
+      });
+    });
+    el.querySelector('[data-action="skip"]').addEventListener('click', async () => {
+      await resolve(key, { skip: true });
+    });
+    const input = el.querySelector('[data-search]');
+    el.querySelector('[data-action="search"]').addEventListener('click', async () => {
+      const q = input.value.trim();
+      if (!q) return;
+      const r = await fetch(`/jobs/${jobID}/search`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({key, query: q})
+      });
+      if (!r.ok) { alert(await r.text()); return; }
+      const j = await r.json();
+      const cardWrap = el.querySelector('.candidates');
+      const html = (j.candidates || []).map(c => candidateHTML(c)).join('') || '<div class="empty-state">No matches.</div>';
+      cardWrap.outerHTML = `<div class="candidates">${html}</div>`;
+      wireFilm(key);
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); el.querySelector('[data-action="search"]').click(); }
+    });
+  }
+
+  function cssEscape(s) {
+    return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/[^a-zA-Z0-9_-]/g, c => '\\' + c);
+  }
+
+  async function resolve(key, body) {
+    body.key = key;
+    const r = await fetch(`/jobs/${jobID}/resolve`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) { alert(await r.text()); return; }
+    poll(); // refresh immediately
+  }
+
+  let pollInflight = false;
+  async function poll() {
+    if (pollInflight) return;
+    pollInflight = true;
+    try {
+      const r = await fetch(`/jobs/${jobID}/status`);
+      if (!r.ok) return;
+      render(await r.json());
+    } finally {
+      pollInflight = false;
+    }
+  }
+
+  poll();
+  setInterval(poll, 1500);
+</script>
+</body>
+</html>

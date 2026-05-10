@@ -1,0 +1,4 @@
+/letterboxd-prep
+*.test
+*.out
+.env
