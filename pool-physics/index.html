@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pool Physics — billiards sandbox</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="table"></canvas>
+
+  <header class="hud hud-top">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <h1>Pool Physics</h1>
+        <p class="brand-sub">elastic collision sandbox</p>
+      </div>
+    </div>
+    <dl class="readout" aria-label="live state">
+      <div><dt>balls</dt><dd id="stat-balls">0</dd></div>
+      <div><dt>kinetic energy</dt><dd id="stat-ke">0.00</dd></div>
+      <div><dt>|momentum|</dt><dd id="stat-p">0.00</dd></div>
+    </dl>
+  </header>
+
+  <aside class="hud hud-hint" id="hint">
+    <kbd>click</kbd> place a ball &nbsp;·&nbsp; <kbd>drag</kbd> from a ball to launch &nbsp;·&nbsp; <kbd>shift</kbd>+<kbd>click</kbd> remove
+  </aside>
+
+  <footer class="hud hud-bottom">
+    <div class="control">
+      <label for="mass">mass</label>
+      <input type="range" id="mass" min="1" max="10" step="0.5" value="2">
+      <output id="mass-val">2.0</output>
+    </div>
+
+    <div class="control">
+      <label for="restitution">elasticity</label>
+      <input type="range" id="restitution" min="0.5" max="1" step="0.01" value="0.97">
+      <output id="restitution-val">0.97</output>
+    </div>
+
+    <div class="toggles">
+      <label class="toggle">
+        <input type="checkbox" id="friction" checked>
+        <span>friction</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="vectors">
+        <span>vectors</span>
+      </label>
+      <label class="toggle" title="Render every other frame to reduce CPU load">
+        <input type="checkbox" id="eco">
+        <span>eco</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <div class="layout-picker">
+        <button id="layouts-btn" class="btn btn-ghost" type="button" aria-haspopup="true" aria-expanded="false">layouts <span class="caret">▾</span></button>
+        <div class="layout-menu" id="layout-menu" hidden role="menu">
+          <button data-layout="rack" type="button" role="menuitem"><span class="lm-mark"></span>rack</button>
+          <button data-layout="grid" type="button" role="menuitem"><span class="lm-mark"></span>grid</button>
+          <button data-layout="line" type="button" role="menuitem"><span class="lm-mark"></span>line</button>
+          <button data-layout="wall" type="button" role="menuitem"><span class="lm-mark"></span>wall</button>
+          <button data-layout="cluster" type="button" role="menuitem"><span class="lm-mark"></span>cluster</button>
+          <button data-layout="swarm" type="button" role="menuitem"><span class="lm-mark"></span>swarm</button>
+          <button data-layout="giants" type="button" role="menuitem"><span class="lm-mark"></span>giants</button>
+          <button data-layout="rings" type="button" role="menuitem"><span class="lm-mark"></span>rings</button>
+          <button data-layout="double" type="button" role="menuitem"><span class="lm-mark"></span>double</button>
+          <button data-layout="cross" type="button" role="menuitem"><span class="lm-mark"></span>cross</button>
+          <button data-layout="funnel" type="button" role="menuitem"><span class="lm-mark"></span>funnel</button>
+          <button data-layout="cradle" type="button" role="menuitem"><span class="lm-mark"></span>cradle</button>
+          <button data-layout="pendulum" type="button" role="menuitem"><span class="lm-mark"></span>pendulum</button>
+          <button data-layout="chaos" type="button" role="menuitem"><span class="lm-mark"></span>chaos</button>
+        </div>
+      </div>
+      <button id="clear" class="btn btn-ghost" type="button">clear</button>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
