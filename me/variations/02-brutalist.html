@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Bowlby One', sans-serif;
+    background: #f1ede3;
+    color: #14110d;
+    min-height: 100vh;
+    padding: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 64px;
+  }
+  h1 {
+    font-size: clamp(72px, 18vw, 260px);
+    line-height: 0.85;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 32px;
+    font-size: clamp(24px, 3.4vw, 38px);
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+  ul a {
+    color: #14110d;
+    text-decoration: none;
+    display: inline-block;
+    padding: 2px 0;
+    border-bottom: 5px solid #14110d;
+    transition: background .15s ease, color .15s ease;
+  }
+  ul a:hover { background: #14110d; color: #f1ede3; }
+  @media (max-width: 720px) {
+    body { padding: 32px; gap: 40px; }
+    ul { flex-direction: column; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+  <h1>Bailey<br>Butler</h1>
+  <ul>
+    <li><a href="https://github.com/baely">GitHub</a></li>
+    <li><a href="https://linkedin.com/in/baileybutler1">LinkedIn</a></li>
+    <li><a href="https://instagram.com/bae1y">Instagram</a></li>
+    <li><a href="https://letterboxd.com/baely">Letterboxd</a></li>
+    <li><a href="https://blog.baileys.dev">Blog</a></li>
+  </ul>
+</body>
+</html>

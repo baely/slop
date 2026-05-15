@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Serif Display', serif;
+    background: #d6c9a7;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2'/></filter><rect width='220' height='220' filter='url(%23n)' opacity='0.22'/></svg>");
+    color: #2a1f12;
+    min-height: 100vh;
+    padding: 80px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 56px;
+  }
+  h1 {
+    font-style: italic;
+    font-size: clamp(56px, 10vw, 128px);
+    line-height: 1;
+    color: #2a1f12;
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 22px;
+    max-width: 980px;
+  }
+  ul a {
+    background: #fff5dc;
+    padding: 22px 28px;
+    text-decoration: none;
+    color: var(--c, #b22222);
+    display: block;
+    font-size: clamp(24px, 2.6vw, 34px);
+    line-height: 1;
+    border: 2px solid var(--c, #b22222);
+    box-shadow: 0 6px 14px rgba(0,0,0,.1);
+    transform: rotate(var(--r, -2deg));
+    transition: transform .3s ease, box-shadow .3s ease;
+    background-image: radial-gradient(circle at 0 0, transparent 5px, #fff5dc 5px);
+    background-size: 12px 12px;
+  }
+  ul li:nth-child(1) a { --c: #b22222; --r: -3deg; }
+  ul li:nth-child(2) a { --c: #1f6e3a; --r: 2deg; }
+  ul li:nth-child(3) a { --c: #c25a1e; --r: -1deg; }
+  ul li:nth-child(4) a { --c: #1f4f8a; --r: 3deg; }
+  ul li:nth-child(5) a { --c: #6b2a8c; --r: -2deg; }
+  ul a:hover { transform: rotate(0deg) translateY(-4px); box-shadow: 0 18px 32px rgba(0,0,0,.18); }
+</style>
+</head>
+<body>
+  <h1>Bailey Butler</h1>
+  <ul>
+    <li><a href="#">GitHub</a></li>
+    <li><a href="#">LinkedIn</a></li>
+    <li><a href="#">Instagram</a></li>
+    <li><a href="#">Letterboxd</a></li>
+    <li><a href="#">Blog</a></li>
+  </ul>
+</body>
+</html>
