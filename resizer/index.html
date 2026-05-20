@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>resizer</title>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f5f3;
+  --surface: #fff;
+  --ink: #111;
+  --muted: #777;
+  --line: #e5e5e0;
+  --accent: #111;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+h1 {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 32px;
+  color: var(--muted);
+}
+
+h1 span { color: var(--ink); }
+
+.drop {
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  padding: 64px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop:hover, .drop.over {
+  border-color: var(--ink);
+}
+
+.drop p {
+  color: var(--muted);
+}
+
+.drop strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.drop input { display: none; }
+
+.work {
+  display: none;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.work.active { display: grid; }
+
+@media (max-width: 720px) {
+  .work.active { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 24px;
+}
+
+.panel h2 {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.meta b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.dims {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+input[type="number"] {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+  color: var(--ink);
+  width: 100%;
+}
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
+.lock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lock input { accent-color: var(--ink); }
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode {
+  display: block;
+  cursor: pointer;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+}
+
+.mode input { display: none; }
+
+.mode-name {
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+}
+
+.mode-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.mode:has(input:checked) {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.mode:has(input:checked) .mode-name,
+.mode:has(input:checked) .mode-desc {
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  background: var(--ink);
+  color: #fff;
+  transition: opacity 0.15s;
+}
+
+button:hover { opacity: 0.85; }
+
+button.secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.preview {
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 24px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image:
+    linear-gradient(45deg, #f5f5f3 25%, transparent 25%),
+    linear-gradient(-45deg, #f5f5f3 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f5f5f3 75%),
+    linear-gradient(-45deg, transparent 75%, #f5f5f3 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: #fafaf8;
+  border-radius: 3px;
+  overflow: hidden;
+  padding: 16px;
+}
+
+canvas {
+  max-width: 100%;
+  max-height: 60vh;
+  display: block;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.loading {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px;
+  font-size: 13px;
+}
+
+.error {
+  color: #c33;
+  font-size: 12px;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>image <span>resizer</span></h1>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="image/jpeg,image/jpg,image/heic,image/heif,.heic,.heif">
+    <p><strong>Drop an image</strong> or click to choose</p>
+    <p style="font-size:12px;margin-top:6px;">JPG, HEIC</p>
+  </label>
+
+  <div class="work" id="work">
+    <div class="panel">
+      <div class="meta" id="meta"></div>
+
+      <div class="field">
+        <label>Dimensions (px)</label>
+        <div class="dims">
+          <input type="number" id="w" min="1" max="20000">
+          <input type="number" id="h" min="1" max="20000">
+        </div>
+        <label class="lock">
+          <input type="checkbox" id="lock" checked>
+          Lock aspect ratio
+        </label>
+      </div>
+
+      <div class="field">
+        <label>Mode</label>
+        <div class="modes">
+          <label class="mode">
+            <input type="radio" name="mode" value="stretched" checked>
+            <span class="mode-name">Stretched</span>
+            <span class="mode-desc">Fill exactly, distort if needed</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="fit">
+            <span class="mode-name">Fit</span>
+            <span class="mode-desc">Show whole image, pad to size</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="cover">
+            <span class="mode-name">Cover</span>
+            <span class="mode-desc">Fill area, crop overflow</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="download">Download JPG</button>
+        <button id="reset" class="secondary">Choose another</button>
+      </div>
+      <div class="error" id="error"></div>
+    </div>
+
+    <div class="preview">
+      <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const work = document.getElementById('work');
+const meta = document.getElementById('meta');
+const wInput = document.getElementById('w');
+const hInput = document.getElementById('h');
+const lock = document.getElementById('lock');
+const canvas = document.getElementById('canvas');
+const status = document.getElementById('status');
+const error = document.getElementById('error');
+const download = document.getElementById('download');
+const reset = document.getElementById('reset');
+
+let img = null;
+let origName = 'image';
+let origAspect = 1;
+let renderPending = false;
+
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault();
+  drop.classList.add('over');
+}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault();
+  drop.classList.remove('over');
+}));
+drop.addEventListener('drop', ev => {
+  if (ev.dataTransfer.files.length) loadFile(ev.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) loadFile(fileInput.files[0]);
+});
+
+async function loadFile(file) {
+  error.textContent = '';
+  origName = file.name.replace(/\.[^.]+$/, '');
+  const ext = file.name.toLowerCase().split('.').pop();
+  drop.querySelector('p').innerHTML = '<strong>Loading…</strong>';
+
+  try {
+    let blob = file;
+    if (ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+      blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.95 });
+    }
+    const url = URL.createObjectURL(blob);
+    img = new Image();
+    img.onload = () => {
+      origAspect = img.naturalWidth / img.naturalHeight;
+      wInput.value = img.naturalWidth;
+      hInput.value = img.naturalHeight;
+      meta.innerHTML = `<b>${escapeHtml(file.name)}</b><br>Original: ${img.naturalWidth} × ${img.naturalHeight}`;
+      work.classList.add('active');
+      drop.style.display = 'none';
+      render();
+    };
+    img.onerror = () => {
+      error.textContent = 'Could not decode image.';
+      drop.querySelector('p').innerHTML = '<strong>Drop an image</strong> or click to choose';
+    };
+    img.src = url;
+  } catch (e) {
+    console.error(e);
+    error.textContent = 'Failed to read file: ' + e.message;
+    drop.querySelector('p').innerHTML = '<strong>Drop an image</strong> or click to choose';
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+wInput.addEventListener('input', () => {
+  if (lock.checked && wInput.value) {
+    hInput.value = Math.max(1, Math.round(parseInt(wInput.value) / origAspect));
+  }
+  scheduleRender();
+});
+hInput.addEventListener('input', () => {
+  if (lock.checked && hInput.value) {
+    wInput.value = Math.max(1, Math.round(parseInt(hInput.value) * origAspect));
+  }
+  scheduleRender();
+});
+lock.addEventListener('change', () => {
+  if (lock.checked && img) origAspect = parseInt(wInput.value) / parseInt(hInput.value);
+});
+document.querySelectorAll('input[name="mode"]').forEach(el =>
+  el.addEventListener('change', scheduleRender)
+);
+
+function scheduleRender() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => { renderPending = false; render(); });
+}
+
+function render() {
+  if (!img) return;
+  const w = Math.max(1, parseInt(wInput.value) || 1);
+  const h = Math.max(1, parseInt(hInput.value) || 1);
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+
+  if (mode === 'stretched') {
+    ctx.drawImage(img, 0, 0, w, h);
+  } else if (mode === 'fit') {
+    const scale = Math.min(w / iw, h / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  } else if (mode === 'cover') {
+    const scale = Math.max(w / iw, h / ih);
+    const sw = w / scale;
+    const sh = h / scale;
+    const sx = (iw - sw) / 2;
+    const sy = (ih - sh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  }
+
+  status.textContent = `Output: ${w} × ${h} · ${mode}`;
+}
+
+download.addEventListener('click', () => {
+  if (!img) return;
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${origName}_${canvas.width}x${canvas.height}_${mode}.jpg`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/jpeg', 0.95);
+});
+
+reset.addEventListener('click', () => {
+  img = null;
+  fileInput.value = '';
+  work.classList.remove('active');
+  drop.style.display = '';
+  drop.querySelector('p').innerHTML = '<strong>Drop an image</strong> or click to choose';
+});
+</script>
+</body>
+</html>
