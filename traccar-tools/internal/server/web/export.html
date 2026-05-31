@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Export · Traccar Tools</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+<main>
+  <a class="back" href="/">← Traccar Tools</a>
+  <h1>Export</h1>
+  <p class="lede">Export full-fidelity tracks from a Traccar instance — timestamps, elevation, speed, course, accuracy and every recorded attribute — as GPX, KML or GeoJSON. Not just the bare coordinates.</p>
+
+  <section class="card" id="card-connect">
+    <h2>Connect</h2>
+    <label>Traccar base URL</label>
+    <input id="url" placeholder="https://traccar.example.com" />
+    <label>Authentication</label>
+    <div class="seg" id="authmode">
+      <button type="button" data-m="token" class="on">API token</button>
+      <button type="button" data-m="basic">Email &amp; password</button>
+    </div>
+    <div id="auth-token" style="margin-top:8px"><input id="token" placeholder="API token (Traccar → Settings → tokens)" /></div>
+    <div id="auth-basic" class="hidden" style="margin-top:8px">
+      <div class="row"><input id="email" placeholder="email@example.com" /><input id="password" type="password" placeholder="password" /></div>
+    </div>
+    <div class="actions"><button class="btn" id="connect-btn">Connect</button></div>
+    <div class="status" id="connect-status"></div>
+  </section>
+
+  <section class="card dim" id="card-select">
+    <h2>Devices &amp; time bounds</h2>
+    <div class="devhead"><button id="sel-all">Select all</button><button id="sel-none">Clear</button></div>
+    <div class="devlist" id="devlist"></div>
+    <div class="row" style="margin-top:16px">
+      <div><label>From</label><input type="datetime-local" id="from" /></div>
+      <div><label>To</label><input type="datetime-local" id="to" /></div>
+    </div>
+    <div class="quick">
+      <button data-days="1">Last 24h</button>
+      <button data-days="7">Last 7 days</button>
+      <button data-days="30">Last 30 days</button>
+      <button data-days="90">Last 90 days</button>
+      <button data-days="365">Last year</button>
+      <button data-days="999999">Everything</button>
+    </div>
+    <label style="margin-top:16px">Split into segments after a gap of</label>
+    <select id="gap" style="max-width:240px">
+      <option value="0">Never (one segment)</option>
+      <option value="15">15 minutes</option>
+      <option value="30" selected>30 minutes</option>
+      <option value="60">1 hour</option>
+      <option value="360">6 hours</option>
+    </select>
+    <div class="hint">A new segment is started when consecutive fixes are further apart than this — keeps disconnected trips from being joined by a straight line.</div>
+    <div class="actions"><button class="btn ghost" id="preview-btn">Preview</button></div>
+    <div class="status" id="select-status"></div>
+  </section>
+
+  <section class="card dim" id="card-preview">
+    <h2>Preview &amp; download</h2>
+    <div class="metric">
+      <div><b id="p-total">0</b><span>points</span></div>
+      <div><b id="p-devs">0</b><span>devices</span></div>
+    </div>
+    <table id="p-table"><thead><tr><th>Device</th><th>Points</th><th>From</th><th>To</th></tr></thead><tbody></tbody></table>
+    <div id="map"></div>
+    <label style="margin-top:18px">Format</label>
+    <div class="seg" id="format">
+      <button type="button" data-f="gpx" class="on">GPX</button>
+      <button type="button" data-f="kml">KML</button>
+      <button type="button" data-f="geojson">GeoJSON</button>
+    </div>
+    <div class="hint" id="format-hint">GPX 1.1 — &lt;ele&gt;/&lt;time&gt; with speed, course, accuracy and all attributes under a traccar: extension. Widely supported.</div>
+    <div class="actions"><button class="btn" id="download-btn">Download</button></div>
+    <div class="status" id="dl-status"></div>
+  </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $ = (s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const state = { source:null, devices:[], map:null, layers:[], format:"gpx" };
+
+$$("#authmode button").forEach(b=>b.onclick=()=>{
+  $$("#authmode button").forEach(x=>x.classList.toggle("on",x===b));
+  $("#auth-token").classList.toggle("hidden", b.dataset.m!=="token");
+  $("#auth-basic").classList.toggle("hidden", b.dataset.m!=="basic");
+});
+function readAuth(){
+  const mode=$("#authmode button.on").dataset.m;
+  if(mode==="token") return { token:$("#token").value.trim() };
+  return { email:$("#email").value.trim(), password:$("#password").value };
+}
+const FMT_HINTS = {
+  gpx: "GPX 1.1 — &lt;ele&gt;/&lt;time&gt; with speed, course, accuracy and all attributes under a traccar: extension. Widely supported.",
+  kml: "KML with gx:Track — time-aware, animatable in Google Earth; per-point speed, course, accuracy and attributes as data arrays.",
+  geojson: "GeoJSON FeatureCollection — a LineString per segment with coordTimes and a full per-point properties array. Best for code / web maps.",
+};
+$$("#format button").forEach(b=>b.onclick=()=>{
+  $$("#format button").forEach(x=>x.classList.toggle("on",x===b));
+  state.format=b.dataset.f; $("#format-hint").innerHTML=FMT_HINTS[state.format];
+});
+
+async function postJSON(url, body){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||r.statusText); return d;
+}
+function setStatus(el,msg,cls){ el.textContent=msg; el.className="status "+(cls||""); }
+function enable(id){ $(id).classList.remove("dim"); }
+
+$("#connect-btn").onclick = async ()=>{
+  const btn=$("#connect-btn"); btn.disabled=true;
+  try{
+    state.source = { baseUrl:$("#url").value.trim(), auth:readAuth() };
+    if(!state.source.baseUrl) throw new Error("URL required");
+    setStatus($("#connect-status"),"Connecting…");
+    const s=await postJSON("/api/connect",state.source);
+    state.devices=s.devices;
+    setStatus($("#connect-status"),`Connected — Traccar ${s.server.version}, ${s.devices.length} device(s)`,"ok");
+    buildDevices(); setQuick(30); enable("#card-select");
+    $("#card-select").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ setStatus($("#connect-status"),e.message,"err"); }
+  finally{ btn.disabled=false; }
+};
+
+function buildDevices(){
+  const box=$("#devlist"); box.innerHTML="";
+  state.devices.forEach(d=>{
+    const l=document.createElement("label");
+    l.innerHTML=`<input type="checkbox" data-id="${d.id}" data-name="${escapeAttr(d.name)}" style="width:auto"> <span>${escapeHTML(d.name)}</span> <span class="uid">${escapeHTML(d.uniqueId)}</span>`;
+    box.appendChild(l);
+  });
+}
+$("#sel-all").onclick=()=>$$("#devlist input").forEach(c=>c.checked=true);
+$("#sel-none").onclick=()=>$$("#devlist input").forEach(c=>c.checked=false);
+function selectedDevices(){
+  return $$("#devlist input:checked").map(c=>({deviceId:+c.dataset.id,name:c.dataset.name}));
+}
+function setQuick(days){
+  const to=new Date();
+  const from=days>=999999?new Date("2010-01-01T00:00:00"):new Date(Date.now()-days*86400000);
+  $("#from").value=toLocal(from); $("#to").value=toLocal(to);
+}
+$$(".quick button").forEach(b=>b.onclick=()=>setQuick(+b.dataset.days));
+function toLocal(d){const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+function payload(){
+  return {
+    source: state.source,
+    devices: selectedDevices(),
+    from: new Date($("#from").value).toISOString(),
+    to: new Date($("#to").value).toISOString(),
+    gapMin: +$("#gap").value,
+    format: state.format,
+  };
+}
+
+$("#preview-btn").onclick = async ()=>{
+  const devs=selectedDevices();
+  if(!devs.length) return setStatus($("#select-status"),"Select at least one device","err");
+  const btn=$("#preview-btn"); btn.disabled=true; setStatus($("#select-status"),"Fetching…");
+  try{
+    const res=await postJSON("/api/export/preview",payload());
+    renderPreview(res); enable("#card-preview"); setStatus($("#select-status"),"","");
+    $("#card-preview").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ setStatus($("#select-status"),e.message,"err"); }
+  finally{ btn.disabled=false; }
+};
+function renderPreview(res){
+  $("#p-total").textContent=res.total.toLocaleString();
+  $("#p-devs").textContent=res.devices.filter(d=>d.count>0).length;
+  const tb=$("#p-table tbody"); tb.innerHTML="";
+  res.devices.forEach(d=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${escapeHTML(d.name)}</td><td>${d.count.toLocaleString()}</td><td>${fmt(d.first)}</td><td>${fmt(d.last)}</td>`;
+    tb.appendChild(tr);
+  });
+  drawMap(res.devices);
+}
+function drawMap(devices){
+  if(!state.map){
+    state.map=L.map("map",{attributionControl:false}).setView([20,0],2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(state.map);
+  }
+  state.layers.forEach(l=>state.map.removeLayer(l)); state.layers=[];
+  const colors=["#5b9dff","#4ec98f","#e0b34a","#f06a6a","#b78cff","#5fd0d6"]; const bounds=[];
+  devices.forEach((d,i)=>{ if(!d.track||!d.track.length) return;
+    const line=L.polyline(d.track,{color:colors[i%colors.length],weight:2,opacity:.85}).addTo(state.map);
+    state.layers.push(line); bounds.push(...d.track); });
+  if(bounds.length) state.map.fitBounds(bounds,{padding:[24,24]});
+  setTimeout(()=>state.map.invalidateSize(),60);
+}
+
+$("#download-btn").onclick = async ()=>{
+  const devs=selectedDevices();
+  if(!devs.length) return setStatus($("#dl-status"),"Select at least one device","err");
+  const btn=$("#download-btn"); btn.disabled=true; setStatus($("#dl-status"),`Building ${state.format.toUpperCase()}…`);
+  try{
+    const r=await fetch("/api/export/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload())});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||r.statusText); }
+    const blob=await r.blob();
+    const name=(r.headers.get("Content-Disposition")||"").match(/filename="([^"]+)"/)?.[1]||("traccar-export."+state.format);
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+    URL.revokeObjectURL(a.href);
+    setStatus($("#dl-status"),`Downloaded ${name} (${(blob.size/1024).toFixed(1)} KB)`,"ok");
+  }catch(e){ setStatus($("#dl-status"),e.message,"err"); }
+  finally{ btn.disabled=false; }
+};
+
+function fmt(iso){ return iso?new Date(iso).toLocaleString():"—"; }
+function escapeHTML(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function escapeAttr(s){return String(s).replace(/"/g,"&quot;");}
+</script>
+</body>
+</html>

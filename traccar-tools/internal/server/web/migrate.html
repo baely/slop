@@ -3,103 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Traccar Migrate</title>
+<title>Migrate · Traccar Tools</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  :root {
-    --bg: #0d0f12;
-    --panel: #14171c;
-    --panel-2: #1b1f26;
-    --line: #262b33;
-    --text: #e7ebef;
-    --muted: #8b94a0;
-    --accent: #5b9dff;
-    --good: #4ec98f;
-    --bad: #f06a6a;
-    --warn: #e0b34a;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  main { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
-  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 4px; }
-  .lede { color: var(--muted); margin: 0 0 32px; }
-  .steps { display: flex; gap: 8px; margin: 0 0 28px; }
-  .steps li {
-    list-style: none; flex: 1; padding: 8px 10px; border-radius: 8px;
-    background: var(--panel); border: 1px solid var(--line);
-    color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center;
-  }
-  .steps li .n {
-    width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-    background: var(--panel-2); font-size: 12px; flex: none;
-  }
-  .steps li.active { color: var(--text); border-color: var(--accent); }
-  .steps li.active .n { background: var(--accent); color: #06101f; }
-  .steps li.done .n { background: var(--good); color: #052414; }
-
-  section.card {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 12px; padding: 24px; margin: 0 0 20px;
-  }
-  .card h2 { font-size: 15px; margin: 0 0 16px; font-weight: 600; }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
-  input, select {
-    width: 100%; padding: 10px 12px; border-radius: 8px; color: var(--text);
-    background: var(--panel-2); border: 1px solid var(--line); font: inherit;
-  }
-  input:focus, select:focus { outline: none; border-color: var(--accent); }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg button { padding: 7px 12px; background: none; border: none; color: var(--muted); font: inherit; cursor: pointer; }
-  .seg button.on { background: var(--accent); color: #06101f; }
-
-  button.btn {
-    padding: 10px 18px; border-radius: 8px; border: 1px solid var(--accent);
-    background: var(--accent); color: #06101f; font: inherit; font-weight: 600; cursor: pointer;
-  }
-  button.btn.ghost { background: none; color: var(--text); border-color: var(--line); }
-  button.btn:disabled { opacity: .5; cursor: not-allowed; }
-  .actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
-
-  .status { font-size: 13px; margin-top: 10px; min-height: 18px; }
-  .status.ok { color: var(--good); }
-  .status.err { color: var(--bad); }
-
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; }
-  td input { padding: 7px 9px; }
-  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
-  .chip.new { color: var(--warn); }
-
-  #map { height: 360px; border-radius: 10px; margin-top: 8px; border: 1px solid var(--line); }
-  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .quick button { padding: 6px 10px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); border-radius: 7px; cursor: pointer; }
-
-  .bar { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; margin: 6px 0 2px; }
-  .bar > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
-  .log {
-    margin-top: 16px; background: #0a0c0f; border: 1px solid var(--line); border-radius: 8px;
-    padding: 12px; height: 220px; overflow: auto; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-  .log div.warn { color: var(--warn); }
-  .log div.good { color: var(--good); }
-  .log div.muted { color: var(--muted); }
-  .hidden { display: none; }
-  .metric { display: flex; gap: 24px; margin-top: 8px; }
-  .metric b { font-size: 24px; font-weight: 600; display: block; }
-  .metric span { font-size: 12px; color: var(--muted); }
-</style>
+<link rel="stylesheet" href="/app.css" />
 </head>
 <body>
 <main>
-  <h1>Traccar Migrate</h1>
+  <a class="back" href="/">← Traccar Tools</a>
+  <h1>Migrate</h1>
   <p class="lede">Replay historical positions from one Traccar instance into another. Read via the reports API, write via the OsmAnd protocol — with a preview before anything is sent.</p>
 
   <ol class="steps" id="steps">
@@ -109,7 +20,6 @@
     <li data-step="4"><span class="n">4</span> Migrate</li>
   </ol>
 
-  <!-- STEP 1 -->
   <div id="panel-1">
     <section class="card">
       <h2>Source instance — read from</h2>
@@ -118,7 +28,6 @@
       <div class="auth" data-for="src"></div>
       <div class="status" id="src-status"></div>
     </section>
-
     <section class="card">
       <h2>Destination instance — write to</h2>
       <label>Traccar API base URL <span class="hint" style="display:inline">(for listing / creating devices)</span></label>
@@ -129,13 +38,9 @@
       <div class="hint">Positions are injected through Traccar's OsmAnd protocol (default port 5055). The REST API can't accept raw positions. We'll send a harmless probe to confirm it's listening.</div>
       <div class="status" id="dst-status"></div>
     </section>
-
-    <div class="actions">
-      <button class="btn" id="connect-btn">Connect &amp; continue</button>
-    </div>
+    <div class="actions"><button class="btn" id="connect-btn">Connect &amp; continue</button></div>
   </div>
 
-  <!-- STEP 2 -->
   <div id="panel-2" class="hidden">
     <section class="card">
       <h2>Devices &amp; ID mapping</h2>
@@ -146,7 +51,6 @@
       </table>
       <label style="margin-top:18px"><input type="checkbox" id="autocreate" checked style="width:auto; margin-right:8px" />Create missing devices on the destination automatically</label>
     </section>
-
     <section class="card">
       <h2>Time range</h2>
       <div class="row">
@@ -161,14 +65,12 @@
         <button data-days="999999">Everything</button>
       </div>
     </section>
-
     <div class="actions">
       <button class="btn ghost" data-goto="1">Back</button>
       <button class="btn" id="preview-btn">Preview</button>
     </div>
   </div>
 
-  <!-- STEP 3 -->
   <div id="panel-3" class="hidden">
     <section class="card">
       <h2>Preview</h2>
@@ -182,7 +84,6 @@
       </table>
       <div id="map"></div>
     </section>
-
     <section class="card">
       <h2>Replay options</h2>
       <div class="row">
@@ -205,14 +106,12 @@
         </div>
       </div>
     </section>
-
     <div class="actions">
       <button class="btn ghost" data-goto="2">Back</button>
       <button class="btn" id="migrate-btn">Start migration</button>
     </div>
   </div>
 
-  <!-- STEP 4 -->
   <div id="panel-4" class="hidden">
     <section class="card">
       <h2 id="run-title">Migrating…</h2>
@@ -235,9 +134,8 @@
 <script>
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-const state = { source:null, dest:null, osmand:"", devices:[], destUniqueIds:new Set(), map:null, layers:[], preview:[], total:0 };
+const state = { source:null, dest:null, osmand:"", devices:[], destUniqueIds:new Set(), map:null, layers:[], total:0 };
 
-// --- auth sub-form (token vs email/password) ------------------------------
 function authForm(which) {
   const box = $(`.auth[data-for="${which}"]`);
   box.innerHTML = `
@@ -246,14 +144,9 @@ function authForm(which) {
       <button type="button" data-m="token" class="on">API token</button>
       <button type="button" data-m="basic">Email &amp; password</button>
     </div>
-    <div data-token style="margin-top:8px">
-      <input data-f="token" placeholder="API token (Traccar → Settings → Tokens)" />
-    </div>
+    <div data-token style="margin-top:8px"><input data-f="token" placeholder="API token (Traccar → Settings → tokens)" /></div>
     <div data-basic class="hidden" style="margin-top:8px">
-      <div class="row">
-        <input data-f="email" placeholder="email@example.com" />
-        <input data-f="password" type="password" placeholder="password" />
-      </div>
+      <div class="row"><input data-f="email" placeholder="email@example.com" /><input data-f="password" type="password" placeholder="password" /></div>
     </div>`;
   $$("[data-mode] button", box).forEach(b => b.onclick = () => {
     $$("[data-mode] button", box).forEach(x => x.classList.toggle("on", x===b));
@@ -269,7 +162,6 @@ function readAuth(which) {
 }
 authForm("src"); authForm("dst");
 
-// --- step navigation ------------------------------------------------------
 function goto(step) {
   for (let i=1;i<=4;i++) $(`#panel-${i}`).classList.toggle("hidden", i!==step);
   $$("#steps li").forEach(li => {
@@ -289,7 +181,6 @@ async function postJSON(url, body) {
 }
 function setStatus(el, msg, cls) { el.textContent = msg; el.className = "status " + (cls||""); }
 
-// --- step 1: connect ------------------------------------------------------
 $("#connect-btn").onclick = async () => {
   const btn = $("#connect-btn"); btn.disabled = true;
   try {
@@ -308,7 +199,7 @@ $("#connect-btn").onclick = async () => {
     setStatus($("#dst-status"), "Checking destination…");
     const d = await postJSON("/api/connect", state.dest);
     state.destUniqueIds = new Set(d.devices.map(x => x.uniqueId));
-    await postJSON("/api/probe", { endpoint: state.osmand });
+    await postJSON("/api/migrate/probe", { endpoint: state.osmand });
     setStatus($("#dst-status"), `Connected — Traccar ${d.server.version}, ${d.devices.length} device(s), OsmAnd reachable`, "ok");
 
     buildDeviceTable();
@@ -320,7 +211,6 @@ $("#connect-btn").onclick = async () => {
   } finally { btn.disabled = false; }
 };
 
-// --- step 2: device table + range ----------------------------------------
 function buildDeviceTable() {
   const tb = $("#dev-table tbody"); tb.innerHTML = "";
   state.devices.forEach(dev => {
@@ -368,22 +258,19 @@ function rangeISO() {
   return { from: new Date($("#from").value).toISOString(), to: new Date($("#to").value).toISOString() };
 }
 
-// --- step 3: preview ------------------------------------------------------
 $("#preview-btn").onclick = async () => {
   const maps = selectedMappings();
-  if (!maps.length) return setStatusToast("Select at least one device");
-  for (const m of maps) if (!m.targetUniqueId) return setStatusToast(`Missing target uniqueId for ${m.sourceName}`);
-
+  if (!maps.length) return alert("Select at least one device");
+  for (const m of maps) if (!m.targetUniqueId) return alert(`Missing target uniqueId for ${m.sourceName}`);
   const btn = $("#preview-btn"); btn.disabled = true; btn.textContent = "Fetching…";
   try {
     const { from, to } = rangeISO();
-    const res = await postJSON("/api/preview", { source: state.source, mappings: maps, from, to });
-    state.preview = res.devices; state.total = res.total;
+    const res = await postJSON("/api/migrate/preview", { source: state.source, mappings: maps, from, to });
+    state.total = res.total;
     renderPreview(res);
     goto(3);
-  } catch (e) {
-    setStatusToast(e.message);
-  } finally { btn.disabled = false; btn.textContent = "Preview"; }
+  } catch (e) { alert(e.message); }
+  finally { btn.disabled = false; btn.textContent = "Preview"; }
 };
 
 function renderPreview(res) {
@@ -415,7 +302,6 @@ function drawMap(devices) {
   setTimeout(() => state.map.invalidateSize(), 60);
 }
 
-// --- step 4: migrate (streamed NDJSON) ------------------------------------
 let abort = null;
 $("#migrate-btn").onclick = async () => {
   const maps = selectedMappings();
@@ -432,7 +318,7 @@ $("#migrate-btn").onclick = async () => {
   try {
     if (missing.length) {
       addLog(`Creating ${missing.length} device(s) on destination…`, "muted");
-      const created = await postJSON("/api/create-devices", {
+      const created = await postJSON("/api/migrate/create-devices", {
         dest: state.dest,
         devices: missing.map(m => ({ name: m.sourceName, uniqueId: m.targetUniqueId })),
       });
@@ -446,9 +332,8 @@ $("#migrate-btn").onclick = async () => {
 
   const { from, to } = rangeISO();
   abort = new AbortController();
-  let sent = 0, failed = 0;
   try {
-    const r = await fetch("/api/migrate", {
+    const r = await fetch("/api/migrate/run", {
       method:"POST", signal: abort.signal,
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
@@ -464,12 +349,7 @@ $("#migrate-btn").onclick = async () => {
       let nl;
       while ((nl = buf.indexOf("\n")) >= 0) {
         const line = buf.slice(0, nl).trim(); buf = buf.slice(nl+1);
-        if (!line) continue;
-        const ev = JSON.parse(line);
-        if (ev.type === "progress" || ev.type === "device") {
-          // recompute running totals from per-device latest values
-        }
-        handleEvent(ev);
+        if (line) handleEvent(JSON.parse(line));
       }
     }
   } catch (e) {
@@ -479,7 +359,7 @@ $("#migrate-btn").onclick = async () => {
   finishRun();
 };
 
-const running = {}; // deviceId -> {sent, failed}
+const running = {};
 function handleEvent(ev) {
   switch (ev.type) {
     case "start": addLog(ev.message, "muted"); break;
@@ -514,12 +394,10 @@ function finishRun(title) {
 }
 $("#cancel-btn").onclick = () => { if (abort) abort.abort(); };
 
-// --- helpers --------------------------------------------------------------
 function addLog(msg, cls) {
   const d = document.createElement("div"); if (cls) d.className = cls;
   d.textContent = msg; $("#log").appendChild(d); $("#log").scrollTop = 1e9;
 }
-function setStatusToast(msg) { alert(msg); }
 function fmt(iso) { return iso ? new Date(iso).toLocaleString() : "—"; }
 function escapeHTML(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function escapeAttr(s){return String(s).replace(/"/g,"&quot;");}

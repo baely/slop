@@ -151,6 +151,7 @@ type Position struct {
 	Protocol   string         `json:"protocol"`
 	FixTime    time.Time      `json:"fixTime"`
 	DeviceTime time.Time      `json:"deviceTime"`
+	ServerTime time.Time      `json:"serverTime"`
 	Latitude   float64        `json:"latitude"`
 	Longitude  float64        `json:"longitude"`
 	Altitude   float64        `json:"altitude"`
@@ -158,6 +159,7 @@ type Position struct {
 	Course     float64        `json:"course"`
 	Accuracy   float64        `json:"accuracy"`
 	Valid      bool           `json:"valid"`
+	Address    string         `json:"address"`
 	Attributes map[string]any `json:"attributes"`
 }
 

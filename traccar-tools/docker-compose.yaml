@@ -1,0 +1,11 @@
+services:
+  traccar-tools:
+    build: .
+    image: registry.baileys.dev/traccar-tools
+    restart: unless-stopped
+    environment:
+      ADDR: ":8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traccar-tools.rule=Host(`traccar-tools.lab.baileys.dev`)
+      - traefik.http.services.traccar-tools.loadbalancer.server.port=8080

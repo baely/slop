@@ -7,11 +7,11 @@ RUN go mod download
 
 COPY . .
 ENV CGO_ENABLED=0 GOOS=linux
-RUN go build -trimpath -ldflags="-s -w" -o /out/traccar-migrate ./cmd/server
+RUN go build -trimpath -ldflags="-s -w" -o /out/traccar-tools ./cmd/server
 
 FROM gcr.io/distroless/static-debian12:latest
 WORKDIR /app
-COPY --from=build /out/traccar-migrate /app/traccar-migrate
+COPY --from=build /out/traccar-tools /app/traccar-tools
 EXPOSE 8080
 ENV ADDR=":8080"
-ENTRYPOINT ["/app/traccar-migrate"]
+ENTRYPOINT ["/app/traccar-tools"]
