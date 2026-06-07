@@ -37,7 +37,7 @@ def meta_for_image(src, meta_map):
     date_match = re.search(r'(\d{4}-\d{2}-\d{2})', parts[0]) if parts else None
     date = date_match.group(1) if date_match else ""
     roll = parts[1] if len(parts) > 1 else ""
-    stock = re.sub(r'^\d+\s+', '', roll)
+    stock = re.sub(r'^(\d+\s+)+', '', roll)
     if stock.isdigit():
         stock = ""
     return {"stock": stock, "date": date, "location": "", "maps": ""}
