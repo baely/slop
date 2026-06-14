@@ -296,7 +296,96 @@ body {
 .cm-operator { color: #c2a99c !important; }
 .cm-property { color: #d8cfc6 !important; }
 
+/* ---------- sliders ---------- */
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  flex: 0 0 auto;
+}
+.slider-row { display: flex; flex-direction: column; gap: 6px; }
+.slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.slider-name { color: var(--amber); }
+.slider-val { color: var(--ink); }
+.slider-row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-2);
+  cursor: pointer;
+  outline: none;
+}
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--safe);
+  box-shadow: 0 0 7px rgba(255,59,48,.7);
+  border: none;
+}
+.slider-row input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--safe);
+  border: none;
+  box-shadow: 0 0 7px rgba(255,59,48,.7);
+}
+
+/* ---------- iterations stepper ---------- */
 .run-row { display: flex; gap: 10px; }
+.iter {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: var(--panel);
+}
+.iter .step {
+  width: 30px;
+  border: none;
+  background: var(--panel);
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 16px;
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.iter .step:hover { color: var(--safe); background: var(--panel-2); }
+.iter input {
+  width: 36px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.iter input::-webkit-outer-spin-button,
+.iter input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.iter .iter-unit {
+  display: flex;
+  align-items: center;
+  padding-right: 8px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}
 .develop-btn {
   flex: 1 1 auto;
   display: flex;

@@ -73,12 +73,20 @@
       <div id="editor"></div>
     </div>
 
+    <div class="sliders" id="sliders" hidden></div>
+
     <div class="run-row">
+      <div class="iter" title="Apply your function this many times in a row">
+        <button class="step" id="iterDown" aria-label="fewer iterations">−</button>
+        <input id="iterInput" type="number" min="1" max="50" value="1" inputmode="numeric" aria-label="iterations">
+        <span class="iter-unit">×</span>
+        <button class="step" id="iterUp" aria-label="more iterations">+</button>
+      </div>
       <button class="develop-btn" id="runBtn">
         <span class="rb-label">Develop</span>
         <kbd>⌘↵</kbd>
       </button>
-      <button class="ghost wide" id="downloadBtn" disabled>Download</button>
+      <button class="ghost" id="downloadBtn" disabled>Download</button>
     </div>
 
     <div class="status" id="status" data-state="idle">
@@ -93,8 +101,18 @@
         <p>It runs once for every pixel. Channel values are <b>0–255</b> (returned values are clamped and rounded for you).</p>
         <p>Inside it you can call:</p>
         <pre>get(x, y) → [r, g, b, a]</pre>
-        <p><code>get</code> reads the <b>original</b> photo — so neighbour lookups never see your in-progress edits. Out-of-bounds reads clamp to the nearest edge.</p>
-        <p>Also in scope: <code>width</code>, <code>height</code>. Everything in <code>Math</code> too.</p>
+        <p><code>get</code> reads the <b>source</b> for the current pass — the original photo on pass one, and the previous pass's output after that — so neighbour lookups never see edits from the pass you're in. Out-of-bounds reads clamp to the nearest edge.</p>
+        <p>Also in scope: <code>width</code>, <code>height</code>, and everything in <code>Math</code>.</p>
+        <p><b>Sliders.</b> Declare a value you want to tweak by eye:</p>
+        <pre>slider(name, default, min, max, step?)</pre>
+        <p>It returns the current value and adds a live slider below the editor — drag it and the photo re-develops. Example:</p>
+        <pre>const amt = slider("amount", 1.5, 0, 4);
+function pixel(x, y) {
+  const [r, g, b] = get(x, y);
+  const l = 0.299*r + 0.587*g + 0.114*b;
+  return [l + (r-l)*amt, l + (g-l)*amt, l + (b-l)*amt];
+}</pre>
+        <p><b>Iterations.</b> The <code>×</code> stepper next to Develop runs your function several times in a row, each pass feeding into the next — great for blurs and warps that build up.</p>
       </div>
     </details>
   </aside>

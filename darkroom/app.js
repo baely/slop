@@ -26,12 +26,17 @@
   const statusEl   = $("status");
   const statusText = $("statusText");
   const presetsEl  = $("presets");
+  const slidersEl  = $("sliders");
+  const iterInput  = $("iterInput");
+  const iterUp     = $("iterUp");
+  const iterDown   = $("iterDown");
 
   // ---- state ----
   let width = 0, height = 0;
   let origData = null;     // ImageData of the loaded photo (the source of truth)
   let resultData = null;   // ImageData after the last develop
   let busy = false;
+  let rerunPending = false; // a slider moved mid-run; re-develop when free
 
   // ---- editor ----
   const editor = CodeMirror($("editor"), {
@@ -63,15 +68,106 @@
     activePreset = i;
     [...presetsEl.children].forEach((c, j) => c.classList.toggle("active", j === i));
   }
-  // editing the code by hand clears the active chip
+  // editing the code by hand clears the active chip; either way, re-scan sliders
+  let discTimer = null;
   editor.on("change", (_, ch) => {
     if (ch.origin && ch.origin !== "setValue") setActivePreset(-1);
+    clearTimeout(discTimer);
+    discTimer = setTimeout(discoverSliders, 250);
   });
 
   // ---- status helpers ----
   function status(html, state = "idle") {
     statusEl.dataset.state = state;
     statusText.innerHTML = html;
+  }
+
+  // ================= sliders =================
+  // Users declare a control inline:  const t = slider("amount", 1, 0, 4)
+  // We run the code in a discovery pass to find every slider() call, build the
+  // UI, then feed the live values back in on every develop.
+  const sliderState = new Map();   // name -> { value, def, min, max, step, seen }
+  let discoverGen = 0;
+  let lastSliderSig = "";
+
+  function makeSlider(register) {
+    return function slider(name, def = 0, min, max, step) {
+      if (typeof name !== "string") throw new Error("slider() needs a name as its first argument.");
+      if (min === undefined) min = 0;
+      if (max === undefined) max = def > min ? def * 2 : min + 1;
+      if (step === undefined) {
+        const span = max - min;
+        step = (Number.isInteger(min) && Number.isInteger(max) && Number.isInteger(def) && span >= 4)
+          ? 1 : span / 100;
+      }
+      return register(name, def, min, max, step);
+    };
+  }
+
+  // registers/updates a slider and returns its current value
+  function registerSlider(name, def, min, max, step) {
+    let s = sliderState.get(name);
+    if (!s) { s = { value: def }; sliderState.set(name, s); }
+    s.def = def; s.min = min; s.max = max; s.step = step; s.seen = discoverGen;
+    s.value = Math.min(max, Math.max(min, s.value));
+    return s.value;
+  }
+
+  // Run the program once (without touching the image) to learn its sliders.
+  function discoverSliders() {
+    discoverGen++;
+    const slider = makeSlider(registerSlider);
+    const probe = () => [0, 0, 0, 255];
+    const get = origData
+      ? (nx, ny) => {
+          const d = origData.data, W = width, H = height;
+          nx = nx < 0 ? 0 : (nx >= W ? W - 1 : nx | 0);
+          ny = ny < 0 ? 0 : (ny >= H ? H - 1 : ny | 0);
+          const i = (ny * W + nx) << 2;
+          return [d[i], d[i + 1], d[i + 2], d[i + 3]];
+        }
+      : probe;
+    try {
+      const pixel = makeFactory()(get, width || 1, height || 1, slider);
+      if (typeof pixel === "function") pixel(0, 0); // trip any slider() calls inside pixel()
+    } catch (_) { /* mid-typing errors are fine; the real run reports them */ }
+    for (const [name, s] of sliderState) if (s.seen !== discoverGen) sliderState.delete(name);
+    renderSliders();
+  }
+
+  function renderSliders() {
+    const entries = [...sliderState.entries()];
+    slidersEl.hidden = entries.length === 0;
+    const sig = entries.map(([n, s]) => `${n}|${s.min}|${s.max}|${s.step}`).join("§");
+    if (sig === lastSliderSig) return; // same controls — don't rebuild mid-drag
+    lastSliderSig = sig;
+
+    slidersEl.innerHTML = "";
+    for (const [name, s] of entries) {
+      const row = document.createElement("div");
+      row.className = "slider-row";
+      const head = document.createElement("div");
+      head.className = "slider-head";
+      const nm = document.createElement("span");
+      nm.className = "slider-name"; nm.textContent = name;
+      const val = document.createElement("span");
+      val.className = "slider-val"; val.textContent = fmt(s.value);
+      head.append(nm, val);
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = s.min; range.max = s.max; range.step = s.step; range.value = s.value;
+      range.addEventListener("input", () => {
+        s.value = parseFloat(range.value);
+        val.textContent = fmt(s.value);
+        requestDevelop();
+      });
+      row.append(head, range);
+      slidersEl.appendChild(row);
+    }
+  }
+
+  function fmt(v) {
+    return Number.isInteger(v) ? String(v) : (Math.round(v * 1000) / 1000).toString();
   }
 
   // ================= image loading =================
@@ -156,38 +252,58 @@
   }
 
   // ================= develop =================
-  function buildPixelFn(src) {
-    // get() reads the ORIGINAL pixels, with edge clamping
-    const W = width, H = height;
-    function get(nx, ny) {
-      nx = nx < 0 ? 0 : (nx >= W ? W - 1 : nx | 0);
-      ny = ny < 0 ? 0 : (ny >= H ? H - 1 : ny | 0);
-      const i = (ny * W + nx) << 2;
-      return [src[i], src[i + 1], src[i + 2], src[i + 3]];
-    }
-    const factory = new Function(
-      "get", "width", "height",
+  function makeFactory() {
+    return new Function(
+      "get", "width", "height", "slider",
       `"use strict";\n${editor.getValue()}\n;
        if (typeof pixel !== "function") throw new Error("Define a function called pixel(x, y).");
        return pixel;`
     );
-    const pixel = factory(get, W, H);
-    return { pixel, get };
+  }
+
+  function getIterations() {
+    let n = parseInt(iterInput.value, 10);
+    if (!Number.isFinite(n)) n = 1;
+    n = Math.min(50, Math.max(1, n));
+    iterInput.value = n;
+    return n;
+  }
+
+  // schedule a develop, coalescing rapid slider input into one re-run at a time
+  function requestDevelop() {
+    if (!origData) return;
+    if (busy) { rerunPending = true; return; }
+    develop();
   }
 
   function develop() {
     if (busy || !origData) return;
     busy = true;
+    rerunPending = false;
     runBtn.disabled = true;
     status("running…", "idle");
 
-    const src = origData.data;            // never mutated during the pass
-    const out = new ImageData(width, height);
-    const dst = out.data;
+    discoverSliders(); // keep the controls + live values in sync with the code
+    const passes = getIterations();
+    const len = width * height * 4;
+    // ping-pong buffers: read from one, write to the other, swap each pass
+    let readBuf = new Uint8ClampedArray(origData.data); // copy of the original
+    let writeBuf = new Uint8ClampedArray(len);
+
+    // get() reads the CURRENT source (the original on pass 1, the previous
+    // pass's output afterwards), with edge clamping
+    const W = width, H = height;
+    function get(nx, ny) {
+      nx = nx < 0 ? 0 : (nx >= W ? W - 1 : nx | 0);
+      ny = ny < 0 ? 0 : (ny >= H ? H - 1 : ny | 0);
+      const i = (ny * W + nx) << 2;
+      return [readBuf[i], readBuf[i + 1], readBuf[i + 2], readBuf[i + 3]];
+    }
+    const slider = makeSlider(registerSlider);
 
     let pixel;
     try {
-      pixel = buildPixelFn(src).pixel;
+      pixel = makeFactory()(get, W, H, slider);
     } catch (err) {
       finishError(err);
       return;
@@ -195,27 +311,27 @@
 
     developing.hidden = false;
     barFill.style.width = "0%";
-    developLabel.textContent = "developing…";
 
     const t0 = performance.now();
     const ROWS_PER_FRAME = Math.max(1, Math.floor(40000 / width)); // ~40k px/chunk
-    let y = 0;
+    let pass = 0, y = 0;
 
     function chunk() {
       const yEnd = Math.min(height, y + ROWS_PER_FRAME);
       try {
         for (; y < yEnd; y++) {
           for (let x = 0; x < width; x++) {
-            const res = pixel(x, y);
             const i = (y * width + x) << 2;
-            if (res == null) { // treat as transparent / unchanged-ish
-              dst[i] = src[i]; dst[i+1] = src[i+1]; dst[i+2] = src[i+2]; dst[i+3] = src[i+3];
+            const res = pixel(x, y);
+            if (res == null) { // unchanged
+              writeBuf[i] = readBuf[i]; writeBuf[i+1] = readBuf[i+1];
+              writeBuf[i+2] = readBuf[i+2]; writeBuf[i+3] = readBuf[i+3];
               continue;
             }
-            dst[i]   = clamp(res[0]);
-            dst[i+1] = clamp(res[1]);
-            dst[i+2] = clamp(res[2]);
-            dst[i+3] = res.length > 3 ? clamp(res[3]) : 255;
+            writeBuf[i]   = clamp(res[0]);
+            writeBuf[i+1] = clamp(res[1]);
+            writeBuf[i+2] = clamp(res[2]);
+            writeBuf[i+3] = res.length > 3 ? clamp(res[3]) : 255;
           }
         }
       } catch (err) {
@@ -224,20 +340,36 @@
         return;
       }
 
-      barFill.style.width = (y / height * 100).toFixed(1) + "%";
+      barFill.style.width = ((pass * height + y) / (passes * height) * 100).toFixed(1) + "%";
+      developLabel.textContent = passes > 1 ? `developing… pass ${pass + 1}/${passes}` : "developing…";
 
       if (y < height) {
         requestAnimationFrame(chunk);
-      } else {
-        const ms = performance.now() - t0;
-        resultData = out;
-        ctx.putImageData(out, 0, 0);
-        developing.hidden = true;
-        timingEl.textContent = `${(width*height/1e6).toFixed(2)} MP · ${ms < 1000 ? ms.toFixed(0)+" ms" : (ms/1000).toFixed(2)+" s"}`;
-        status("Developed.", "ok");
-        busy = false;
-        runBtn.disabled = false;
+        return;
       }
+
+      // finished a pass: the output becomes the input for the next one
+      pass++;
+      if (pass < passes) {
+        const tmp = readBuf; readBuf = writeBuf; writeBuf = tmp;
+        y = 0;
+        requestAnimationFrame(chunk);
+        return;
+      }
+
+      // all passes done
+      const ms = performance.now() - t0;
+      const out = new ImageData(width, height);
+      out.data.set(writeBuf);
+      resultData = out;
+      ctx.putImageData(out, 0, 0);
+      developing.hidden = true;
+      const xN = passes > 1 ? ` ·×${passes}` : "";
+      timingEl.textContent = `${(width*height/1e6).toFixed(2)} MP${xN} · ${ms < 1000 ? ms.toFixed(0)+" ms" : (ms/1000).toFixed(2)+" s"}`;
+      status(passes > 1 ? `Developed (${passes} passes).` : "Developed.", "ok");
+      busy = false;
+      runBtn.disabled = false;
+      if (rerunPending) requestDevelop(); // a slider moved while we were busy
     }
     requestAnimationFrame(chunk);
   }
@@ -251,6 +383,7 @@
     const where = row != null ? ` (at row ${row})` : "";
     status("✕ " + (err && err.message ? err.message : String(err)) + where, "error");
     busy = false;
+    rerunPending = false;
     runBtn.disabled = false;
     // leave the original on screen
     if (origData) ctx.putImageData(origData, 0, 0);
@@ -258,6 +391,11 @@
 
   // ================= wiring =================
   runBtn.addEventListener("click", develop);
+
+  // iterations stepper
+  iterUp.addEventListener("click", () => { iterInput.value = getIterations() + 1; requestDevelop(); });
+  iterDown.addEventListener("click", () => { iterInput.value = getIterations() - 1; requestDevelop(); });
+  iterInput.addEventListener("change", () => { getIterations(); requestDevelop(); });
   downloadBtn.addEventListener("click", () => {
     if (!resultData && origData) ctx.putImageData(origData, 0, 0);
     const a = document.createElement("a");
@@ -269,6 +407,7 @@
   resetBtn.addEventListener("click", () => {
     setActivePreset(0);
     editor.setValue(PRESETS[0].code);
+    iterInput.value = 1;
     resultData = null;
     if (origData) ctx.putImageData(origData, 0, 0);
     status("Reset to the original.", "idle");

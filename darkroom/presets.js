@@ -44,7 +44,7 @@ function pixel(x, y) {
     name: "posterize",
     code:
 `// Crush each channel down to a few steps.
-const STEPS = 5;
+const STEPS = slider("steps", 5, 2, 12);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const q = v => Math.round(v / 255 * (STEPS - 1)) / (STEPS - 1) * 255;
@@ -118,7 +118,7 @@ function pixel(x, y) {
     name: "chromatic",
     code:
 `// Pull the red and blue channels apart for a lens-fringe look.
-const SHIFT = 6;
+const SHIFT = slider("shift", 6, 0, 30);
 function pixel(x, y) {
   const r = get(x - SHIFT, y)[0];
   const g = get(x, y)[1];
@@ -130,7 +130,7 @@ function pixel(x, y) {
     name: "pixelate",
     code:
 `// Snap each pixel to the colour of its block's top-left corner.
-const SIZE = 12;
+const SIZE = slider("block", 12, 2, 60);
 function pixel(x, y) {
   const bx = Math.floor(x / SIZE) * SIZE;
   const by = Math.floor(y / SIZE) * SIZE;
@@ -151,7 +151,7 @@ function pixel(x, y) {
     name: "threshold",
     code:
 `// Pure black & white at a brightness cutoff.
-const T = 128;
+const T = slider("cutoff", 128, 0, 255);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const lum = 0.299*r + 0.587*g + 0.114*b;
@@ -163,7 +163,7 @@ function pixel(x, y) {
     name: "brightness",
     code:
 `// Add a flat amount to every channel (negative darkens).
-const AMOUNT = 45;
+const AMOUNT = slider("amount", 45, -150, 150);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   return [r + AMOUNT, g + AMOUNT, b + AMOUNT];
@@ -173,7 +173,7 @@ function pixel(x, y) {
     name: "contrast",
     code:
 `// Push values away from mid-grey (C > 1 = more punch).
-const C = 1.6;
+const C = slider("contrast", 1.6, 0, 3);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const f = v => (v - 128) * C + 128;
@@ -184,7 +184,7 @@ function pixel(x, y) {
     name: "saturation",
     code:
 `// Pull each channel away from the pixel's own grey.
-const S = 1.9;
+const S = slider("saturation", 1.9, 0, 4);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const l = 0.299*r + 0.587*g + 0.114*b;
@@ -196,7 +196,7 @@ function pixel(x, y) {
     name: "hue rotate",
     code:
 `// Spin the colour wheel while keeping brightness.
-const DEG = 90;
+const DEG = slider("degrees", 90, 0, 360);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const a = DEG * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
@@ -231,7 +231,7 @@ function pixel(x, y) {
     name: "motion blur",
     code:
 `// Smear each pixel into the ones to its left.
-const LEN = 14;
+const LEN = slider("length", 14, 1, 40);
 function pixel(x, y) {
   let r = 0, g = 0, b = 0;
   for (let d = 0; d < LEN; d++) {
@@ -404,8 +404,8 @@ function pixel(x, y) {
     name: "swirl",
     code:
 `// Rotate the sampling point more the closer it is to centre.
-const STRENGTH = 3.2;
-const RADIUS = 240;
+const STRENGTH = slider("strength", 3.2, 0, 8);
+const RADIUS = slider("radius", 240, 20, 500);
 function pixel(x, y) {
   const cx = width / 2, cy = height / 2;
   let dx = x - cx, dy = y - cy;

@@ -25,10 +25,37 @@ Inside `pixel` you can call:
 get(x, y) → [r, g, b, a]
 ```
 
-`get` always reads the **original** photo, so neighbour lookups never see your
-in-progress edits. Reads outside the image clamp to the nearest edge.
+`get` reads the **source for the current pass** — the original photo on pass one,
+and the previous pass's output after that — so neighbour lookups never see edits
+from the pass they're in. Reads outside the image clamp to the nearest edge.
 
 Also in scope: `width`, `height`, and the global `Math`.
+
+### Sliders
+
+Declare any value you want to tune by eye and a live slider appears below the
+editor; dragging it re-develops the photo:
+
+```js
+slider(name, default, min, max, step?)   // returns the current value
+```
+
+```js
+const amt = slider("amount", 1.5, 0, 4);
+function pixel(x, y) {
+  const [r, g, b] = get(x, y);
+  const l = 0.299*r + 0.587*g + 0.114*b;
+  return [l + (r-l)*amt, l + (g-l)*amt, l + (b-l)*amt];
+}
+```
+
+If `min`/`max` are omitted they default to a sensible range; `step` is inferred.
+
+### Iterations
+
+The `×` stepper next to **Develop** runs your function several times in a row
+(1–50), each pass feeding into the next. Useful for effects that build up — a
+box blur ×10 becomes a strong blur, a swirl ×N winds tighter, and so on.
 
 ### Example — a box blur using neighbours
 
@@ -48,10 +75,13 @@ function pixel(x, y) {
 ## Features
 
 - Drag-and-drop, browse, paste, or load a procedural sample image
-- CodeMirror editor with a dozen ready-made presets (grayscale, invert, sepia,
-  posterize, box blur, sharpen, Sobel edges, emboss, chromatic aberration,
-  pixelate, ripple)
-- `⌘/Ctrl + Enter` to run; progress bar while developing
+- CodeMirror editor with 30 ready-made presets (grayscale, invert, sepia,
+  posterize, threshold, brightness/contrast/saturation, hue rotate, box/gaussian/
+  motion blur, sharpen, unsharp, Sobel edges, emboss, outline, dilate, erode,
+  vignette, duotone, solarize, dither, thermal, chromatic aberration, pixelate,
+  ripple, frosted glass, swirl)
+- Inline `slider()` controls and an iterations stepper for live, no-retyping tweaks
+- `⌘/Ctrl + Enter` to run; progress bar (with pass count) while developing
 - Hold **compare** to peek at the original; **download** the result as PNG
 - Large uploads are scaled down to a 1600px long edge so runs stay responsive
 
