@@ -51,6 +51,15 @@ function pixel(x, y) {
 
 If `min`/`max` are omitted they default to a sensible range; `step` is inferred.
 
+For a set of named choices, declare a dropdown instead:
+
+```js
+select(name, ["option a", "option b", ...])   // returns the chosen item
+```
+
+The `dither` preset uses this to switch between Bayer 2×2 / 4×4 / 8×8, a
+clustered-dot halftone, and random patterns (with a `levels` slider alongside).
+
 ### Iterations
 
 The `×` stepper next to **Develop** runs your function several times in a row

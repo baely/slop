@@ -82,13 +82,15 @@
     statusText.innerHTML = html;
   }
 
-  // ================= sliders =================
-  // Users declare a control inline:  const t = slider("amount", 1, 0, 4)
-  // We run the code in a discovery pass to find every slider() call, build the
-  // UI, then feed the live values back in on every develop.
-  const sliderState = new Map();   // name -> { value, def, min, max, step, seen }
+  // ================= controls (sliders + selects) =================
+  // Users declare a control inline:
+  //   const t = slider("amount", 1, 0, 4)
+  //   const p = select("pattern", ["a", "b", "c"])
+  // We run the code in a discovery pass to find every call, build the UI, then
+  // feed the live values back in on every develop.
+  const controls = new Map(); // name -> { type, value, seen, ...config }
   let discoverGen = 0;
-  let lastSliderSig = "";
+  let lastControlSig = "";
 
   function makeSlider(register) {
     return function slider(name, def = 0, min, max, step) {
@@ -104,19 +106,44 @@
     };
   }
 
-  // registers/updates a slider and returns its current value
+  function makeSelect(register) {
+    return function select(name, options, def) {
+      if (typeof name !== "string") throw new Error("select() needs a name as its first argument.");
+      if (!Array.isArray(options) || options.length === 0) throw new Error("select() needs a non-empty array of options.");
+      const norm = options.map(o =>
+        (o && typeof o === "object" && "value" in o)
+          ? { label: String(o.label ?? o.value), value: o.value }
+          : { label: String(o), value: o });
+      return register(name, norm, def);
+    };
+  }
+
   function registerSlider(name, def, min, max, step) {
-    let s = sliderState.get(name);
-    if (!s) { s = { value: def }; sliderState.set(name, s); }
+    let s = controls.get(name);
+    if (!s || s.type !== "slider") { s = { type: "slider", value: def }; controls.set(name, s); }
     s.def = def; s.min = min; s.max = max; s.step = step; s.seen = discoverGen;
     s.value = Math.min(max, Math.max(min, s.value));
     return s.value;
   }
 
-  // Run the program once (without touching the image) to learn its sliders.
+  function registerSelect(name, options, def) {
+    let s = controls.get(name);
+    if (!s || s.type !== "select") {
+      s = { type: "select", value: def !== undefined ? def : options[0].value };
+      controls.set(name, s);
+    }
+    s.options = options; s.seen = discoverGen;
+    if (!options.some(o => o.value === s.value)) {
+      s.value = (def !== undefined && options.some(o => o.value === def)) ? def : options[0].value;
+    }
+    return s.value;
+  }
+
+  // Run the program once (without touching the image) to learn its controls.
   function discoverSliders() {
     discoverGen++;
     const slider = makeSlider(registerSlider);
+    const select = makeSelect(registerSelect);
     const probe = () => [0, 0, 0, 255];
     const get = origData
       ? (nx, ny) => {
@@ -128,42 +155,72 @@
         }
       : probe;
     try {
-      const pixel = makeFactory()(get, width || 1, height || 1, slider);
-      if (typeof pixel === "function") pixel(0, 0); // trip any slider() calls inside pixel()
+      const pixel = makeFactory()(get, width || 1, height || 1, slider, select);
+      if (typeof pixel === "function") pixel(0, 0); // trip any calls inside pixel()
     } catch (_) { /* mid-typing errors are fine; the real run reports them */ }
-    for (const [name, s] of sliderState) if (s.seen !== discoverGen) sliderState.delete(name);
-    renderSliders();
+    for (const [name, s] of controls) if (s.seen !== discoverGen) controls.delete(name);
+    renderControls();
   }
 
-  function renderSliders() {
-    const entries = [...sliderState.entries()];
+  function renderControls() {
+    const entries = [...controls.entries()];
     slidersEl.hidden = entries.length === 0;
-    const sig = entries.map(([n, s]) => `${n}|${s.min}|${s.max}|${s.step}`).join("§");
-    if (sig === lastSliderSig) return; // same controls — don't rebuild mid-drag
-    lastSliderSig = sig;
+    const sig = entries.map(([n, s]) => s.type === "select"
+      ? `c:${n}|${s.options.map(o => o.label).join(",")}`
+      : `s:${n}|${s.min}|${s.max}|${s.step}`).join("§");
+    if (sig === lastControlSig) return; // same controls — don't rebuild mid-edit
+    lastControlSig = sig;
 
     slidersEl.innerHTML = "";
     for (const [name, s] of entries) {
-      const row = document.createElement("div");
-      row.className = "slider-row";
-      const head = document.createElement("div");
-      head.className = "slider-head";
-      const nm = document.createElement("span");
-      nm.className = "slider-name"; nm.textContent = name;
-      const val = document.createElement("span");
-      val.className = "slider-val"; val.textContent = fmt(s.value);
-      head.append(nm, val);
-      const range = document.createElement("input");
-      range.type = "range";
-      range.min = s.min; range.max = s.max; range.step = s.step; range.value = s.value;
-      range.addEventListener("input", () => {
-        s.value = parseFloat(range.value);
-        val.textContent = fmt(s.value);
-        requestDevelop();
-      });
-      row.append(head, range);
-      slidersEl.appendChild(row);
+      slidersEl.appendChild(s.type === "select" ? selectRow(name, s) : sliderRow(name, s));
     }
+  }
+
+  function sliderRow(name, s) {
+    const row = document.createElement("div");
+    row.className = "slider-row";
+    const head = document.createElement("div");
+    head.className = "slider-head";
+    const nm = document.createElement("span");
+    nm.className = "slider-name"; nm.textContent = name;
+    const val = document.createElement("span");
+    val.className = "slider-val"; val.textContent = fmt(s.value);
+    head.append(nm, val);
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = s.min; range.max = s.max; range.step = s.step; range.value = s.value;
+    range.addEventListener("input", () => {
+      s.value = parseFloat(range.value);
+      val.textContent = fmt(s.value);
+      requestDevelop();
+    });
+    row.append(head, range);
+    return row;
+  }
+
+  function selectRow(name, s) {
+    const row = document.createElement("div");
+    row.className = "slider-row";
+    const head = document.createElement("div");
+    head.className = "slider-head";
+    const nm = document.createElement("span");
+    nm.className = "slider-name"; nm.textContent = name;
+    head.append(nm);
+    const sel = document.createElement("select");
+    sel.className = "control-select";
+    s.options.forEach((o, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i); opt.textContent = o.label;
+      if (o.value === s.value) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", () => {
+      s.value = s.options[parseInt(sel.value, 10)].value;
+      requestDevelop();
+    });
+    row.append(head, sel);
+    return row;
   }
 
   function fmt(v) {
@@ -254,7 +311,7 @@
   // ================= develop =================
   function makeFactory() {
     return new Function(
-      "get", "width", "height", "slider",
+      "get", "width", "height", "slider", "select",
       `"use strict";\n${editor.getValue()}\n;
        if (typeof pixel !== "function") throw new Error("Define a function called pixel(x, y).");
        return pixel;`
@@ -300,10 +357,11 @@
       return [readBuf[i], readBuf[i + 1], readBuf[i + 2], readBuf[i + 3]];
     }
     const slider = makeSlider(registerSlider);
+    const select = makeSelect(registerSelect);
 
     let pixel;
     try {
-      pixel = makeFactory()(get, W, H, slider);
+      pixel = makeFactory()(get, W, H, slider, select);
     } catch (err) {
       finishError(err);
       return;

@@ -105,7 +105,9 @@
         <p>Also in scope: <code>width</code>, <code>height</code>, and everything in <code>Math</code>.</p>
         <p><b>Sliders.</b> Declare a value you want to tweak by eye:</p>
         <pre>slider(name, default, min, max, step?)</pre>
-        <p>It returns the current value and adds a live slider below the editor — drag it and the photo re-develops. Example:</p>
+        <p>For a set of named choices, use a dropdown:</p>
+        <pre>select(name, ["a", "b", "c"])   // returns the chosen item</pre>
+        <p>Both return the current value and add a live control below the editor — change it and the photo re-develops. Example:</p>
         <pre>const amt = slider("amount", 1.5, 0, 4);
 function pixel(x, y) {
   const [r, g, b] = get(x, y);

@@ -355,17 +355,32 @@ function pixel(x, y) {
   {
     name: "dither",
     code:
-`// 1-bit image using an ordered 4x4 Bayer matrix.
-const BAYER = [ 0, 8, 2,10,
-               12, 4,14, 6,
-                3,11, 1, 9,
-               15, 7,13, 5 ];
+`// Ordered dithering — choose the threshold pattern and grey levels.
+const MATS = {
+  "bayer 2x2": [0,2, 3,1],
+  "bayer 4x4": [0,8,2,10, 12,4,14,6, 3,11,1,9, 15,7,13,5],
+  "bayer 8x8": [ 0,32, 8,40, 2,34,10,42,  48,16,56,24,50,18,58,26,
+                12,44, 4,36,14,46, 6,38,  60,28,52,20,62,30,54,22,
+                 3,35,11,43, 1,33, 9,41,  51,19,59,27,49,17,57,25,
+                15,47, 7,39,13,45, 5,37,  63,31,55,23,61,29,53,21 ],
+  "halftone" : [12,5,6,13, 4,0,1,7, 11,3,2,8, 15,10,9,14],
+};
+const pattern = select("pattern", ["bayer 4x4","bayer 2x2","bayer 8x8","halftone","random"]);
+const levels  = slider("levels", 2, 2, 8);
+
+function threshold(x, y) {
+  if (pattern === "random") return Math.random();
+  const m = MATS[pattern];
+  const n = m.length === 4 ? 2 : m.length === 64 ? 8 : 4;
+  return (m[(y % n) * n + (x % n)] + 0.5) / (n * n);
+}
 function pixel(x, y) {
   const [r, g, b] = get(x, y);
   const l = (0.299*r + 0.587*g + 0.114*b) / 255;
-  const t = (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
-  const v = l > t ? 255 : 0;
-  return [v, v, v];
+  const v = l * (levels - 1);
+  const f = Math.floor(v);
+  const grey = (f + (v - f > threshold(x, y) ? 1 : 0)) / (levels - 1) * 255;
+  return [grey, grey, grey];
 }`
   },
   {
