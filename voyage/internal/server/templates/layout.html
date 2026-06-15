@@ -1,0 +1,204 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<style>
+  :root {
+    --ink:#141414; --ink-2:#3a3a3a; --soft:#666; --faint:#9a9a9a;
+    --line:#e3e3e3; --line-2:#efefef; --bg:#fff; --bg-2:#fafafa;
+    --accent:#27489c; --accent-deep:#1d3677; --accent-tint:#eef1fa;
+    --danger:#b3261e; --ok:#2f7d4f;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg);
+    margin: 0; line-height: 1.55; font-size: 15px; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 22px 18px 90px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  h1 { font-size: 27px; letter-spacing: -0.02em; margin: 6px 0 2px; }
+  h2 { font-size: 16px; letter-spacing: -0.01em; margin: 0 0 12px; }
+  h3 { font-size: 15px; margin: 0; }
+  p { margin: 6px 0; }
+  .muted { color: var(--faint); font-size: 13px; }
+  .meta { color: var(--soft); font-size: 13px; }
+  .mono { font-family: var(--mono); font-size: 0.9em; letter-spacing: -0.01em; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .wordmark { font-weight: 700; letter-spacing: -0.02em; font-size: 18px; text-decoration: none; color: var(--ink); }
+  .wordmark::after { content: "."; color: var(--accent); }
+  .back { display: inline-block; color: var(--faint); text-decoration: none; font-size: 13px; margin-bottom: 4px; }
+  .back:hover { color: var(--accent); }
+
+  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--faint); margin-bottom: 5px; }
+  input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 10px; transition: border-color .15s, box-shadow .15s; }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+  textarea { width: 100%; resize: vertical; }
+  button { font: inherit; cursor: pointer; }
+
+  .btn, button.btn-primary, button.btn-sm, .vote { border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 6px; padding: 8px 13px; transition: transform .05s, background .15s, border-color .15s, color .15s; }
+  .btn:hover, button.btn-sm:hover { border-color: var(--faint); }
+  .btn:active, .btn-primary:active, .btn-sm:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn-sm { padding: 5px 10px; font-size: 13px; }
+  .btn-ghost { background: none; border: none; color: var(--faint); padding: 5px 8px; border-radius: 6px; }
+  .btn-ghost:hover { color: var(--accent); background: var(--accent-tint); }
+  .btn-danger { color: var(--danger); border: none; background: none; }
+  .btn-danger:hover { text-decoration: underline; }
+
+  .inline { display: inline; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .stack > * + * { margin-top: 13px; }
+
+  .card { border: 1px solid var(--line); border-radius: 9px; padding: 17px 18px; margin: 14px 0; background: var(--bg); }
+  .lead { color: var(--soft); font-size: 14px; margin: 4px 0 2px; }
+
+  /* boarding-pass flourish on a page heading */
+  .ticket { display: flex; align-items: center; gap: 12px; margin: 8px 0 2px; }
+  .ticket::after { content: ""; flex: 1; height: 0; border-top: 1px dashed var(--line); }
+  .ticket .stamp { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent-tint); background: var(--accent-tint); border-radius: 4px; padding: 2px 7px; }
+
+  .modes { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 18px 0 8px; }
+  .modes a { text-decoration: none; padding: 8px 15px; color: var(--faint); font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .modes a:hover { color: var(--ink); }
+  .modes a.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+
+  .locations { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 4px; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 11px; font-size: 13px; }
+  .tag::before { content: "📍"; font-size: 11px; }
+
+  .pill { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--soft);
+    background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 8px; }
+  .pill-selected { background: var(--accent-tint); color: var(--accent-deep); border-color: #d6def4; }
+  .pill-preferred { background: #fff6e6; color: #8a5a00; border-color: #f0e2c0; }
+
+  /* budget → hotels grouping */
+  .group { border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; margin: 11px 0; background: var(--bg); }
+  .group-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .group-title { font-weight: 650; font-size: 15px; }
+
+  .opts { list-style: none; padding: 0; margin: 0; }
+  .opts > li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .opts > li:last-child { border-bottom: none; }
+  .addform { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .addform input[name=label], .addform input[name=notes] { flex: 1 1 130px; }
+
+  .hotels { list-style: none; padding: 0; margin: 8px 0 4px; }
+  .hotels li { padding: 8px 2px; border-bottom: 1px dashed var(--line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hotels li:last-child { border-bottom: none; }
+  .hotels li.chosen { background: var(--accent-tint); border-radius: 6px; padding: 8px 10px; border-bottom: none; }
+
+  .activities { list-style: none; padding: 0; margin: 4px 0; counter-reset: rank; }
+  .activities li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .activities li:last-child { border-bottom: none; }
+  .activities li::before { counter-increment: rank; content: counter(rank); font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 16px; }
+
+  .votes { color: var(--soft); font-size: 13px; white-space: nowrap; }
+  .vote { color: var(--soft); border-radius: 999px; padding: 5px 12px; }
+  .vote:hover { border-color: var(--accent); color: var(--accent); }
+  .vote.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .statusbtns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .comments { margin-top: 8px; padding-top: 6px; }
+  .comment { font-size: 13px; color: var(--soft); margin: 3px 0; }
+  .comment strong { color: var(--ink); }
+
+  .shareurl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .shareurl input { flex: 1 1 240px; background: var(--bg-2); font-family: var(--mono); font-size: 13px; }
+  .empty { color: var(--faint); font-size: 14px; padding: 22px 0; text-align: center; }
+  .section-title { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 2px; }
+  .section-title h2 { margin: 0; }
+</style>
+</head>
+<body><div class="wrap">
+{{end}}
+
+{{define "foot"}}</div>
+<script>
+// Every action is a form POST that redirects back to the same page, which would
+// otherwise reload scrolled to the top. Remember the scroll position on submit
+// and restore it after the redirect (same path only).
+(function () {
+  try {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    var KEY = "voyage:scroll";
+    var saved = sessionStorage.getItem(KEY);
+    if (saved) {
+      sessionStorage.removeItem(KEY);
+      var d = JSON.parse(saved);
+      if (d && d.p === location.pathname) {
+        var y = d.y;
+        window.scrollTo(0, y);
+        requestAnimationFrame(function () { window.scrollTo(0, y); });
+      }
+    }
+    document.addEventListener("submit", function () {
+      try { sessionStorage.setItem(KEY, JSON.stringify({ p: location.pathname, y: window.scrollY })); } catch (e) {}
+    }, true);
+  } catch (e) {}
+})();
+
+// Date range convenience: keep start/end sensible. Picking a start fills/repairs
+// the end to start+1 night; picking an end fills/repairs the start to end-1.
+(function () {
+  function shift(s, days) {
+    var p = s.split("-");
+    var dt = new Date(+p[0], (+p[1]) - 1, +p[2]);
+    dt.setDate(dt.getDate() + days);
+    var m = String(dt.getMonth() + 1).padStart(2, "0");
+    var d = String(dt.getDate()).padStart(2, "0");
+    return dt.getFullYear() + "-" + m + "-" + d;
+  }
+  document.addEventListener("change", function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== "INPUT" || t.type !== "date" || !t.form) return;
+    if (t.name === "start" && t.value) {
+      var end = t.form.querySelector('input[type=date][name="end"]');
+      if (end && (!end.value || end.value < t.value)) end.value = shift(t.value, 1);
+    } else if (t.name === "end" && t.value) {
+      var start = t.form.querySelector('input[type=date][name="start"]');
+      if (start && (!start.value || start.value > t.value)) start.value = shift(t.value, -1);
+    }
+  });
+})();
+</script>
+</body></html>{{end}}
+
+{{define "vote"}}{{if .Page.Voter}}<form method="post" action="/t/{{.Page.Token}}/vote" class="inline">
+<input type="hidden" name="target_type" value="{{.Type}}">
+<input type="hidden" name="target_id" value="{{.ID}}">
+<input type="hidden" name="redirect" value="/t/{{.Page.Token}}#{{.Type}}-{{.ID}}">
+<button class="vote btn-sm {{if .Voted}}on{{end}}">&#9829; {{.Votes}}</button>
+</form>{{else}}<span class="votes">&#9829; {{.Votes}}</span>{{end}}{{end}}
+
+{{define "comments"}}<div class="comments">
+{{range commentsFor .Page.Comments .Type .ID}}<p class="comment"><strong>{{.Author}}:</strong> {{.Body}}{{if and $.Page.Voter (eq .VoterID $.Page.Voter.ID)}} <form method="post" action="/t/{{$.Page.Token}}/comment/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="/t/{{$.Page.Token}}#{{$.Type}}-{{$.ID}}"><button class="btn-ghost btn-sm" title="Delete">&times;</button></form>{{end}}</p>{{end}}
+{{if .Page.Voter}}<form method="post" action="/t/{{.Page.Token}}/comment" class="row">
+<input type="hidden" name="target_type" value="{{.Type}}">
+<input type="hidden" name="target_id" value="{{.ID}}">
+<input type="hidden" name="redirect" value="/t/{{.Page.Token}}#{{.Type}}-{{.ID}}">
+<input name="body" class="grow" placeholder="Add a comment" required>
+<button class="btn-ghost btn-sm">Post</button>
+</form>{{end}}
+</div>{{end}}
+
+{{/* ownercomments: organiser-side thread (display + delete own + add). Pass a
+dict with Comments, Type, ID (target), TripID, CurrentURL. */}}
+{{define "ownercomments"}}<div class="comments">
+{{range commentsFor .Comments .Type .ID}}<p class="comment"><strong>{{.Author}}:</strong> {{.Body}}{{if eq .VoterID 0}} <form method="post" action="/comments/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm" title="Delete">&times;</button></form>{{end}}</p>{{end}}
+<form method="post" action="/trips/{{.TripID}}/comment" class="row">
+<input type="hidden" name="redirect" value="{{.CurrentURL}}">
+<input type="hidden" name="target_type" value="{{.Type}}">
+<input type="hidden" name="target_id" value="{{.ID}}">
+<input name="body" class="grow" placeholder="Add a comment" required>
+<button class="btn-ghost btn-sm">Post</button>
+</form>
+</div>{{end}}

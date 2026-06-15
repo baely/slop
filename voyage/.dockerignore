@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env
+*.db
+*.db-*
+*.db-shm
+*.db-wal
+voyage-bin
+dist

@@ -1,0 +1,28 @@
+services:
+  voyage:
+    build: .
+    image: registry.baileys.dev/voyage:latest
+    restart: unless-stopped
+    environment:
+      ADDR: ":8080"
+      DB_PATH: "/data/voyage.db"
+      TITLE: "${TITLE:-Voyage}"
+      CURRENCY: "${CURRENCY:-AUD}"
+      # Required: the access token for the planner (owner) side. Travellers use
+      # the per-trip share link and never need this.
+      ADMIN_TOKEN: "${ADMIN_TOKEN:?set ADMIN_TOKEN}"
+      # Absolute base used to build share links. Leave empty to derive from the
+      # request host.
+      BASE_URL: "${BASE_URL:-https://voyage.baileys.app}"
+      # Set TRUST_PROXY=1 when running behind a reverse proxy that terminates TLS
+      # and sets X-Forwarded-Proto.
+      TRUST_PROXY: "${TRUST_PROXY:-1}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.voyage.rule=Host(`voyage.baileys.app`)
+      - traefik.http.services.voyage.loadbalancer.server.port=8080
+    volumes:
+      - voyage-data:/data
+
+volumes:
+  voyage-data:

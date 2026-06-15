@@ -1,0 +1,268 @@
+{{define "trip"}}{{template "head" .}}
+<header class="topbar">
+  <a class="wordmark" href="/">Voyage</a>
+  <form method="post" action="/logout"><button class="btn-ghost btn-sm">Sign out</button></form>
+</header>
+
+<a class="back" href="/">&larr; All trips</a>
+<h1>{{.Trip.Title}}</h1>
+
+<div class="locations">
+  {{range .Locations}}<span class="tag">{{.Name}}
+    <form method="post" action="/locations/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm" style="padding:0 4px">&times;</button></form>
+  </span>{{end}}
+  <form method="post" action="/trips/{{.Trip.ID}}/locations" class="inline">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="name" placeholder="Add location" class="btn-sm">
+    <button class="btn-sm">Add</button>
+  </form>
+</div>
+
+<nav class="modes">
+  <a href="/trips/{{.Trip.ID}}?mode=ideate" class="{{if eq .Mode "ideate"}}active{{end}}">Ideate</a>
+  <a href="/trips/{{.Trip.ID}}?mode=plan" class="{{if eq .Mode "plan"}}active{{end}}">Plan</a>
+</nav>
+
+<div class="card">
+  <div class="row">
+    <form method="post" action="/trips/{{.Trip.ID}}/party" class="row" style="gap:6px">
+      <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+      <span class="meta">Party of</span>
+      <input name="size" type="number" min="1" value="{{.Trip.PartySize}}" style="width:62px">
+      <button class="btn-sm">Update</button>
+    </form>
+    <span class="grow"></span>
+    <span class="meta">{{if .TripNights}}Per-night totals use <strong>{{.TripNights}} nights</strong> ({{.TripNightsLabel}}) · per-person totals use <strong>{{.Trip.PartySize}}</strong>{{else}}Add a date range to get per-night totals{{end}}</span>
+  </div>
+</div>
+
+{{if eq .Mode "ideate"}}
+{{/* ---------------- IDEATE: budget -> dates -> accom -> activities ---------------- */}}
+<p class="lead">Work through it in order: budgets, possible dates, where you'd stay in each budget, then an activity wishlist. Your crew votes on all of it.</p>
+
+{{/* 1 — BUDGET */}}
+<div class="card">
+  <div class="ticket"><span class="stamp">1 · Budget</span></div>
+  <ul class="opts">
+    {{range .Budgets}}<li id="axis_option-{{.Option.ID}}">
+      <span class="mono">{{.Option.Label}}</span>
+      {{if .Option.TotalLabel}}<span class="muted">{{.Option.TotalLabel}}</span>{{end}}
+      <span class="votes">&#9829; {{.Option.Votes}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/axes/{{.BudgetAxis.ID}}/options" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="amount" placeholder="2500" inputmode="numeric" size="6">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <select name="basis"><option value="total">total</option><option value="pp">pp</option></select>
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Add budget</button>
+  </form>
+</div>
+
+{{/* 2 — DATES */}}
+<div class="card">
+  <div class="ticket"><span class="stamp">2 · Dates</span></div>
+  <ul class="opts">
+    {{range .Dates}}<li>
+      <span class="mono">{{.Label}}</span>
+      {{if .Nights}}<span class="muted">· {{.Nights}} nights</span>{{end}}
+      <span class="votes">&#9829; {{.Votes}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/axes/{{.DatesAxis.ID}}/options" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input type="date" name="start"><input type="date" name="end">
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Add dates</button>
+  </form>
+</div>
+
+{{/* 3 — ACCOMMODATION (its own step; a list per budget) */}}
+<div class="card">
+  <div class="ticket"><span class="stamp">3 · Accommodation</span></div>
+  <p class="muted">Add the places you'd stay for each budget.</p>
+  {{range .Budgets}}
+  <div class="group">
+    <div class="group-head"><span class="group-title mono">{{.Option.Label}}</span></div>
+    <ul class="hotels">
+      {{range .Hotels}}<li>
+        <strong>{{.Label}}</strong>
+        {{if metaStr .Meta "price"}}<span class="muted mono">{{cur (metaStr .Meta "currency")}}{{metaStr .Meta "price"}} {{metaStr .Meta "basis"}}</span>{{end}}
+      {{if .TotalLabel}}<span class="muted">{{.TotalLabel}}</span>{{end}}
+        {{if metaStr .Meta "area"}}<span class="muted">&middot; {{metaStr .Meta "area"}}</span>{{end}}
+        {{if metaStr .Meta "rating"}}<span class="muted">&middot; {{metaStr .Meta "rating"}}&#9733;</span>{{end}}
+        {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
+        <span class="grow"></span>
+        <span class="votes">&#9829; {{.Votes}}</span>
+        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </li>{{else}}<li class="muted">No accommodation yet for this budget.</li>{{end}}
+    </ul>
+    <form method="post" action="/options/{{.Option.ID}}/hotels" class="addform" style="margin-top:8px">
+      <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+      <input name="label" placeholder="Place to stay" required>
+      <input name="price" placeholder="price" size="6">
+      <input name="currency" value="{{defaultCurrency}}" size="4">
+      <select name="basis"><option value="night">/night</option><option value="total">total</option></select>
+      <input name="area" placeholder="area" size="9">
+      <input name="rating" placeholder="rating" size="5">
+      <input name="link" placeholder="link">
+      <button class="btn-primary btn-sm">Add accommodation</button>
+    </form>
+  </div>
+  {{else}}<p class="muted">Add a budget first, then list places to stay for it.</p>{{end}}
+</div>
+
+{{/* 4 — ACTIVITIES */}}
+{{if .Activities}}
+<div class="card">
+  <div class="ticket"><span class="stamp">4 · Activities</span></div>
+  <ul class="activities">
+    {{range .Activities.Items}}<li>
+      <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}{{if .Link}} <a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="up"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&uarr;</button></form>
+      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="down"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&darr;</button></form>
+      <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/trips/{{.Trip.ID}}/activities" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="label" placeholder="Activity" required>
+    <input name="notes" placeholder="notes">
+    <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Add</button>
+  </form>
+</div>
+{{end}}
+
+{{else}}
+{{/* ---------------- PLAN ---------------- */}}
+<p class="lead">See what your crew likes, pick the winning accommodation, and share the link.</p>
+
+<div class="card">
+  <h2>Share with travellers</h2>
+  <p class="muted">Anyone with this link can view the options and vote — no sign-in needed.</p>
+  <div class="shareurl">
+    <input id="shareurl" value="{{.ShareURL}}" readonly>
+    <button class="btn-sm" type="button" onclick="navigator.clipboard.writeText(document.getElementById('shareurl').value);this.textContent='Copied';">Copy</button>
+    <a class="btn-sm btn-ghost" href="{{.ShareURL}}" target="_blank" rel="noopener">Open</a>
+    <form method="post" action="/trips/{{.Trip.ID}}/share/rotate" class="inline" onsubmit="return confirm('Rotate the link? The old one will stop working.')"><input type="hidden" name="redirect" value="{{.CurrentURL}}"><button class="btn-ghost btn-sm">Rotate</button></form>
+  </div>
+</div>
+
+<div class="section-title"><h2>Budget</h2><span class="muted">ranked by votes</span></div>
+<div class="card">
+  <ul class="opts">
+    {{range .Budgets}}<li id="axis_option-{{.Option.ID}}" style="display:block">
+      <div class="row">
+        <span class="mono">{{.Option.Label}}</span>
+        {{if .Option.TotalLabel}}<span class="muted">{{.Option.TotalLabel}}</span>{{end}}
+        <span class="votes">&#9829; {{.Option.Votes}}</span>
+        <span class="grow"></span>
+        <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </div>
+      {{template "ownercomments" (dict "Comments" $.Comments "Type" "axis_option" "ID" .Option.ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
+    </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/axes/{{.BudgetAxis.ID}}/options" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="amount" placeholder="2500" inputmode="numeric" size="6">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <select name="basis"><option value="total">total</option><option value="pp">pp</option></select>
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Add budget</button>
+  </form>
+</div>
+
+<div class="section-title"><h2>Dates</h2><span class="muted">ranked by votes</span></div>
+<div class="card">
+  <ul class="opts">
+    {{range .Dates}}<li style="display:block">
+      <div class="row">
+        <span class="mono">{{.Label}}</span>
+        {{if .Nights}}<span class="muted">· {{.Nights}} nights</span>{{end}}
+        <span class="votes">&#9829; {{.Votes}}</span>
+        <span class="grow"></span>
+        <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </div>
+      {{template "ownercomments" (dict "Comments" $.Comments "Type" "axis_option" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
+    </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/axes/{{.DatesAxis.ID}}/options" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input type="date" name="start"><input type="date" name="end">
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Add dates</button>
+  </form>
+</div>
+
+<div class="section-title"><h2>Accommodation</h2><span class="muted">per budget · pick the winners</span></div>
+{{range .Budgets}}
+<div class="card">
+  <div class="group-head"><span class="group-title mono">{{.Option.Label}}</span></div>
+  <ul class="hotels">
+    {{range .Hotels}}<li class="{{if ne .Status "option"}}chosen{{end}}" style="display:block">
+      <div class="row">
+        <strong>{{.Label}}</strong>
+        {{if metaStr .Meta "price"}}<span class="muted mono">{{cur (metaStr .Meta "currency")}}{{metaStr .Meta "price"}} {{metaStr .Meta "basis"}}</span>{{end}}
+        {{if .TotalLabel}}<span class="muted">{{.TotalLabel}}</span>{{end}}
+        {{if metaStr .Meta "area"}}<span class="muted">&middot; {{metaStr .Meta "area"}}</span>{{end}}
+        {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
+        <span class="grow"></span>
+        <span class="votes">&#9829; {{.Votes}}</span>
+        {{if ne .Status "option"}}<span class="pill pill-{{.Status}}">{{.Status}}</span>{{end}}
+      </div>
+      <div class="statusbtns" style="margin-top:6px">
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="preferred"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Prefer</button></form>
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="selected"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Select</button></form>
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Reset</button></form>
+        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </div>
+      {{template "ownercomments" (dict "Comments" $.Comments "Type" "combo_item" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
+    </li>{{else}}<li class="muted">No accommodation for this budget.</li>{{end}}
+  </ul>
+  <form method="post" action="/options/{{.Option.ID}}/hotels" class="addform" style="margin-top:8px">
+    <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+    <input name="label" placeholder="Place to stay" required>
+    <input name="price" placeholder="price" size="6">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <select name="basis"><option value="night">/night</option><option value="total">total</option></select>
+    <input name="area" placeholder="area" size="9">
+    <input name="rating" placeholder="rating" size="5">
+    <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Add accommodation</button>
+  </form>
+</div>
+{{else}}<div class="empty">No budgets yet — add one above.</div>{{end}}
+
+{{if .Activities}}
+<div class="section-title"><h2>Activities</h2><span class="muted">weighted ranking from travellers</span></div>
+<div class="card">
+  <ul class="activities">
+    {{range .Activities.Items}}<li style="display:block">
+      <div class="row">
+        <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}{{if .Link}} <a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}</span>
+        <span class="grow"></span>
+        <span class="votes">score {{.Votes}}</span>
+        <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </div>
+      {{template "ownercomments" (dict "Comments" $.Comments "Type" "list_item" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
+    </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/trips/{{.Trip.ID}}/activities" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="label" placeholder="Activity" required>
+    <input name="notes" placeholder="notes">
+    <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Add</button>
+  </form>
+</div>
+{{end}}
+
+{{end}}
+{{template "foot" .}}{{end}}
