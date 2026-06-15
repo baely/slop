@@ -21,8 +21,17 @@ services:
       - traefik.enable=true
       - traefik.http.routers.voyage.rule=Host(`voyage.baileys.app`)
       - traefik.http.services.voyage.loadbalancer.server.port=8080
+      # Route over the shared Traefik network (the service is only on `web`).
+      - traefik.docker.network=web
     volumes:
       - voyage-data:/data
+    networks:
+      - web
+
+# Join the existing shared Traefik network instead of creating a per-project one.
+networks:
+  web:
+    external: true
 
 volumes:
   voyage-data:
