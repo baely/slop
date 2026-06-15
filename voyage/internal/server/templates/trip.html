@@ -95,7 +95,7 @@
         {{if metaStr .Meta "price"}}<span class="muted mono">{{cur (metaStr .Meta "currency")}}{{metaStr .Meta "price"}} {{metaStr .Meta "basis"}}</span>{{end}}
       {{if .TotalLabel}}<span class="muted">{{.TotalLabel}}</span>{{end}}
         {{if metaStr .Meta "area"}}<span class="muted">&middot; {{metaStr .Meta "area"}}</span>{{end}}
-        {{if metaStr .Meta "rating"}}<span class="muted">&middot; {{metaStr .Meta "rating"}}&#9733;</span>{{end}}
+        {{if metaStr .Meta "rating"}}<span class="muted">&middot; {{metaStr .Meta "rating"}}<span class="star">&#9733;</span></span>{{end}}
         {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
         <span class="grow"></span>
         <span class="votes">&#9829; {{.Votes}}</span>
