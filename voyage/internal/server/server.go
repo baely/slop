@@ -87,6 +87,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /t/{token}/identify", s.handleIdentify)
 	s.mux.HandleFunc("POST /t/{token}/vote", s.handleVote)
 	s.mux.HandleFunc("POST /t/{token}/rank", s.handleRank)
+	s.mux.HandleFunc("POST /t/{token}/suggest/budget", s.handleSuggestBudget)
+	s.mux.HandleFunc("POST /t/{token}/suggest/dates", s.handleSuggestDates)
+	s.mux.HandleFunc("POST /t/{token}/suggest/accommodation", s.handleSuggestAccommodation)
+	s.mux.HandleFunc("POST /t/{token}/suggest/activity", s.handleSuggestActivity)
 }
 
 // ---- rendering helpers ----
@@ -219,8 +223,10 @@ func (s *Server) handleDeleteTrip(w http.ResponseWriter, r *http.Request) {
 // budgetGroup is a budget option together with the hotel options grouped under
 // it. Hotels are grouped by budget only (dates are an independent votable list).
 type budgetGroup struct {
-	Option store.AxisOption
-	Hotels []store.ComboItem
+	Option          store.AxisOption
+	Hotels          []store.ComboItem
+	ComboID         int64 // budget-only combo holding the accommodation (0 if none yet)
+	CanSuggestAccom bool  // computed (share): the current traveller may add a stay here
 }
 
 type tripPage struct {
@@ -327,7 +333,9 @@ func (s *Server) budgetGroups(budget store.Axis, combos []store.Combo, counts ma
 		}
 		opt.TotalLabel = budgetTotalLabel(opt.Meta, party)
 		var hotels []store.ComboItem
+		var comboID int64
 		if c := byBudgetOpt[opt.ID]; c != nil {
+			comboID = c.ID
 			hotels = c.Items
 			for j := range hotels {
 				hotels[j].Votes = counts[key("combo_item", hotels[j].ID)]
@@ -337,7 +345,7 @@ func (s *Server) budgetGroups(budget store.Axis, combos []store.Combo, counts ma
 				hotels[j].TotalLabel = accomTotalLabel(hotels[j].Meta, nights)
 			}
 		}
-		groups = append(groups, budgetGroup{Option: opt, Hotels: hotels})
+		groups = append(groups, budgetGroup{Option: opt, Hotels: hotels, ComboID: comboID})
 	}
 	return groups
 }
@@ -380,9 +388,20 @@ func (s *Server) handleAddOption(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	label, meta := optionFromForm(axis.Kind, r)
+	if label != "" {
+		_, _ = s.store.AddAxisOption(axisID, label, meta, nil)
+	}
+	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", axis.TripID))
+}
+
+// optionFromForm builds an axis option's label and metadata from request form
+// fields, deriving a label when none is given. Shared by the owner and traveller
+// (suggestion) paths.
+func optionFromForm(kind string, r *http.Request) (string, map[string]any) {
 	label := strings.TrimSpace(r.FormValue("label"))
 	meta := map[string]any{}
-	switch axis.Kind {
+	switch kind {
 	case "budget":
 		amount := strings.TrimSpace(r.FormValue("amount"))
 		currency := strings.TrimSpace(r.FormValue("currency"))
@@ -412,10 +431,7 @@ func (s *Server) handleAddOption(w http.ResponseWriter, r *http.Request) {
 			label = formatDateRange(start, end)
 		}
 	}
-	if label != "" {
-		_, _ = s.store.AddAxisOption(axisID, label, meta)
-	}
-	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", axis.TripID))
+	return label, meta
 }
 
 func (s *Server) handleDeleteOption(w http.ResponseWriter, r *http.Request) {
@@ -441,17 +457,22 @@ func (s *Server) handleAddBudgetHotel(w http.ResponseWriter, r *http.Request) {
 	if label != "" {
 		comboID, err := s.store.EnsureCombo(tripID, map[int64]int64{axisID: optID})
 		if err == nil {
-			meta := map[string]any{}
-			for _, k := range []string{"price", "currency", "basis", "area", "rating"} {
-				if v := strings.TrimSpace(r.FormValue(k)); v != "" {
-					meta[k] = v
-				}
-			}
 			_, _ = s.store.AddComboItem(comboID, "hotel", label,
-				strings.TrimSpace(r.FormValue("link")), strings.TrimSpace(r.FormValue("notes")), meta)
+				strings.TrimSpace(r.FormValue("link")), strings.TrimSpace(r.FormValue("notes")), hotelMetaFromForm(r), nil)
 		}
 	}
 	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", tripID))
+}
+
+// hotelMetaFromForm collects accommodation metadata fields from a request.
+func hotelMetaFromForm(r *http.Request) map[string]any {
+	meta := map[string]any{}
+	for _, k := range []string{"price", "currency", "basis", "area", "rating"} {
+		if v := strings.TrimSpace(r.FormValue(k)); v != "" {
+			meta[k] = v
+		}
+	}
+	return meta
 }
 
 func (s *Server) handleDeleteItem(w http.ResponseWriter, r *http.Request) {
@@ -477,7 +498,7 @@ func (s *Server) handleAddActivity(w http.ResponseWriter, r *http.Request) {
 	label := strings.TrimSpace(r.FormValue("label"))
 	if label != "" {
 		if list, err := s.store.ActivitiesList(tripID); err == nil {
-			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")))
+			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), nil)
 		}
 	}
 	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", tripID))
@@ -640,23 +661,26 @@ func nightsBetween(start, end string) int {
 	return n
 }
 
-// budgetTotalLabel turns a per-person budget into a group total for `party`.
+// budgetTotalLabel shows the budget's other side: a per-person budget gets its
+// group total, and a total budget gets its per-person figure.
 func budgetTotalLabel(meta map[string]any, party int) string {
 	if party < 1 {
 		party = 1
-	}
-	if !strings.EqualFold(metaString(meta, "basis"), "pp") {
-		return ""
 	}
 	amt, ok := parseAmount(metaString(meta, "amount"))
 	if !ok {
 		return ""
 	}
-	people := "people"
-	if party == 1 {
-		people = "person"
+	cur := metaString(meta, "currency")
+	if strings.EqualFold(metaString(meta, "basis"), "pp") {
+		people := "people"
+		if party == 1 {
+			people = "person"
+		}
+		return "≈ " + formatMoney(cur, amt*float64(party)) + " total for " + strconv.Itoa(party) + " " + people
 	}
-	return "≈ " + formatMoney(metaString(meta, "currency"), amt*float64(party)) + " for " + strconv.Itoa(party) + " " + people
+	// Total basis (the default): show the implied per-person amount.
+	return "≈ " + formatMoney(cur, amt/float64(party)) + " pp"
 }
 
 // accomTotalLabel turns a per-night stay into a stay total for `nights`.

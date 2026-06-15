@@ -49,13 +49,15 @@ func activityOrder(items []store.ListItem, voterPoints map[int64]int, groupScore
 func voterCookieName(tripID int64) string { return "vv_" + strconv.FormatInt(tripID, 10) }
 
 type sharePage struct {
-	Title      string
-	Trip       *store.Trip
-	Voter      *store.Voter
-	Budgets    []budgetGroup
-	Dates      []store.AxisOption
-	Activities *store.List
-	Token      string
+	Title            string
+	Trip             *store.Trip
+	Voter            *store.Voter
+	Budgets          []budgetGroup
+	Dates            []store.AxisOption
+	Activities       *store.List
+	Token            string
+	CanSuggestBudget bool // current traveller hasn't used their 1 budget suggestion
+	CanSuggestDates  bool // ... their 1 dates suggestion
 }
 
 func (s *Server) loadVoter(r *http.Request, tripID int64) *store.Voter {
@@ -121,14 +123,37 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		activities.Items = activityOrder(activities.Items, base, counts)
 	}
 
+	// Traveller suggestion limits: 1 budget, 1 dates, 1 accommodation per budget,
+	// unlimited activities.
+	canBudget, canDates := false, false
+	if voter != nil {
+		if n, _ := s.store.CountAxisOptionsBy(budget.ID, voter.ID); n < 1 {
+			canBudget = true
+		}
+		if n, _ := s.store.CountAxisOptionsBy(dates.ID, voter.ID); n < 1 {
+			canDates = true
+		}
+		for i := range budgets {
+			if budgets[i].ComboID == 0 {
+				budgets[i].CanSuggestAccom = true
+				continue
+			}
+			if n, _ := s.store.CountComboItemsBy(budgets[i].ComboID, voter.ID); n < 1 {
+				budgets[i].CanSuggestAccom = true
+			}
+		}
+	}
+
 	s.render(w, "share", sharePage{
-		Title:      trip.Title,
-		Trip:       trip,
-		Voter:      voter,
-		Budgets:    budgets,
-		Dates:      dateOpts,
-		Activities: activities,
-		Token:      token,
+		Title:            trip.Title,
+		Trip:             trip,
+		Voter:            voter,
+		Budgets:          budgets,
+		Dates:            dateOpts,
+		Activities:       activities,
+		Token:            token,
+		CanSuggestBudget: canBudget,
+		CanSuggestDates:  canDates,
 	})
 }
 
@@ -238,5 +263,107 @@ func (s *Server) handleRank(w http.ResponseWriter, r *http.Request) {
 		points[it.ID] = n - i // top gets n points
 	}
 	_ = s.store.SetVoterActivityPoints(trip.ID, voter.ID, points)
+	redirectBack(w, r, "/t/"+token)
+}
+
+// ---- traveller suggestions ----
+
+// shareTripAndVoter resolves the trip + identified voter for a /t/{token} POST,
+// writing the redirect/response itself and returning ok=false when it can't.
+func (s *Server) shareTripAndVoter(w http.ResponseWriter, r *http.Request) (string, *store.Trip, *store.Voter, bool) {
+	token := r.PathValue("token")
+	trip, err := s.store.GetTripByToken(token)
+	if err != nil {
+		http.NotFound(w, r)
+		return token, nil, nil, false
+	}
+	voter := s.loadVoter(r, trip.ID)
+	if voter == nil {
+		http.Redirect(w, r, "/t/"+token, http.StatusSeeOther)
+		return token, trip, nil, false
+	}
+	return token, trip, voter, true
+}
+
+func (s *Server) shareAxes(tripID int64) (budget, dates store.Axis) {
+	axes, _ := s.store.AxesForTrip(tripID)
+	for _, a := range axes {
+		switch a.Kind {
+		case "budget":
+			budget = a
+		case "date_range":
+			dates = a
+		}
+	}
+	return
+}
+
+// handleSuggestBudget lets a traveller add one budget option of their own.
+func (s *Server) handleSuggestBudget(w http.ResponseWriter, r *http.Request) {
+	token, trip, voter, ok := s.shareTripAndVoter(w, r)
+	if !ok {
+		return
+	}
+	budget, _ := s.shareAxes(trip.ID)
+	if n, _ := s.store.CountAxisOptionsBy(budget.ID, voter.ID); n < 1 {
+		if label, meta := optionFromForm("budget", r); label != "" {
+			_, _ = s.store.AddAxisOption(budget.ID, label, meta, &voter.ID)
+		}
+	}
+	redirectBack(w, r, "/t/"+token)
+}
+
+// handleSuggestDates lets a traveller add one date range of their own.
+func (s *Server) handleSuggestDates(w http.ResponseWriter, r *http.Request) {
+	token, trip, voter, ok := s.shareTripAndVoter(w, r)
+	if !ok {
+		return
+	}
+	_, dates := s.shareAxes(trip.ID)
+	if n, _ := s.store.CountAxisOptionsBy(dates.ID, voter.ID); n < 1 {
+		if label, meta := optionFromForm("date_range", r); label != "" {
+			_, _ = s.store.AddAxisOption(dates.ID, label, meta, &voter.ID)
+		}
+	}
+	redirectBack(w, r, "/t/"+token)
+}
+
+// handleSuggestAccommodation lets a traveller add one stay under a given budget.
+func (s *Server) handleSuggestAccommodation(w http.ResponseWriter, r *http.Request) {
+	token, trip, voter, ok := s.shareTripAndVoter(w, r)
+	if !ok {
+		return
+	}
+	optID := formInt(r, "budget_option_id")
+	axisID, err := s.store.AxisOptionAxisID(optID)
+	if err != nil {
+		redirectBack(w, r, "/t/"+token)
+		return
+	}
+	comboID, err := s.store.EnsureCombo(trip.ID, map[int64]int64{axisID: optID})
+	if err != nil {
+		redirectBack(w, r, "/t/"+token)
+		return
+	}
+	label := strings.TrimSpace(r.FormValue("label"))
+	if n, _ := s.store.CountComboItemsBy(comboID, voter.ID); n < 1 && label != "" {
+		_, _ = s.store.AddComboItem(comboID, "hotel", label,
+			strings.TrimSpace(r.FormValue("link")), strings.TrimSpace(r.FormValue("notes")), hotelMetaFromForm(r), &voter.ID)
+	}
+	redirectBack(w, r, "/t/"+token)
+}
+
+// handleSuggestActivity lets a traveller add activities (unlimited).
+func (s *Server) handleSuggestActivity(w http.ResponseWriter, r *http.Request) {
+	token, trip, voter, ok := s.shareTripAndVoter(w, r)
+	if !ok {
+		return
+	}
+	label := strings.TrimSpace(r.FormValue("label"))
+	if label != "" {
+		if list, err := s.store.ActivitiesList(trip.ID); err == nil {
+			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), &voter.ID)
+		}
+	}
 	redirectBack(w, r, "/t/"+token)
 }

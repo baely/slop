@@ -24,11 +24,20 @@
       {{template "vote" (dict "Page" $ "Type" "axis_option" "ID" .Option.ID "Votes" .Option.Votes "Voted" .Option.Voted)}}
     </div>
   </div>
-  {{else}}<p class="muted">No budgets shared yet.</p>{{end}}
+  {{else}}<p class="muted">No budgets yet.</p>{{end}}
+  {{if .Voter}}{{if .CanSuggestBudget}}
+  <form method="post" action="/t/{{.Token}}/suggest/budget" class="addform" style="margin-top:12px">
+    <input type="hidden" name="redirect" value="/t/{{.Token}}">
+    <input name="amount" placeholder="2500" inputmode="numeric" size="6">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <select name="basis"><option value="total">total</option><option value="pp">pp</option></select>
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Suggest a budget</button>
+  </form>
+  {{else}}<p class="muted" style="margin-top:8px">You've suggested a budget.</p>{{end}}{{end}}
 </div>
 
 {{/* 2 — DATES */}}
-{{if .Dates}}
 <div class="section-title"><h2>Dates</h2></div>
 <div class="card">
   {{range .Dates}}
@@ -37,9 +46,16 @@
       {{template "vote" (dict "Page" $ "Type" "axis_option" "ID" .ID "Votes" .Votes "Voted" .Voted)}}
     </div>
   </div>
-  {{end}}
+  {{else}}<p class="muted">No dates yet.</p>{{end}}
+  {{if .Voter}}{{if .CanSuggestDates}}
+  <form method="post" action="/t/{{.Token}}/suggest/dates" class="addform" style="margin-top:12px">
+    <input type="hidden" name="redirect" value="/t/{{.Token}}">
+    <input type="date" name="start"><input type="date" name="end">
+    <input name="label" placeholder="or custom label">
+    <button class="btn-primary btn-sm">Suggest dates</button>
+  </form>
+  {{else}}<p class="muted" style="margin-top:8px">You've suggested a date range.</p>{{end}}{{end}}
 </div>
-{{end}}
 
 {{/* 3 — ACCOMMODATION (per budget) */}}
 <div class="section-title"><h2>Accommodation</h2></div>
@@ -59,13 +75,26 @@
       </div>
     </li>{{else}}<li class="muted">No accommodation listed for this budget.</li>{{end}}
   </ul>
+  {{if $.Voter}}{{if .CanSuggestAccom}}
+  <form method="post" action="/t/{{$.Token}}/suggest/accommodation" class="addform" style="margin-top:8px">
+    <input type="hidden" name="redirect" value="/t/{{$.Token}}">
+    <input type="hidden" name="budget_option_id" value="{{.Option.ID}}">
+    <input name="label" placeholder="Place to stay" required>
+    <input name="price" placeholder="price" size="6">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <select name="basis"><option value="night">/night</option><option value="total">total</option></select>
+    <input name="area" placeholder="area" size="9">
+    <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Suggest a place</button>
+  </form>
+  {{else}}<p class="muted" style="margin-top:8px">You've suggested a place for this budget.</p>{{end}}{{end}}
 </div>
 {{else}}
 <div class="empty">No budgets have been shared yet.</div>
 {{end}}
 
 {{/* 4 — ACTIVITIES: each traveller ranks; the weighted result is the final order */}}
-{{if and .Activities .Activities.Items}}
+{{if .Activities}}
 <div class="section-title"><h2>Activities</h2><span class="muted">{{if .Voter}}rank your priorities — top = most wanted{{else}}group ranking{{end}}</span></div>
 <div class="card">
   <ul class="activities">
@@ -76,8 +105,16 @@
         <form method="post" action="/t/{{$.Token}}/rank" class="inline"><input type="hidden" name="item" value="{{.ID}}"><input type="hidden" name="dir" value="down"><input type="hidden" name="redirect" value="/t/{{$.Token}}#list_item-{{.ID}}"><button class="btn-ghost btn-sm">&darr;</button></form>
         {{end}}
       </div>
-    </li>{{end}}
+    </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
   </ul>
+  {{if .Voter}}
+  <form method="post" action="/t/{{.Token}}/suggest/activity" class="addform" style="margin-top:10px">
+    <input type="hidden" name="redirect" value="/t/{{.Token}}">
+    <input name="label" placeholder="Activity" required>
+    <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Suggest an activity</button>
+  </form>
+  {{end}}
 </div>
 {{end}}
 {{template "foot" .}}{{end}}

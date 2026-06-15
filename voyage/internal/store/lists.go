@@ -78,13 +78,14 @@ func (s *Store) ActivitiesList(tripID int64) (*List, error) {
 	return &l, nil
 }
 
-// AddListItem appends an item to a list.
-func (s *Store) AddListItem(listID int64, label, notes, link string) (int64, error) {
+// AddListItem appends an item to a list. createdBy is the suggesting voter (nil
+// for the organiser).
+func (s *Store) AddListItem(listID int64, label, notes, link string, createdBy *int64) (int64, error) {
 	var pos int
 	_ = s.db.QueryRow(`SELECT COALESCE(MAX(position)+1, 0) FROM list_items WHERE list_id = ?`, listID).Scan(&pos)
 	res, err := s.db.Exec(
-		`INSERT INTO list_items (list_id, label, position, notes, link) VALUES (?, ?, ?, ?, ?)`,
-		listID, label, pos, notes, link)
+		`INSERT INTO list_items (list_id, label, position, notes, link, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
+		listID, label, pos, notes, link, nullableID(createdBy))
 	if err != nil {
 		return 0, err
 	}

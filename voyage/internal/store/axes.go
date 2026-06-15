@@ -77,17 +77,26 @@ func (s *Store) AddAxis(tripID int64, name, kind string) (int64, error) {
 	return res.LastInsertId()
 }
 
-// AddAxisOption appends an option to an axis.
-func (s *Store) AddAxisOption(axisID int64, label string, meta map[string]any) (int64, error) {
+// AddAxisOption appends an option to an axis. createdBy is the suggesting voter
+// (nil for the organiser).
+func (s *Store) AddAxisOption(axisID int64, label string, meta map[string]any, createdBy *int64) (int64, error) {
 	var pos int
 	_ = s.db.QueryRow(`SELECT COALESCE(MAX(position)+1, 0) FROM axis_options WHERE axis_id = ?`, axisID).Scan(&pos)
 	res, err := s.db.Exec(
-		`INSERT INTO axis_options (axis_id, label, position, metadata) VALUES (?, ?, ?, ?)`,
-		axisID, label, pos, marshalMeta(meta))
+		`INSERT INTO axis_options (axis_id, label, position, metadata, created_by) VALUES (?, ?, ?, ?, ?)`,
+		axisID, label, pos, marshalMeta(meta), nullableID(createdBy))
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
+}
+
+// CountAxisOptionsBy returns how many options on an axis were suggested by a
+// given voter.
+func (s *Store) CountAxisOptionsBy(axisID, voterID int64) (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM axis_options WHERE axis_id = ? AND created_by = ?`, axisID, voterID).Scan(&n)
+	return n, err
 }
 
 // DeleteAxisOption removes an option (and, via cascade, any combos that used it).

@@ -205,20 +205,28 @@ func (s *Store) ComboTripID(comboID int64) (int64, error) {
 	return tripID, err
 }
 
-// AddComboItem appends a dependent option (a hotel) to a combo.
-func (s *Store) AddComboItem(comboID int64, category, label, link, notes string, meta map[string]any) (int64, error) {
+// AddComboItem appends a dependent option (a hotel) to a combo. createdBy is the
+// suggesting voter (nil for the organiser).
+func (s *Store) AddComboItem(comboID int64, category, label, link, notes string, meta map[string]any, createdBy *int64) (int64, error) {
 	if category == "" {
 		category = "hotel"
 	}
 	var pos int
 	_ = s.db.QueryRow(`SELECT COALESCE(MAX(position)+1, 0) FROM combo_items WHERE combo_id = ?`, comboID).Scan(&pos)
 	res, err := s.db.Exec(
-		`INSERT INTO combo_items (combo_id, category, label, position, link, notes, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		comboID, category, label, pos, link, notes, marshalMeta(meta))
+		`INSERT INTO combo_items (combo_id, category, label, position, link, notes, metadata, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		comboID, category, label, pos, link, notes, marshalMeta(meta), nullableID(createdBy))
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
+}
+
+// CountComboItemsBy returns how many items on a combo were suggested by a voter.
+func (s *Store) CountComboItemsBy(comboID, voterID int64) (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM combo_items WHERE combo_id = ? AND created_by = ?`, comboID, voterID).Scan(&n)
+	return n, err
 }
 
 // DeleteComboItem removes a combo item.

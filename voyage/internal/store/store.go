@@ -154,6 +154,13 @@ func (s *Store) Migrate() error {
 	if err := s.addColumnIfMissing("trips", "party_size", "party_size INTEGER NOT NULL DEFAULT 2"); err != nil {
 		return fmt.Errorf("migrate party_size: %w", err)
 	}
+	// created_by tracks which voter suggested an option (NULL = organiser), so we
+	// can attribute and limit traveller suggestions.
+	for _, t := range []string{"axis_options", "combo_items", "list_items"} {
+		if err := s.addColumnIfMissing(t, "created_by", "created_by INTEGER"); err != nil {
+			return fmt.Errorf("migrate created_by on %s: %w", t, err)
+		}
+	}
 	return nil
 }
 
@@ -186,6 +193,14 @@ func (s *Store) addColumnIfMissing(table, column, ddl string) error {
 
 // now returns the current time as an RFC3339 string for storage.
 func now() string { return time.Now().UTC().Format(time.RFC3339) }
+
+// nullableID returns the value for a nullable foreign-key column: NULL when nil.
+func nullableID(id *int64) any {
+	if id == nil {
+		return nil
+	}
+	return *id
+}
 
 // newToken returns a URL-safe random hex token of n bytes (2n hex chars).
 func newToken(n int) string {

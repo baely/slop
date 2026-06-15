@@ -64,8 +64,8 @@ func TestEnsureComboIsIdempotent(t *testing.T) {
 	tripID, _ := s.CreateTrip("Trip", nil)
 	budget, dates := budgetAndDates(t, s, tripID)
 
-	bOpt, _ := s.AddAxisOption(budget.ID, "£2500 pp", nil)
-	dOpt, _ := s.AddAxisOption(dates.ID, "12–19 Jul", nil)
+	bOpt, _ := s.AddAxisOption(budget.ID, "£2500 pp", nil, nil)
+	dOpt, _ := s.AddAxisOption(dates.ID, "12–19 Jul", nil, nil)
 	sel := map[int64]int64{budget.ID: bOpt, dates.ID: dOpt}
 
 	first, err := s.EnsureCombo(tripID, sel)
@@ -81,7 +81,7 @@ func TestEnsureComboIsIdempotent(t *testing.T) {
 	}
 
 	// A different date option must produce a distinct combo.
-	dOpt2, _ := s.AddAxisOption(dates.ID, "5–12 Sep", nil)
+	dOpt2, _ := s.AddAxisOption(dates.ID, "5–12 Sep", nil, nil)
 	other, err := s.EnsureCombo(tripID, map[int64]int64{budget.ID: bOpt, dates.ID: dOpt2})
 	if err != nil {
 		t.Fatalf("ensure other: %v", err)
@@ -100,12 +100,12 @@ func TestSelectComboItemDemotesSiblings(t *testing.T) {
 	s := newTestStore(t)
 	tripID, _ := s.CreateTrip("Trip", nil)
 	budget, dates := budgetAndDates(t, s, tripID)
-	bOpt, _ := s.AddAxisOption(budget.ID, "mid", nil)
-	dOpt, _ := s.AddAxisOption(dates.ID, "summer", nil)
+	bOpt, _ := s.AddAxisOption(budget.ID, "mid", nil, nil)
+	dOpt, _ := s.AddAxisOption(dates.ID, "summer", nil, nil)
 	combo, _ := s.EnsureCombo(tripID, map[int64]int64{budget.ID: bOpt, dates.ID: dOpt})
 
-	h1, _ := s.AddComboItem(combo, "hotel", "One", "", "", nil)
-	h2, _ := s.AddComboItem(combo, "hotel", "Two", "", "", nil)
+	h1, _ := s.AddComboItem(combo, "hotel", "One", "", "", nil, nil)
+	h2, _ := s.AddComboItem(combo, "hotel", "Two", "", "", nil, nil)
 	if err := s.SetComboItemStatus(h1, "selected"); err != nil {
 		t.Fatalf("select h1: %v", err)
 	}

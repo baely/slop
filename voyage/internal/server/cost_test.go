@@ -61,8 +61,9 @@ func TestBudgetTotalLabel(t *testing.T) {
 	if !strings.Contains(got, "$7,500") || !strings.Contains(got, "3 people") {
 		t.Errorf("budgetTotalLabel = %q", got)
 	}
-	if budgetTotalLabel(map[string]any{"basis": "total", "amount": "5000"}, 3) != "" {
-		t.Error("total-basis budget should have no per-person total")
+	// A total-basis budget shows the implied per-person figure.
+	if got := budgetTotalLabel(map[string]any{"basis": "total", "amount": "6000", "currency": "AUD"}, 3); !strings.Contains(got, "$2,000") || !strings.Contains(got, "pp") {
+		t.Errorf("total-basis per-person label = %q", got)
 	}
 	if got := budgetTotalLabel(pp, 1); !strings.Contains(got, "1 person") {
 		t.Errorf("singular person label = %q", got)
