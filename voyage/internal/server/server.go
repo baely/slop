@@ -81,16 +81,12 @@ func (s *Server) routes() {
 	s.mux.Handle("POST /activities/{id}/move", s.auth(s.handleMoveActivity))
 	s.mux.Handle("POST /trips/{id}/party", s.auth(s.handleSetParty))
 	s.mux.Handle("POST /trips/{id}/share/rotate", s.auth(s.handleRotateShare))
-	s.mux.Handle("POST /trips/{id}/comment", s.auth(s.handleOwnerComment))
-	s.mux.Handle("POST /comments/{id}/delete", s.auth(s.handleOwnerDeleteComment))
 
 	// Traveller (share token, no login).
 	s.mux.HandleFunc("GET /t/{token}", s.handleShare)
 	s.mux.HandleFunc("POST /t/{token}/identify", s.handleIdentify)
 	s.mux.HandleFunc("POST /t/{token}/vote", s.handleVote)
 	s.mux.HandleFunc("POST /t/{token}/rank", s.handleRank)
-	s.mux.HandleFunc("POST /t/{token}/comment", s.handleShareComment)
-	s.mux.HandleFunc("POST /t/{token}/comment/{id}/delete", s.handleShareDeleteComment)
 }
 
 // ---- rendering helpers ----
@@ -105,9 +101,6 @@ func (s *Server) render(w http.ResponseWriter, name string, data any) {
 
 func funcMap(defaultCurrency string) template.FuncMap {
 	return template.FuncMap{
-		"commentsFor": func(m map[string][]store.Comment, t string, id int64) []store.Comment {
-			return m[fmt.Sprintf("%s:%d", t, id)]
-		},
 		"metaStr": func(m map[string]any, k string) string {
 			if m == nil {
 				return ""
@@ -240,7 +233,6 @@ type tripPage struct {
 	Budgets         []budgetGroup
 	Dates           []store.AxisOption
 	Activities      *store.List
-	Comments        map[string][]store.Comment
 	ShareURL        string
 	CurrentURL      string
 	TripNights      int
@@ -268,7 +260,6 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 	axes, _ := s.store.AxesForTrip(id)
 	combos, _ := s.store.CombosForTrip(id)
 	counts, _ := s.store.VoteCounts(id)
-	comments, _ := s.store.CommentsFor(id)
 	activities, _ := s.store.ActivitiesList(id)
 
 	var budget, dates store.Axis
@@ -307,7 +298,6 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		Budgets:         budgets,
 		Dates:           dateOpts,
 		Activities:      activities,
-		Comments:        comments,
 		ShareURL:        s.shareURL(r, trip.ShareToken),
 		CurrentURL:      r.URL.String(),
 		TripNights:      nights,
@@ -507,7 +497,7 @@ func (s *Server) handleMoveActivity(w http.ResponseWriter, r *http.Request) {
 	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", tripID))
 }
 
-// ---- owner: sharing & comments ----
+// ---- owner: sharing ----
 
 func (s *Server) handleSetParty(w http.ResponseWriter, r *http.Request) {
 	tripID := parseID(r, "id")
@@ -520,22 +510,6 @@ func (s *Server) handleSetParty(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRotateShare(w http.ResponseWriter, r *http.Request) {
 	tripID := parseID(r, "id")
 	_, _ = s.store.RotateShareToken(tripID)
-	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=plan", tripID))
-}
-
-func (s *Server) handleOwnerComment(w http.ResponseWriter, r *http.Request) {
-	tripID := parseID(r, "id")
-	body := strings.TrimSpace(r.FormValue("body"))
-	if body != "" {
-		_ = s.store.AddComment(tripID, nil, strings.TrimSpace(r.FormValue("target_type")), formInt(r, "target_id"), body)
-	}
-	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=plan", tripID))
-}
-
-func (s *Server) handleOwnerDeleteComment(w http.ResponseWriter, r *http.Request) {
-	commentID := parseID(r, "id")
-	tripID, _ := s.store.CommentTripID(commentID)
-	_ = s.store.DeleteComment(commentID, nil) // owner deletes only their own (NULL-author) comments
 	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=plan", tripID))
 }
 

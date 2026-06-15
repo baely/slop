@@ -111,9 +111,6 @@
   .vote.on { background: var(--warm); color: #fff; border-color: var(--warm); }
 
   .statusbtns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .comments { margin-top: 8px; padding-top: 6px; }
-  .comment { font-size: 13px; color: var(--soft); margin: 3px 0; }
-  .comment strong { color: var(--ink); }
 
   .shareurl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .shareurl input { flex: 1 1 240px; background: var(--bg-2); font-family: var(--mono); font-size: 13px; }
@@ -182,27 +179,3 @@
 <input type="hidden" name="redirect" value="/t/{{.Page.Token}}#{{.Type}}-{{.ID}}">
 <button class="vote btn-sm {{if .Voted}}on{{end}}">&#9829; {{.Votes}}</button>
 </form>{{else}}<span class="votes">&#9829; {{.Votes}}</span>{{end}}{{end}}
-
-{{define "comments"}}<div class="comments">
-{{range commentsFor .Page.Comments .Type .ID}}<p class="comment"><strong>{{.Author}}:</strong> {{.Body}}{{if and $.Page.Voter (eq .VoterID $.Page.Voter.ID)}} <form method="post" action="/t/{{$.Page.Token}}/comment/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="/t/{{$.Page.Token}}#{{$.Type}}-{{$.ID}}"><button class="btn-ghost btn-sm" title="Delete">&times;</button></form>{{end}}</p>{{end}}
-{{if .Page.Voter}}<form method="post" action="/t/{{.Page.Token}}/comment" class="row">
-<input type="hidden" name="target_type" value="{{.Type}}">
-<input type="hidden" name="target_id" value="{{.ID}}">
-<input type="hidden" name="redirect" value="/t/{{.Page.Token}}#{{.Type}}-{{.ID}}">
-<input name="body" class="grow" placeholder="Add a comment" required>
-<button class="btn-ghost btn-sm">Post</button>
-</form>{{end}}
-</div>{{end}}
-
-{{/* ownercomments: organiser-side thread (display + delete own + add). Pass a
-dict with Comments, Type, ID (target), TripID, CurrentURL. */}}
-{{define "ownercomments"}}<div class="comments">
-{{range commentsFor .Comments .Type .ID}}<p class="comment"><strong>{{.Author}}:</strong> {{.Body}}{{if eq .VoterID 0}} <form method="post" action="/comments/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm" title="Delete">&times;</button></form>{{end}}</p>{{end}}
-<form method="post" action="/trips/{{.TripID}}/comment" class="row">
-<input type="hidden" name="redirect" value="{{.CurrentURL}}">
-<input type="hidden" name="target_type" value="{{.Type}}">
-<input type="hidden" name="target_id" value="{{.ID}}">
-<input name="body" class="grow" placeholder="Add a comment" required>
-<button class="btn-ghost btn-sm">Post</button>
-</form>
-</div>{{end}}

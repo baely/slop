@@ -28,7 +28,7 @@ range). Nights are shown on each date range.
 ### Share, vote & rank
 
 Every trip has an unguessable **share link**. Fellow travellers open it (no
-sign-in), enter a name, and weigh in — and leave **comments** anywhere:
+sign-in), enter a name, and weigh in:
 
 - **Budgets, date ranges and accommodation** are **upvoted** (one vote each); the
   shared view and Plan rank them by total votes.
@@ -36,8 +36,7 @@ sign-in), enter a name, and weigh in — and leave **comments** anywhere:
   the app aggregates everyone's rankings (Borda points) into a **weighted final
   ranking** — the order shown on the Plan screen, with each activity's score.
 
-Anyone (travellers *and* the organiser) can **comment** on any element, and
-delete their **own** comments.
+(Discussion happens in person — there's intentionally no free-text commenting.)
 
 ## Designed to generalise
 

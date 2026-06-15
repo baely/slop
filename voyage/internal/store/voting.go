@@ -40,7 +40,7 @@ func (s *Store) VoterByToken(tripID int64, token string) (*Voter, error) {
 	return &v, nil
 }
 
-// targetKey builds the map key used for vote/comment lookups.
+// targetKey builds the map key used for vote lookups.
 func targetKey(targetType string, targetID int64) string {
 	return fmt.Sprintf("%s:%d", targetType, targetID)
 }
@@ -149,62 +149,4 @@ func (s *Store) SetVoterActivityPoints(tripID, voterID int64, points map[int64]i
 		}
 	}
 	return tx.Commit()
-}
-
-// AddComment records a note against a target. voterID may be nil for the owner.
-func (s *Store) AddComment(tripID int64, voterID *int64, targetType string, targetID int64, body string) error {
-	var v any
-	if voterID != nil {
-		v = *voterID
-	}
-	_, err := s.db.Exec(
-		`INSERT INTO comments (trip_id, voter_id, target_type, target_id, body, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		tripID, v, targetType, targetID, body, now())
-	return err
-}
-
-// CommentsFor returns all comments for a trip grouped by target key "type:id".
-func (s *Store) CommentsFor(tripID int64) (map[string][]Comment, error) {
-	rows, err := s.db.Query(`
-		SELECT c.id, c.target_type, c.target_id, COALESCE(c.voter_id, 0), COALESCE(v.name, 'Organiser'), c.body, c.created_at
-		FROM comments c LEFT JOIN voters v ON v.id = c.voter_id
-		WHERE c.trip_id = ?
-		ORDER BY c.created_at, c.id`, tripID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	out := map[string][]Comment{}
-	for rows.Next() {
-		var c Comment
-		if err := rows.Scan(&c.ID, &c.TargetType, &c.TargetID, &c.VoterID, &c.Author, &c.Body, &c.CreatedAt); err != nil {
-			return nil, err
-		}
-		k := targetKey(c.TargetType, c.TargetID)
-		out[k] = append(out[k], c)
-	}
-	return out, rows.Err()
-}
-
-// DeleteComment removes a comment if it belongs to the requester. A nil voterID
-// authorises only the organiser's own (NULL-author) comments; a non-nil voterID
-// authorises only that traveller's comments.
-func (s *Store) DeleteComment(id int64, voterID *int64) error {
-	if voterID == nil {
-		_, err := s.db.Exec(`DELETE FROM comments WHERE id = ? AND voter_id IS NULL`, id)
-		return err
-	}
-	_, err := s.db.Exec(`DELETE FROM comments WHERE id = ? AND voter_id = ?`, id, *voterID)
-	return err
-}
-
-// CommentTripID returns the trip a comment belongs to (for redirects).
-func (s *Store) CommentTripID(id int64) (int64, error) {
-	var tripID int64
-	err := s.db.QueryRow(`SELECT trip_id FROM comments WHERE id = ?`, id).Scan(&tripID)
-	if err == sql.ErrNoRows {
-		return 0, ErrNotFound
-	}
-	return tripID, err
 }

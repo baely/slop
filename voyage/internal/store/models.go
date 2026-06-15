@@ -150,14 +150,3 @@ type Voter struct {
 	Token     string
 	CreatedAt string
 }
-
-// Comment is a note left against any votable target.
-type Comment struct {
-	ID         int64
-	TargetType string
-	TargetID   int64
-	VoterID    int64  // author voter id; 0 for the organiser (owner)
-	Author     string // voter name, or "Organiser" for owner comments
-	Body       string
-	CreatedAt  string
-}

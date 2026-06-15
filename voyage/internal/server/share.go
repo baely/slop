@@ -55,7 +55,6 @@ type sharePage struct {
 	Budgets    []budgetGroup
 	Dates      []store.AxisOption
 	Activities *store.List
-	Comments   map[string][]store.Comment
 	Token      string
 }
 
@@ -84,7 +83,6 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 	combos, _ := s.store.CombosForTrip(trip.ID)
 	activities, _ := s.store.ActivitiesList(trip.ID)
 	counts, _ := s.store.VoteCounts(trip.ID)
-	comments, _ := s.store.CommentsFor(trip.ID)
 
 	voted := map[string]bool{}
 	if voter != nil {
@@ -130,7 +128,6 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		Budgets:    budgets,
 		Dates:      dateOpts,
 		Activities: activities,
-		Comments:   comments,
 		Token:      token,
 	})
 }
@@ -185,48 +182,6 @@ func validVoteTarget(t string) bool {
 		return true
 	}
 	return false
-}
-
-// validCommentTarget guards what travellers can comment on (everything, incl.
-// activities).
-func validCommentTarget(t string) bool {
-	return t == "list_item" || validVoteTarget(t)
-}
-
-func (s *Server) handleShareComment(w http.ResponseWriter, r *http.Request) {
-	token := r.PathValue("token")
-	trip, err := s.store.GetTripByToken(token)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	voter := s.loadVoter(r, trip.ID)
-	if voter == nil {
-		http.Redirect(w, r, "/t/"+token, http.StatusSeeOther)
-		return
-	}
-	body := strings.TrimSpace(r.FormValue("body"))
-	targetType := strings.TrimSpace(r.FormValue("target_type"))
-	if body != "" && validCommentTarget(targetType) {
-		_ = s.store.AddComment(trip.ID, &voter.ID, targetType, formInt(r, "target_id"), body)
-	}
-	redirectBack(w, r, "/t/"+token)
-}
-
-func (s *Server) handleShareDeleteComment(w http.ResponseWriter, r *http.Request) {
-	token := r.PathValue("token")
-	trip, err := s.store.GetTripByToken(token)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	voter := s.loadVoter(r, trip.ID)
-	if voter == nil {
-		http.Redirect(w, r, "/t/"+token, http.StatusSeeOther)
-		return
-	}
-	_ = s.store.DeleteComment(parseID(r, "id"), &voter.ID) // travellers delete only their own
-	redirectBack(w, r, "/t/"+token)
 }
 
 // handleRank moves an activity up/down in the current traveller's personal

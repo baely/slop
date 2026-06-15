@@ -7,8 +7,8 @@
 //     multi-category.
 //   - Lists spine: lists -> list_items, a generic rankable list. v1 seeds one
 //     "Activities" list per trip.
-//   - Voting spine: voters, votes and comments keyed by a generic
-//     (target_type, target_id) pair, so anything can become votable later.
+//   - Voting spine: voters and votes keyed by a generic (target_type,
+//     target_id) pair, so anything can become votable/rankable later.
 package store
 
 import (
@@ -143,15 +143,6 @@ func (s *Store) Migrate() error {
 			value INTEGER NOT NULL DEFAULT 1,
 			created_at TEXT NOT NULL,
 			UNIQUE(voter_id, target_type, target_id)
-		);`,
-		`CREATE TABLE IF NOT EXISTS comments (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-			voter_id INTEGER REFERENCES voters(id) ON DELETE SET NULL,
-			target_type TEXT NOT NULL,
-			target_id INTEGER NOT NULL,
-			body TEXT NOT NULL,
-			created_at TEXT NOT NULL
 		);`,
 	}
 	for _, q := range stmts {

@@ -166,7 +166,6 @@
         <span class="grow"></span>
         <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
-      {{template "ownercomments" (dict "Comments" $.Comments "Type" "axis_option" "ID" .Option.ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
     </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
   </ul>
   <form method="post" action="/axes/{{.BudgetAxis.ID}}/options" class="addform" style="margin-top:10px">
@@ -190,7 +189,6 @@
         <span class="grow"></span>
         <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
-      {{template "ownercomments" (dict "Comments" $.Comments "Type" "axis_option" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
     </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
   </ul>
   <form method="post" action="/axes/{{.DatesAxis.ID}}/options" class="addform" style="margin-top:10px">
@@ -223,7 +221,6 @@
         <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Reset</button></form>
         <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
-      {{template "ownercomments" (dict "Comments" $.Comments "Type" "combo_item" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
     </li>{{else}}<li class="muted">No accommodation for this budget.</li>{{end}}
   </ul>
   <form method="post" action="/options/{{.Option.ID}}/hotels" class="addform" style="margin-top:8px">
@@ -251,7 +248,6 @@
         <span class="votes">score {{.Votes}}</span>
         <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
-      {{template "ownercomments" (dict "Comments" $.Comments "Type" "list_item" "ID" .ID "TripID" $.Trip.ID "CurrentURL" $.CurrentURL)}}
     </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
   </ul>
   <form method="post" action="/trips/{{.Trip.ID}}/activities" class="addform" style="margin-top:10px">
