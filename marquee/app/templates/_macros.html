@@ -1,0 +1,35 @@
+{% macro poster(film) %}
+  {% if film.poster %}
+    <img class="pi" src="{{ film.poster }}" alt="{{ film.title }}" loading="lazy">
+  {% else %}
+    <div class="pi pi--text">
+      <span class="pt-title">{{ film.title }}</span>
+      <span class="pt-foot">No Cover On File</span>
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro stamp(status) %}
+  {%- set s = status.state if status else 'addable' -%}
+  {%- if s == 'available' -%}
+    <span class="stamp stamp--available">&#10003; IN STOCK</span>
+  {%- elif s == 'grabbing' -%}
+    <span class="stamp stamp--grabbing">RECV<span class="pb"><i style="width:{{ status.progress|default(0) }}%"></i></span>{{ status.progress|default(0) }}%</span>
+  {%- elif s == 'wanted' -%}
+    <span class="stamp stamp--wanted">&#9679; ON ORDER</span>
+  {%- else -%}
+    <span class="stamp stamp--none">NOT HELD</span>
+  {%- endif -%}
+{% endmacro %}
+
+{% macro rec(film, status=None, watched=False) %}
+  <a class="rec" href="/film/{{ film.tmdb_id }}" data-tmdb="{{ film.tmdb_id }}">
+    <div class="rec-art">{{ poster(film) }}</div>
+    <div class="rec-lab">
+      <div class="rec-no">ACC&middot;{{ '%07d'|format(film.tmdb_id|int) }}</div>
+      <div class="rec-t">{{ film.title }}</div>
+      <div class="rec-y">{{ film.year or '----' }}{% if film.director %} &middot; {{ film.director|upper }}{% endif %}</div>
+      <div class="rec-stamprow"><span data-status>{{ stamp(status) }}</span>{% if watched %} <span class="seenflag">VIEWED</span>{% endif %}</div>
+    </div>
+  </a>
+{% endmacro %}

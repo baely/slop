@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}CIRCULATION DESK — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="deskline">
+  CIRCULATION DESK &nbsp;//&nbsp; HOLDINGS: <b>{{ stats.total_watched }}</b> VIEWED &nbsp;·&nbsp;
+  ON ORDER: <b>{{ stats.watchlist }}</b> &nbsp;·&nbsp; AVG. APPRAISAL: <b>{{ stats.mean_rating or 'N/A' }}</b>
+</div>
+
+{% if grabbing or ready %}
+<div class="sechead">Acquisition Register <span class="sechead-n">// OUTSTANDING + RECENTLY RECEIVED ORDERS</span></div>
+<table class="ledger" style="margin-bottom:1.6rem">
+  <thead><tr><th>Cat. No.</th><th>Title</th><th>Yr</th><th>Director</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for f in grabbing + ready %}
+  <tr data-tmdb="{{ f.tmdb_id }}">
+    <td>{{ '%07d'|format(f.tmdb_id|int) }}</td>
+    <td><a href="/film/{{ f.tmdb_id }}">{{ f.title|upper }}</a></td>
+    <td>{{ f.year or '—' }}</td>
+    <td class="rv">{{ (f.director or '—')|upper }}</td>
+    <td><span data-status>{{ m.stamp(statuses.get(f.tmdb_id)) }}</span></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="sechead">Catalogue — Now Circulating <span class="sechead-n">// TMDB WEEKLY ACQUISITION REGISTER</span></div>
+<div class="sheet">{% for f in trending %}{{ m.rec(f, statuses.get(f.tmdb_id), f.tmdb_id in watched) }}{% endfor %}</div>
+
+{% endblock %}

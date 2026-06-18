@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}BROWSE CATALOGUE — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="sechead">Catalogue Search <span class="sechead-n">// {{ 'QUERY: “' ~ q|upper ~ '”' if q else 'WEEKLY ACQUISITION REGISTER' }}</span></div>
+<label class="fld" style="max-width:560px">
+  <span>Find Title — Director — Keyword</span>
+  <input type="search" id="bigsearch" value="{{ q }}" placeholder="type to search the register…" autocomplete="off" autofocus>
+</label>
+
+<div class="sheet" id="results">
+  {% for f in results %}{{ m.rec(f, statuses.get(f.tmdb_id), f.tmdb_id in watched) }}
+  {% else %}<p class="empty">NO RECORDS MATCH QUERY.</p>{% endfor %}
+</div>
+
+{% endblock %}
+{% block scripts %}<script>Marquee.liveSearch('#bigsearch', '#results');</script>{% endblock %}

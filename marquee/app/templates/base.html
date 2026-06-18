@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MARQUEE — FILM CATALOGUE{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<div class="masthead">
+  <a class="logo" href="/">MARQUEE</a>
+  <span class="sys">Personal Film Catalogue &amp; Acquisition System</span>
+  <span class="clk" id="clk"></span>
+</div>
+
+<nav class="tabs">
+  <a href="/discover" class="{{ 'on' if nav=='discover' }}">Browse</a>
+  <a href="/watchlist" class="{{ 'on' if nav=='watchlist' }}">Holds</a>
+  <a href="/library" class="{{ 'on' if nav=='library' }}">In&nbsp;Stock</a>
+  <a href="/diary" class="{{ 'on' if nav=='diary' }}">History</a>
+  <a href="/you" class="{{ 'on' if nav=='you' }}">Patron</a>
+  <form action="/discover" method="get">
+    <label>Find&nbsp;Title:</label>
+    <input type="search" name="q" value="{{ q|default('') }}" autocomplete="off">
+  </form>
+</nav>
+
+<main class="page">
+{% block content %}{% endblock %}
+</main>
+
+<div class="statusbar">
+  <span>OPERATOR: <b>{{ owner|upper }}</b></span>
+  <span>TMDB: {% if tmdb_enabled %}<b class="ok">ONLINE</b>{% else %}<b class="sim">OFFLINE — DEMO CATALOGUE</b>{% endif %}</span>
+  <span>RADARR: {% if radarr_health.ok and not radarr_health.demo %}<b class="ok">CONNECTED v{{ radarr_health.version }}</b>{% else %}<b class="sim">SIMULATED</b>{% endif %}</span>
+  {% if demo %}<span>NOTE: set <b>TMDB_API_KEY</b> + <b>RADARR_*</b> to take live</span>{% endif %}
+</div>
+
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

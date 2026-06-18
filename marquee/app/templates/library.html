@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}IN STOCK — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="sechead">Holdings In Stock <span class="sechead-n">// {{ available }} OF {{ films|length }} ON DISK — SOURCED FROM RADARR</span></div>
+
+{% if films %}
+<div class="sheet sheet--dense">
+  {% for f in films %}
+  <a class="rec" href="/film/{{ f.tmdb_id }}" data-tmdb="{{ f.tmdb_id }}">
+    <div class="rec-art">{{ m.poster(f) }}</div>
+    <div class="rec-lab">
+      <div class="rec-no">ACC&middot;{{ '%07d'|format(f.tmdb_id|int) }}</div>
+      <div class="rec-t">{{ f.title }}</div>
+      <div class="rec-y">{{ f.year or '----' }}</div>
+      <div class="rec-stamprow">
+        {% if f.has_file %}<span class="stamp stamp--available">&#10003; ON DISK</span>
+        {% else %}<span class="stamp stamp--wanted">MISSING</span>{% endif %}
+        {% if f.tmdb_id in watched %} <span class="seenflag">VIEWED</span>{% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">NO HOLDINGS ON FILE.{% if demo %} CONNECT RADARR TO LIST YOUR COLLECTION.{% endif %}</div>
+{% endif %}
+
+{% endblock %}

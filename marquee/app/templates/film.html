@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ film.title|upper }} — CATALOGUE RECORD{% endblock %}
+{% block content %}
+
+<div class="deskline">CATALOGUE RECORD &nbsp;//&nbsp; ACC&middot;{{ '%07d'|format(film.tmdb_id|int) }}</div>
+
+<div class="record" data-tmdb="{{ film.tmdb_id }}">
+  <div>
+    <div class="record-poster">{{ m.poster(film) }}</div>
+  </div>
+  <div>
+    <div class="rectitle">{{ film.title }} <span class="yr">[{{ film.year or '----' }}]</span></div>
+
+    <table class="fieldtable">
+      <tr><td class="k">Director</td><td>{{ film.director or 'UNCREDITED' }}</td></tr>
+      <tr><td class="k">Runtime</td><td>{{ (film.runtime ~ ' MIN') if film.runtime else '—' }}</td></tr>
+      <tr><td class="k">Classification</td><td>{{ film.genres|join(' / ')|upper if film.genres else '—' }}</td></tr>
+      {% if film.vote %}<tr><td class="k">TMDB Index</td><td>{{ film.vote }} / 10</td></tr>{% endif %}
+      <tr><td class="k">Synopsis</td><td class="synopsis">{{ film.overview or 'NO SYNOPSIS ON FILE.' }}</td></tr>
+    </table>
+
+    <div class="acqbox" data-tmdb="{{ film.tmdb_id }}">
+      <span class="lbl">Acquisition&nbsp;Status:</span>
+      <span data-status>
+        {% set s = status.state if status else 'addable' %}
+        {% if s == 'available' %}<span class="bigstamp s-available">In Stock</span>
+        {% elif s == 'grabbing' %}<span class="bigstamp s-grabbing">Receiving {{ status.progress|default(0) }}%</span>
+        {% elif s == 'wanted' %}<span class="bigstamp s-wanted">On Order</span>
+        {% else %}<span class="bigstamp s-none">Not Held</span>{% endif %}
+      </span>
+      <button class="btn btn--req act-radarr" data-act="radarr">Order via Radarr</button>
+      <button class="btn act-wl {{ 'is-on' if state.in_watchlist }}" data-act="watchlist">{{ '&#9733; On Hold' if state.in_watchlist else 'Place Hold' }}</button>
+      {% if state.watched %}<span class="seenflag">VIEWED &times;{{ state.watch_count }}{% if state.rating %} · {{ state.rating }}&#9733;{% endif %}</span>{% endif %}
+    </div>
+
+    <div class="twocol">
+      <div class="panel">
+        <div class="bar">File Viewing Entry</div>
+        <div class="body">
+          <form method="post" action="/api/film/{{ film.tmdb_id }}/log">
+            <label class="fld"><span>Appraisal</span>
+              <select name="rating">
+                <option value="">— NOT RATED —</option>
+                {% for v in ['5','4.5','4','3.5','3','2.5','2','1.5','1','0.5'] %}<option value="{{ v }}">{{ v }} STAR</option>{% endfor %}
+              </select>
+            </label>
+            <label class="fld"><span>Date Viewed</span><input type="date" name="watched_on"></label>
+            <label class="fld"><span>Notes</span><textarea name="review" rows="2" placeholder="remarks for the ledger…"></textarea></label>
+            <div class="fldrow">
+              <label class="chk"><input type="checkbox" name="rewatch" value="true"> Re-View</label>
+              <label class="chk"><input type="checkbox" name="liked" value="true"> &hearts; Flag</label>
+              <button class="btn btn--go" type="submit" style="margin-left:auto">File Entry</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="bar">Circulation History</div>
+        <div class="body">
+          {% if state.logs %}
+          {% for l in state.logs %}
+          <div class="logrow" style="border-top:1px solid var(--ink);padding:.5rem 0">
+            <div>
+              {% if l.rating %}<span class="stars" style="--r: {{ l.rating }}"></span> {% endif %}
+              <span class="rv">{{ l.watched_on or 'NO DATE' }}</span>
+              {% if l.rewatch %} <span class="tag">RE-VIEW</span>{% endif %}{% if l.liked %} <span class="liked">&hearts;</span>{% endif %}
+              <form class="del" method="post" action="/api/log/{{ l.id }}/delete" style="float:right">
+                <input type="hidden" name="tmdb_id" value="{{ film.tmdb_id }}"><button>STRIKE</button>
+              </form>
+            </div>
+            {% if l.review %}<div class="rv" style="margin-top:.2rem">&ldquo;{{ l.review }}&rdquo;</div>{% endif %}
+          </div>
+          {% endfor %}
+          {% else %}<p class="rv">NO PRIOR CIRCULATION.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}<script>Marquee.pollFilm({{ film.tmdb_id }});</script>{% endblock %}

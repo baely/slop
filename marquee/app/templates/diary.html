@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}VIEWING HISTORY — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="sechead">Viewing History — Rental Ledger <span class="sechead-n">// {{ entries|length }} ENTR{{ 'IES' if entries|length != 1 else 'Y' }}</span></div>
+
+{% if entries %}
+<table class="ledger">
+  <thead><tr><th>Date</th><th>Cat. No.</th><th>Title</th><th>Yr</th><th>Appraisal</th><th>Flags</th><th>Notes</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+  <tr>
+    <td>{{ e.watched_on or '—' }}</td>
+    <td>{{ '%07d'|format(e.tmdb_id|int) }}</td>
+    <td><a href="/film/{{ e.tmdb_id }}">{{ e.title|upper }}</a></td>
+    <td>{{ e.year or '—' }}</td>
+    <td>{% if e.rating %}<span class="stars" style="--r: {{ e.rating }}"></span> {{ e.rating }}{% else %}<span class="rv">—</span>{% endif %}</td>
+    <td>{% if e.rewatch %}<span class="tag">RE-VIEW</span> {% endif %}{% if e.liked %}<span class="liked">&hearts;</span>{% endif %}</td>
+    <td class="rv">{{ e.review or '' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">LEDGER EMPTY. VIEW A TITLE, THEN FILE AN ENTRY FROM ITS RECORD.</div>
+{% endif %}
+
+{% endblock %}

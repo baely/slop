@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}HOLDS &amp; ORDERS — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="sechead">Holds &amp; Standing Orders <span class="sechead-n">// {{ films|length }} TITLE(S) ON REQUEST</span></div>
+
+{% if films %}
+<div class="sheet">{% for f in films %}{{ m.rec(f, statuses.get(f.tmdb_id), f.tmdb_id in watched) }}{% endfor %}</div>
+{% else %}
+<div class="empty">NO HOLDS ON FILE. &nbsp; <a href="/discover">BROWSE THE CATALOGUE &raquo;</a></div>
+{% endif %}
+
+{% endblock %}

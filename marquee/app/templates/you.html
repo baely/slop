@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}PATRON RECORD — MARQUEE{% endblock %}
+{% block content %}
+
+<div class="sechead">Patron Record &amp; Activity Report <span class="sechead-n">// GENERATED FROM LEDGER</span></div>
+
+<div class="statgrid">
+  <div class="statcell"><b>{{ stats.total_watched }}</b><span>Titles Viewed</span></div>
+  <div class="statcell"><b>{{ stats.total_logs }}</b><span>Ledger Entries</span></div>
+  <div class="statcell"><b>{{ stats.mean_rating or 'N/A' }}</b><span>Mean Appraisal</span></div>
+  <div class="statcell"><b>{{ stats.rewatches }}</b><span>Re-Views</span></div>
+  <div class="statcell"><b>{{ stats.watchlist }}</b><span>Open Orders</span></div>
+</div>
+
+<div class="twocol">
+  <div class="panel">
+    <div class="bar">Appraisal Distribution</div>
+    <div class="body histo">
+      {% if stats.rating_dist %}
+        {% set order = ['5.0','4.5','4.0','3.5','3.0','2.5','2.0','1.5','1.0','0.5'] %}
+        {% set maxv = (stats.rating_dist.values()|list|max) %}
+        {% for r in order %}{% if stats.rating_dist.get(r) %}
+        <div class="row"><span class="k">{{ r }}&#9733;</span><span class="blocks">{{ '█' * ((stats.rating_dist[r]/maxv*22)|round|int or 1) }}</span><span class="v"> {{ stats.rating_dist[r] }}</span></div>
+        {% endif %}{% endfor %}
+      {% else %}<p class="rv">NO APPRAISALS ON FILE.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="bar">Holdings By Genre</div>
+    <div class="body histo">
+      {% if stats.top_genres %}
+        {% set gmax = stats.top_genres[0][1] %}
+        {% for g, n in stats.top_genres %}
+        <div class="row"><span class="k" style="width:7rem;text-align:left">{{ g[:11]|upper }}</span><span class="blocks">{{ '█' * ((n/gmax*16)|round|int or 1) }}</span><span class="v"> {{ n }}</span></div>
+        {% endfor %}
+      {% else %}<p class="rv">FILE LEDGER ENTRIES TO POPULATE.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
