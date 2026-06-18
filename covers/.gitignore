@@ -1,0 +1,5 @@
+.env
+data/
+*.png
+.DS_Store
+.playwright-mcp/
