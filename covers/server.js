@@ -90,7 +90,7 @@ function sanitize(b) {
     time: b.time ? String(b.time) : '',
     rating: num(b.rating) || 0,
     amount: num(b.amount) || 0,
-    currency: b.currency ? String(b.currency).slice(0, 4) : '£',
+    currency: b.currency ? String(b.currency).slice(0, 4) : '$',
   };
   if (Array.isArray(b.items)) {
     e.items = b.items
