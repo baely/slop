@@ -8,7 +8,8 @@ A personal, password-protected log of restaurants you've been to — with an edi
   - Required: restaurant name, location, date
   - Optional: time, rating (0.5–5 stars), amount spent (with currency)
 - **Itemised menu items** — record each dish/drink with an optional price; prices auto-total into the amount spent (overridable)
-- **Map view** — every visit is pinned on a warm-toned map (locations geocoded via OpenStreetMap/Nominatim). Pins group by place and list each visit; in the entry form you can **Find on map** and drag the pin to the exact spot
+- **Map view** — every visit is pinned on a clean map (locations geocoded via OpenStreetMap/Nominatim). Pins group by place and list each visit; in the entry form you can **Find on map** and drag the pin to the exact spot
+- **Pin from your tracker** (optional) — if `TRACK_TOKEN` is set, a **From tracker** button pulls your real GPS position (from a Traccar instance, e.g. `track.baileys.dev`, the same source trackui uses) at the visit's date/time and drops the pin where you actually were. The token is held server-side and never exposed to the browser
 - **Search** across restaurant, location, and dishes
 - **Sort** by newest/oldest, highest rated, most spent, or name
 - **Month grouping** with a running visit count, magazine-style
@@ -45,6 +46,9 @@ A personal, password-protected log of restaurants you've been to — with an edi
 | `APP_PASSWORD` | `covers` | Password gating the app (**set this!**) |
 | `PORT` | `8080` | HTTP port |
 | `DATA_DIR` | `/data` | Directory for `db.json` |
+| `TRACK_TOKEN` | _(unset)_ | Traccar bearer token; enables the "From tracker" button |
+| `TRACK_BASE` | `https://track.baileys.dev/api` | Traccar API base |
+| `TRACK_DEVICE` | `1` | Traccar device id to query |
 
 Geocoding runs in the browser against OpenStreetMap/Nominatim and is cached in `localStorage`, so each place is only looked up once. The location text you type is the only thing sent off-device.
 

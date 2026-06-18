@@ -118,11 +118,11 @@
   .stars{display:inline-flex;gap:1px}
   .stars svg{width:15px;height:15px}
 
-  .entry .tools{position:absolute;top:11px;right:11px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
-  .entry:hover .tools,.entry:focus-within .tools{opacity:1}
-  .tools button{width:29px;height:29px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.15s}
-  .tools button:hover{color:var(--ink);border-color:var(--muted)}
-  .tools button.del:hover{color:var(--danger);border-color:var(--danger)}
+  .entry .tools{position:absolute;top:10px;right:10px;display:flex;gap:2px;z-index:5;opacity:0;pointer-events:none;transition:opacity .15s;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:2px;box-shadow:0 4px 12px -4px rgba(24,24,27,.22)}
+  .entry:hover .tools,.entry:focus-within .tools{opacity:1;pointer-events:auto}
+  .tools button{width:28px;height:28px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .tools button:hover{color:var(--ink);background:var(--bg)}
+  .tools button.del:hover{color:var(--danger);background:var(--bg)}
 
   /* map */
   #mapView{margin-top:14px}
@@ -159,8 +159,8 @@
   .field textarea{resize:vertical;min-height:62px;line-height:1.4}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 
-  .locrow{display:flex;gap:8px}
-  .locrow input{flex:1}
+  .locrow{display:flex;gap:8px;flex-wrap:wrap}
+  .locrow input{flex:1;min-width:150px}
   .btn-locate{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 15px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--ink-2);transition:.15s}
   .btn-locate:hover{border-color:var(--muted);color:var(--ink)}
   #formMapWrap{display:none;margin-top:10px}
@@ -312,6 +312,7 @@
       <div class="locrow">
         <input type="text" id="f-location" autocomplete="off" placeholder="e.g. Surry Hills, Sydney" required>
         <button type="button" class="btn-locate" id="locateBtn">Find on map</button>
+        <button type="button" class="btn-locate" id="trackBtn" style="display:none" title="Pin where you were at this date &amp; time">From tracker</button>
       </div>
       <div id="formMapWrap">
         <div id="formMap"></div>
@@ -395,7 +396,7 @@ let prefs=loadPrefs();
 let geocache=loadGcache();
 let token=localStorage.getItem(TOKKEY)||"";
 let editingId=null, draftRating=0, draftLat=null, draftLng=null, amountAuto=true;
-let currentView="log";
+let currentView="log", trackerEnabled=false;
 let map=null, markersLayer=null, formMap=null, formMarker=null, geocoding=false;
 
 /* ---------- api ---------- */
@@ -780,7 +781,7 @@ $("#f-amount").addEventListener('input',()=>{amountAuto=false;$("#autoHint").sty
 $("#sumBtn").addEventListener('click',()=>{amountAuto=true;maybeAutoSum();});
 $("#f-currency").addEventListener('change',()=>{$$(".i-cur").forEach(s=>s.textContent=$("#f-currency").value);});
 
-/* locate */
+/* locate (geocode the typed location) */
 $("#locateBtn").addEventListener('click',async()=>{
   const loc=$("#f-location").value.trim();
   if(!loc){toast("Type a location first");return;}
@@ -790,6 +791,31 @@ $("#locateBtn").addEventListener('click',async()=>{
   if(!res){toast("Couldn't find that place — drop the pin manually");showFormMap(20,0,2);return;}
   draftLat=res.lat; draftLng=res.lng; showFormMap(res.lat,res.lng,14);
 });
+
+/* locate from tracker (where I actually was at the visit's date/time) */
+function trackWindow(date,time){
+  const target=new Date(`${date}T${time||'19:30'}`);
+  if(time){const span=3*3600e3;return {from:new Date(target-span),to:new Date(target.getTime()+span),target};}
+  return {from:new Date(`${date}T00:00`),to:new Date(`${date}T23:59`),target};
+}
+$("#trackBtn").addEventListener('click',async()=>{
+  const date=$("#f-date").value;
+  if(!date){toast("Set the date first");return;}
+  const btn=$("#trackBtn"); const label=btn.textContent; btn.textContent="Locating…"; btn.disabled=true;
+  try{
+    const {from,to,target}=trackWindow(date,$("#f-time").value);
+    const pts=await api('GET',`/track/positions?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
+    if(!pts||!pts.length){toast("No tracker fixes around then");return;}
+    let best=pts[0],bd=Infinity;
+    for(const p of pts){const d=Math.abs(new Date(p.fixTime)-target);if(d<bd){bd=d;best=p;}}
+    draftLat=best.lat; draftLng=best.lng; showFormMap(best.lat,best.lng,16);
+    toast("Pinned where you were");
+  }catch{ toast("Couldn't reach the tracker"); }
+  finally{ btn.textContent=label; btn.disabled=false; }
+});
+function checkTracker(){
+  api('GET','/track/status').then(s=>{trackerEnabled=!!(s&&s.enabled);$("#trackBtn").style.display=trackerEnabled?"":"none";}).catch(()=>{});
+}
 
 async function del(id){
   const e=entries.find(x=>x.id===id);
@@ -899,6 +925,7 @@ async function loadEntries(){
   entries=await api('GET','/entries');
   render();
   if(currentView==="map")renderMap();
+  checkTracker();
 }
 async function init(){
   bindStarPick();

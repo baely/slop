@@ -16,6 +16,12 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
+// Optional: pull location history from a Traccar instance (track.baileys.dev),
+// the same source trackui uses. Token stays server-side.
+const TRACK_TOKEN = process.env.TRACK_TOKEN || '';
+const TRACK_BASE = process.env.TRACK_BASE || 'https://track.baileys.dev/api';
+const TRACK_DEVICE = process.env.TRACK_DEVICE || '1';
+
 if (!process.env.APP_PASSWORD) {
   console.warn('[covers] WARNING: APP_PASSWORD not set — using the default "covers". Set APP_PASSWORD in production.');
 }
@@ -156,6 +162,28 @@ const server = http.createServer(async (req, res) => {
         db.sessions = db.sessions.filter((x) => x !== t);
         await persist();
         return send(res, 204, null);
+      }
+
+      // tracker (Traccar proxy) — token held server-side
+      if (url === '/api/track/status' && req.method === 'GET') {
+        return send(res, 200, { enabled: !!TRACK_TOKEN });
+      }
+      if (url === '/api/track/positions' && req.method === 'GET') {
+        if (!TRACK_TOKEN) return send(res, 503, { error: 'Tracker not configured' });
+        const qs = new URL(req.url, 'http://localhost').searchParams;
+        const up = new URL(TRACK_BASE + '/positions');
+        up.searchParams.set('deviceId', TRACK_DEVICE);
+        if (qs.get('from')) up.searchParams.set('from', qs.get('from'));
+        if (qs.get('to')) up.searchParams.set('to', qs.get('to'));
+        let r;
+        try { r = await fetch(up, { headers: { Authorization: 'Bearer ' + TRACK_TOKEN } }); }
+        catch { return send(res, 502, { error: 'Tracker unreachable' }); }
+        if (!r.ok) return send(res, 502, { error: 'Tracker error ' + r.status });
+        const arr = await r.json();
+        const slim = (Array.isArray(arr) ? arr : [])
+          .map((p) => ({ fixTime: p.fixTime, lat: p.latitude, lng: p.longitude }))
+          .filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number');
+        return send(res, 200, slim);
       }
 
       if (url === '/api/entries' && req.method === 'GET') {
