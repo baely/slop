@@ -15,6 +15,9 @@ services:
       # Optional: auto-detected from Radarr if omitted
       RADARR_QUALITY_PROFILE_ID: ${RADARR_QUALITY_PROFILE_ID:-}
       RADARR_ROOT_FOLDER: ${RADARR_ROOT_FOLDER:-}
+      # --- Letterboxd ongoing sync (public RSS) ---
+      LETTERBOXD_USERNAME: ${LETTERBOXD_USERNAME:-}
+      SYNC_INTERVAL_MIN: ${SYNC_INTERVAL_MIN:-60}
       # --- App ---
       OWNER: ${OWNER:-bailey}
       DB_PATH: /data/marquee.db

@@ -3,9 +3,17 @@
 {% block title %}CIRCULATION DESK — MARQUEE{% endblock %}
 {% block content %}
 
-<div class="deskline">
-  CIRCULATION DESK &nbsp;//&nbsp; HOLDINGS: <b>{{ stats.total_watched }}</b> VIEWED &nbsp;·&nbsp;
-  ON ORDER: <b>{{ stats.watchlist }}</b> &nbsp;·&nbsp; AVG. APPRAISAL: <b>{{ stats.mean_rating or 'N/A' }}</b>
+<div class="deskrow">
+  <div class="deskline">
+    CIRCULATION DESK &nbsp;//&nbsp; HOLDINGS: <b>{{ stats.total_watched }}</b> VIEWED &nbsp;·&nbsp;
+    ON ORDER: <b>{{ stats.watchlist }}</b> &nbsp;·&nbsp; AVG. APPRAISAL: <b>{{ stats.mean_rating or 'N/A' }}</b>
+  </div>
+  {% if sync_enabled %}
+  <div class="syncbox">
+    <button class="btn act-sync" data-act="sync">&#8635;&nbsp;Sync Letterboxd</button>
+    <span class="syncnote" id="syncnote" data-last="{{ last_sync or '' }}"></span>
+  </div>
+  {% endif %}
 </div>
 
 {% if grabbing or ready %}

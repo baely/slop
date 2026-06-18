@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, tmdb, radarr, config
+import asyncio
+from . import db, tmdb, radarr, config, sync
 
 BASE_DIR = os.path.dirname(__file__)
 app = FastAPI(title="Marquee")
@@ -22,11 +23,32 @@ def _startup():
     db.init()
 
 
+@app.on_event("startup")
+async def _start_poller():
+    """Auto-pull new Letterboxd activity on an interval (best-effort)."""
+    if not (config.SYNC_ENABLED and config.SYNC_INTERVAL_MIN > 0):
+        return
+
+    async def loop():
+        await asyncio.sleep(3)  # let startup settle, then sync immediately
+        while True:
+            try:
+                res = await asyncio.to_thread(sync.run)
+                if res.get("new"):
+                    print(f"[sync] filed {res['new']} new entr{'y' if res['new']==1 else 'ies'} from Letterboxd")
+            except Exception as e:  # noqa: BLE001
+                print("[sync] error:", e)
+            await asyncio.sleep(config.SYNC_INTERVAL_MIN * 60)
+
+    asyncio.create_task(loop())
+
+
 def ctx(request, **kw):
     base = {
         "request": request, "app_name": config.APP_NAME, "owner": config.OWNER,
         "radarr_health": radarr.health(), "tmdb_enabled": config.TMDB_ENABLED,
         "demo": config.DEMO_MODE, "nav": kw.pop("nav", ""),
+        "sync_enabled": config.SYNC_ENABLED, "last_sync": db.last_sync(),
     }
     base.update(kw)
     return base
@@ -160,6 +182,11 @@ def remove_log(log_id: int, tmdb_id: int = Form(...)):
 def api_status(ids: str = ""):
     tmdb_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
     return radarr.status_for(tmdb_ids)
+
+
+@app.post("/api/sync")
+def api_sync():
+    return sync.run()
 
 
 @app.get("/api/search")

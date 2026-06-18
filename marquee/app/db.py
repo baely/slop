@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS logs (
 
 CREATE INDEX IF NOT EXISTS idx_logs_film ON logs(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_logs_date ON logs(watched_on);
+
+CREATE TABLE IF NOT EXISTS lb_synced (
+  guid         TEXT PRIMARY KEY,        -- Letterboxd RSS item guid
+  synced_at    REAL NOT NULL
+);
 """
 
 
@@ -167,6 +172,30 @@ def diary(limit=300):
 def watched_ids():
     with connect() as c:
         return {r[0] for r in c.execute("SELECT DISTINCT tmdb_id FROM logs").fetchall()}
+
+
+def log_exists(tmdb_id, watched_on):
+    """Has this exact viewing already been recorded? (dedupe for RSS sync)"""
+    with connect() as c:
+        return c.execute("SELECT 1 FROM logs WHERE tmdb_id=? AND watched_on=?",
+                         (tmdb_id, watched_on)).fetchone() is not None
+
+
+# --- Letterboxd RSS sync bookkeeping --------------------------------------
+def lb_seen(guid):
+    with connect() as c:
+        return c.execute("SELECT 1 FROM lb_synced WHERE guid=?", (guid,)).fetchone() is not None
+
+
+def lb_mark(guid):
+    with connect() as c:
+        c.execute("INSERT OR IGNORE INTO lb_synced (guid, synced_at) VALUES (?,?)", (guid, time.time()))
+
+
+def last_sync():
+    with connect() as c:
+        r = c.execute("SELECT MAX(synced_at) FROM lb_synced").fetchone()
+        return r[0]
 
 
 def film_user_state(tmdb_id):

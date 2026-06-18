@@ -58,6 +58,16 @@ const Marquee = (() => {
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
     e.preventDefault();
+    if (btn.dataset.act === "sync") {
+      btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = "SYNCING…";
+      try {
+        const d = await (await fetch("/api/sync", { method: "POST" })).json();
+        if (d.ok) { toast(d.new ? `PULLED ${d.new} NEW ENTR${d.new === 1 ? "Y" : "IES"}` : "ALREADY UP TO DATE"); if (d.new) setTimeout(() => location.reload(), 800); }
+        else toast("SYNC: " + (d.reason || "failed"));
+      } catch (_) { toast("SYNC FAILED"); }
+      finally { btn.disabled = false; btn.innerHTML = orig; }
+      return;
+    }
     const host = btn.closest("[data-tmdb]");
     const id = host && host.dataset.tmdb;
     if (!id) return;
@@ -137,6 +147,16 @@ const Marquee = (() => {
         clk.textContent = `TERMINAL 01  ·  ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}  ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
       };
       tick(); setInterval(tick, 1000);
+    }
+    // last-synced indicator
+    const sn = document.getElementById("syncnote");
+    if (sn) {
+      const last = parseFloat(sn.dataset.last);
+      if (last) {
+        const s = Math.max(0, Date.now() / 1000 - last);
+        const rel = s < 90 ? "just now" : s < 5400 ? Math.round(s / 60) + "m ago" : s < 172800 ? Math.round(s / 3600) + "h ago" : Math.round(s / 86400) + "d ago";
+        sn.textContent = "last synced " + rel;
+      } else { sn.textContent = "auto-syncs hourly"; }
     }
     if ([...document.querySelectorAll(".stamp,.bigstamp")].some(b =>
       /grabbing|wanted|order|recv|receiving/i.test(b.className + b.textContent))) startPolling();

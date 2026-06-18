@@ -31,6 +31,11 @@ DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "..", "da
 APP_NAME = os.getenv("APP_NAME", "Marquee")
 OWNER = os.getenv("OWNER", "you")
 
+# --- Letterboxd sync (ongoing ingestion via the public RSS feed) ---
+LETTERBOXD_USERNAME = os.getenv("LETTERBOXD_USERNAME", "").strip()
+SYNC_INTERVAL_MIN = int(os.getenv("SYNC_INTERVAL_MIN", "60") or 0)
+
 TMDB_ENABLED = bool(TMDB_API_KEY or TMDB_BEARER)
 RADARR_ENABLED = bool(RADARR_URL and RADARR_API_KEY)
+SYNC_ENABLED = bool(LETTERBOXD_USERNAME and TMDB_ENABLED)  # need TMDB to fetch new films' metadata
 DEMO_MODE = not TMDB_ENABLED  # no metadata source -> serve fixtures
