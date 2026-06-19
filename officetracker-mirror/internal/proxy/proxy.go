@@ -65,6 +65,17 @@ func New(cfg Config) http.Handler {
 // connect with an empty token" and read_only==true as "lock the UI".
 const metaBody = `{"auth":"none","read_only":true}`
 
+// setCORS marks a response as readable from any origin. The mirror is
+// anonymous and read-only — no cookies or credentials cross the boundary — so a
+// wildcard origin is safe: there is no per-user data for the same-origin policy
+// to protect, and the guard already rejects every write method.
+func setCORS(h http.Header) {
+	h.Set("Access-Control-Allow-Origin", "*")
+	h.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+	h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+	h.Set("Access-Control-Max-Age", "86400")
+}
+
 // guard enforces the read-only contract before anything reaches the proxy.
 func guard(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,14 +86,18 @@ func guard(next http.Handler) http.Handler {
 		}
 
 		if isDenied(r.URL.Path) {
+			setCORS(w.Header())
 			http.NotFound(w, r)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
+			// Proxied responses get their CORS headers in modifyResponse.
 			next.ServeHTTP(w, r)
 		case http.MethodOptions:
+			// CORS preflight: advertise the allowed methods/headers and stop.
+			setCORS(w.Header())
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			writeForbidden(w, r)
@@ -107,6 +122,7 @@ func writeMeta(w http.ResponseWriter, r *http.Request) {
 		writeForbidden(w, r)
 		return
 	}
+	setCORS(w.Header())
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
@@ -114,6 +130,7 @@ func writeMeta(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeForbidden(w http.ResponseWriter, r *http.Request) {
+	setCORS(w.Header())
 	if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/mcp/") {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
@@ -128,6 +145,13 @@ func writeForbidden(w http.ResponseWriter, r *http.Request) {
 func modifyResponse(resp *http.Response) error {
 	// Never leak the upstream account's session cookie to an anonymous client.
 	resp.Header.Del("Set-Cookie")
+
+	// Replace any upstream CORS policy with our own so every proxied response
+	// (HTML, JSON, static assets) is readable cross-origin.
+	resp.Header.Del("Access-Control-Allow-Origin")
+	resp.Header.Del("Access-Control-Allow-Methods")
+	resp.Header.Del("Access-Control-Allow-Headers")
+	setCORS(resp.Header)
 
 	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
 		return nil
