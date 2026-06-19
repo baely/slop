@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flyover Lab — map style comparison</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d0f;
+    --panel:#14181c;
+    --panel-2:#1b2026;
+    --line:#ffffff14;
+    --line-strong:#ffffff2a;
+    --ink:#e9e7e1;
+    --ink-dim:#9aa0a6;
+    --ink-faint:#646a70;
+    --accent:#e8a33d;
+    --accent-dim:#7a5a22;
+    --good:#7fd17f;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+    --sans:"IBM Plex Sans", system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);overflow:hidden;
+    display:flex;flex-direction:column;height:100vh;
+  }
+  button,input,select{font-family:inherit;color:inherit}
+
+  /* ---- top bar ---- */
+  header{
+    display:flex;align-items:center;gap:18px;flex:0 0 auto;
+    padding:10px 16px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#14181c,#0e1114);
+  }
+  .wordmark{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);white-space:nowrap}
+  .wordmark b{color:var(--accent);font-weight:600}
+  .bar-group{display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);
+    padding:7px 12px;border-radius:7px;font-size:13px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;transition:.12s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent-dim);background:#20262d}
+  .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);font-weight:600}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent}
+  .btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+  .btn.rec{color:#e6938f}
+  .btn.rec[aria-pressed="true"]{background:#d2433f;border-color:#d2433f;color:#fff;animation:recpulse 1.4s ease-in-out infinite}
+  @keyframes recpulse{50%{box-shadow:0 0 0 4px #d2433f33}}
+
+  .field{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-dim)}
+  .field input[type=range]{accent-color:var(--accent);width:96px}
+  .field .val{font-family:var(--mono);color:var(--ink);min-width:34px;text-align:right;font-size:12px}
+  .field select{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);border-radius:6px;padding:5px 6px;font-size:12px;font-family:var(--mono);cursor:pointer}
+  .field input.cust{width:60px;background:var(--bg);border:1px solid var(--line-strong);color:var(--ink);border-radius:6px;padding:5px 6px;font-size:12px;font-family:var(--mono)}
+  .field input.cust:focus{outline:none;border-color:var(--accent-dim)}
+
+  /* ---- layout ---- */
+  main{flex:1 1 auto;display:flex;min-height:0}
+  aside{
+    width:312px;flex:0 0 auto;border-right:1px solid var(--line);
+    background:var(--panel);display:flex;flex-direction:column;min-height:0;
+    transition:margin-left .2s ease;
+  }
+  aside.collapsed{margin-left:-312px}
+  .aside-scroll{overflow-y:auto;padding:14px;flex:1}
+  .section{margin-bottom:22px}
+  .section h2{
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);margin:0 0 10px;font-weight:500;
+  }
+
+  /* waypoints */
+  .wp{
+    display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);
+    border-radius:7px;margin-bottom:6px;background:var(--panel-2);font-size:13px;
+  }
+  .wp .idx{font-family:var(--mono);color:var(--accent);font-size:11px;width:18px;flex:0 0 auto}
+  .wp .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wp .co{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .wp .x{cursor:pointer;color:var(--ink-faint);padding:2px 4px;border-radius:4px}
+  .wp .x:hover{color:#ff8a8a;background:#ffffff10}
+  .wp.dragging{opacity:.4}
+  .wp .grip{cursor:grab;color:var(--ink-faint);font-size:13px}
+
+  .add-row{display:flex;gap:6px;margin-top:8px}
+  .add-row input{
+    flex:1;min-width:0;background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;
+    padding:8px 10px;font-size:13px;
+  }
+  .add-row input:focus{outline:none;border-color:var(--accent-dim)}
+
+  /* style picker */
+  .style-item{
+    display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;cursor:pointer;
+    font-size:13px;border:1px solid transparent;
+  }
+  .style-item:hover{background:var(--panel-2)}
+  .style-item input{accent-color:var(--accent);margin:0}
+  .style-item .meta{flex:1;min-width:0}
+  .style-item .lbl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .style-item .prov{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .style-item.locked{opacity:.45}
+  .tag{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--line-strong);color:var(--ink-faint)}
+  .tag.key{color:var(--accent);border-color:var(--accent-dim)}
+
+  .keyfield{margin-bottom:10px}
+  .keyfield label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:4px}
+  .keyfield label a{color:var(--accent);text-decoration:none;font-size:11px;float:right}
+  .keyfield label a:hover{text-decoration:underline}
+  .keyfield input{width:100%;background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;font-size:12px;font-family:var(--mono)}
+  .keyfield input:focus{outline:none;border-color:var(--accent-dim)}
+
+  .hint{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:8px}
+
+  /* ---- stage ---- */
+  .stage{flex:1 1 auto;position:relative;min-width:0;background:#000}
+  #grid{position:absolute;inset:0;display:grid;gap:1px;background:var(--line)}
+  #grid.framed{inset:auto;left:50%;top:50%;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;background:transparent;transform-origin:center center}
+  #grid.framed .cell{flex:0 0 auto;outline:1px solid var(--line-strong);outline-offset:-1px}
+  .cell{position:relative;overflow:hidden;background:#0c0c0c}
+  .cell .map{position:absolute;inset:0}
+  .cell .cap{
+    position:absolute;top:8px;left:8px;z-index:2;display:flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    background:#0b0d0fcc;backdrop-filter:blur(6px);padding:5px 9px;border-radius:6px;
+    border:1px solid var(--line);pointer-events:none;
+  }
+  .cell .cap .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cell .cap .prov{color:var(--ink-faint)}
+  .cell .tools{
+    position:absolute;top:7px;right:8px;z-index:3;display:flex;gap:5px;opacity:0;transition:.15s;
+  }
+  .cell:hover .tools{opacity:1}
+  .cell .tools button{
+    background:#0b0d0fcc;border:1px solid var(--line);color:var(--ink-dim);
+    width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:12px;display:grid;place-items:center;
+    backdrop-filter:blur(6px);
+  }
+  .cell .tools button:hover{color:var(--ink);border-color:var(--accent-dim)}
+  .cell.recording{outline:2px solid #ff5d5d;outline-offset:-2px}
+  .cell .recdot{
+    position:absolute;bottom:8px;right:8px;z-index:3;font-family:var(--mono);font-size:10px;color:#ff7b7b;
+    display:none;align-items:center;gap:5px;background:#0b0d0fcc;padding:3px 7px;border-radius:5px;
+  }
+  .cell.recording .recdot{display:flex}
+  .cell .recdot .b{width:7px;height:7px;border-radius:50%;background:#ff5d5d;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.2}}
+
+  /* now-flying overlay */
+  #now{
+    position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;
+    display:none;align-items:center;gap:14px;
+    background:#0b0d0fe6;border:1px solid var(--line-strong);border-radius:10px;
+    padding:10px 18px;backdrop-filter:blur(10px);box-shadow:0 8px 40px #0009;
+  }
+  #now.show{display:flex}
+  #now .leg{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.1em}
+  #now .to{font-size:16px;font-weight:600}
+  #now .co{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .progress{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0;transition:width .2s linear;z-index:21}
+
+  .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-faint);font-family:var(--mono);font-size:13px}
+
+  /* scrollbar */
+  .aside-scroll::-webkit-scrollbar{width:9px}
+  .aside-scroll::-webkit-scrollbar-thumb{background:#ffffff18;border-radius:6px;border:2px solid var(--panel)}
+  .maplibregl-ctrl-attrib{font-size:9px !important}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn ghost" id="toggleAside" title="Toggle panel">☰</button>
+  <span class="wordmark"><b>flyover</b>·lab</span>
+  <div class="bar-group">
+    <button class="btn primary" id="play">▶ Fly route</button>
+    <button class="btn" id="stop">■ Stop</button>
+    <button class="btn" id="reset" title="Frame the whole route">⤢ Fit</button>
+    <button class="btn rec" id="recAll" title="Record the flight as a video for every selected panel, at the frame resolution">⏺ Record</button>
+  </div>
+  <div class="bar-group">
+    <label class="field">pitch <input type="range" id="pitch" min="0" max="80" value="62"><span class="val" id="pitchV">62°</span></label>
+    <label class="field">zoom <input type="range" id="zoom" min="3" max="14" step="0.5" value="9.5"><span class="val" id="zoomV">9.5</span></label>
+    <label class="field">leg <input type="range" id="legdur" min="2" max="12" step="0.5" value="5"><span class="val" id="legdurV">5.0s</span></label>
+    <label class="field">frame
+      <select id="frame" title="Output dimensions per panel (also the recording resolution)">
+        <option value="fit">Fit</option>
+        <option value="1920x1080">1920×1080</option>
+        <option value="1280x720">1280×720</option>
+        <option value="1080x1920">1080×1920 ↕</option>
+        <option value="1080x1080">1080×1080 □</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <input id="frameW" class="cust" type="number" min="120" step="20" value="1920">
+      <span class="cust">×</span>
+      <input id="frameH" class="cust" type="number" min="120" step="20" value="1080">
+    </label>
+  </div>
+  <div class="spacer"></div>
+  <div class="bar-group">
+    <button class="btn" id="lock" aria-pressed="true" title="Pan/zoom all maps together">⛓ Sync</button>
+    <button class="btn" id="terrain" aria-pressed="true" title="3D terrain (AWS DEM)">⛰ 3D</button>
+    <button class="btn" id="north" aria-pressed="false" title="Lock bearing to north (no heading rotation)">⇧ North</button>
+    <button class="btn" id="orbit" aria-pressed="true" title="Slow orbit on arrival">↻ Orbit</button>
+    <button class="btn" id="loopBtn" aria-pressed="false" title="Loop the route">∞ Loop</button>
+  </div>
+</header>
+
+<main>
+  <aside id="aside">
+    <div class="aside-scroll">
+      <div class="section">
+        <h2>Route</h2>
+        <div id="wpList"></div>
+        <div class="add-row">
+          <input id="wpSearch" placeholder="Add place (e.g. Reykjavík)" />
+          <button class="btn" id="wpAdd">+</button>
+        </div>
+        <div class="hint">Search uses OpenStreetMap Nominatim. Drag ⠿ to reorder. The camera faces the direction of travel on each leg.</div>
+      </div>
+
+      <div class="section">
+        <h2>Map styles · compare</h2>
+        <div id="styleList"></div>
+      </div>
+
+      <div class="section">
+        <h2>API keys <span class="tag">stored locally</span></h2>
+        <div class="keyfield">
+          <label>MapTiler key <a href="https://cloud.maptiler.com/account/keys/" target="_blank">get one ↗</a></label>
+          <input id="keyMaptiler" placeholder="MapTiler API key" autocomplete="off" />
+        </div>
+        <div class="keyfield">
+          <label>Mapbox token <a href="https://account.mapbox.com/access-tokens/" target="_blank">get one ↗</a></label>
+          <input id="keyMapbox" placeholder="pk.eyJ…" autocomplete="off" />
+        </div>
+        <div class="hint">Keyless providers (OpenFreeMap, CARTO, Esri, MapLibre demo) work out of the box. Enter keys to unlock MapTiler &amp; Mapbox styles.</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="stage">
+    <div id="grid"></div>
+    <div class="empty" id="empty">Select one or more map styles →</div>
+    <div id="now">
+      <span class="leg" id="nowLeg">LEG 1 / 5</span>
+      <span class="to" id="nowTo">—</span>
+      <span class="co" id="nowCo"></span>
+    </div>
+    <div class="progress" id="progress"></div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const LS = {
+  get:(k,d)=>{try{const v=localStorage.getItem('flyoverlab.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set:(k,v)=>localStorage.setItem('flyoverlab.'+k,JSON.stringify(v)),
+};
+
+/* ---------------- style catalog ---------------- */
+function rasterStyle(tiles, attribution){
+  return {
+    version:8, glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources:{ r:{type:'raster', tiles:Array.isArray(tiles)?tiles:[tiles], tileSize:256, attribution, maxzoom:19} },
+    layers:[{id:'r', type:'raster', source:'r'}]
+  };
+}
+const STYLES = [
+  {id:'ofm-liberty', label:'Liberty', provider:'OpenFreeMap', style:'https://tiles.openfreemap.org/styles/liberty'},
+  {id:'ofm-bright',  label:'Bright',  provider:'OpenFreeMap', style:'https://tiles.openfreemap.org/styles/bright'},
+  {id:'ofm-positron',label:'Positron',provider:'OpenFreeMap', style:'https://tiles.openfreemap.org/styles/positron'},
+  {id:'carto-dark',  label:'Dark Matter', provider:'CARTO', style:'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'},
+  {id:'carto-voyager',label:'Voyager', provider:'CARTO', style:'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'},
+  {id:'carto-positron',label:'Positron',provider:'CARTO', style:'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'},
+  {id:'esri-imagery',label:'World Imagery', provider:'Esri', style:()=>rasterStyle('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','© Esri')},
+  {id:'esri-topo',   label:'Topographic', provider:'Esri', style:()=>rasterStyle('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}','© Esri')},
+  {id:'maplibre-demo',label:'Demo tiles', provider:'MapLibre', style:'https://demotiles.maplibre.org/style.json'},
+
+  {id:'mt-satellite',label:'Satellite', provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/satellite/style.json?key=${k}`},
+  {id:'mt-hybrid',   label:'Hybrid',    provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/hybrid/style.json?key=${k}`},
+  {id:'mt-streets',  label:'Streets v2',provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/streets-v2/style.json?key=${k}`},
+  {id:'mt-outdoor',  label:'Outdoor v2',provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/outdoor-v2/style.json?key=${k}`},
+  {id:'mt-topo',     label:'Topo v2',   provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/topo-v2/style.json?key=${k}`},
+  {id:'mt-winter',   label:'Winter v2', provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/winter-v2/style.json?key=${k}`},
+  {id:'mt-basic',    label:'Basic v2',  provider:'MapTiler', needs:'maptiler', style:k=>`https://api.maptiler.com/maps/basic-v2/style.json?key=${k}`},
+
+  {id:'mb-sat-streets',label:'Satellite Streets', provider:'Mapbox', needs:'mapbox', mb:'satellite-streets-v12'},
+  {id:'mb-outdoors',  label:'Outdoors',  provider:'Mapbox', needs:'mapbox', mb:'outdoors-v12'},
+  {id:'mb-streets',   label:'Streets',   provider:'Mapbox', needs:'mapbox', mb:'streets-v12'},
+  {id:'mb-light',     label:'Light',     provider:'Mapbox', needs:'mapbox', mb:'light-v11'},
+  {id:'mb-dark',      label:'Dark',      provider:'Mapbox', needs:'mapbox', mb:'dark-v11'},
+];
+
+/* Mapbox styles loaded through MapLibre by rewriting mapbox:// references */
+function mapboxStyleUrl(styleId, token){
+  return `https://api.mapbox.com/styles/v1/mapbox/${styleId}?access_token=${token}`;
+}
+function mapboxTransform(token){
+  return (url)=>{
+    if(!url.startsWith('mapbox://')) return {url};
+    const rest = url.replace('mapbox://','');
+    if(rest.startsWith('tiles/')){
+      return {url:`https://api.mapbox.com/v4/${rest.replace('tiles/','')}?access_token=${token}`};
+    }
+    if(rest.startsWith('fonts/')){
+      return {url:`https://api.mapbox.com/fonts/v1/${rest.replace('fonts/','')}?access_token=${token}`};
+    }
+    if(rest.startsWith('sprites/')){
+      return {url:`https://api.mapbox.com/styles/v1/${rest.replace('sprites/','')}?access_token=${token}`};
+    }
+    // raw tileset id, e.g. mapbox://mapbox.satellite
+    return {url:`https://api.mapbox.com/v4/${rest}.json?secure&access_token=${token}`};
+  };
+}
+
+/* ---------------- state ---------------- */
+const DEFAULT_ROUTE = [
+  {name:'San Francisco', lng:-122.4194, lat:37.7749},
+  {name:'Reykjavík',     lng:-21.8174,  lat:64.1265},
+  {name:'Lisbon',        lng:-9.1393,   lat:38.7223},
+  {name:'Marrakesh',     lng:-7.9811,   lat:31.6295},
+  {name:'Cape Town',     lng:18.4241,   lat:-33.9249},
+];
+let waypoints = LS.get('route', DEFAULT_ROUTE);
+let selected  = LS.get('styles', ['ofm-liberty','carto-dark','esri-imagery']);
+let keys = { maptiler: LS.get('key.maptiler',''), mapbox: LS.get('key.mapbox','') };
+let opts = {
+  pitch:62, zoom:9.5, legdur:5,
+  lock:LS.get('opt.lock',true), terrain:LS.get('opt.terrain',true),
+  orbit:LS.get('opt.orbit',true), loop:LS.get('opt.loop',false),
+  north:LS.get('opt.north',false), frame:LS.get('opt.frame','fit'),
+};
+
+const cells = new Map();   // styleId -> {map, container, recorder, chunks}
+let playing = false, playToken = 0, syncing = false, recSession = null;
+
+/* ---------------- terrain ---------------- */
+const TERRAIN_SRC = 'aws-terrain';
+function applyTerrain(map){
+  try{
+    if(!map.getSource(TERRAIN_SRC)){
+      map.addSource(TERRAIN_SRC,{
+        type:'raster-dem', encoding:'terrarium', tileSize:256, maxzoom:14,
+        tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        attribution:'Terrain © AWS / Mapzen'
+      });
+    }
+    map.setTerrain(opts.terrain ? {source:TERRAIN_SRC, exaggeration:1.35} : null);
+  }catch(e){/* style may not be ready */}
+}
+function refreshTerrain(){ cells.forEach(c=>applyTerrain(c.map)); }
+
+/* ---------------- build a map for a style ---------------- */
+function styleSpecFor(def){
+  if(def.mb){
+    if(!keys.mapbox) return null;
+    return { style: mapboxStyleUrl(def.mb, keys.mapbox), transform: mapboxTransform(keys.mapbox) };
+  }
+  if(def.needs==='maptiler'){
+    if(!keys.maptiler) return null;
+    return { style: def.style(keys.maptiler) };
+  }
+  return { style: typeof def.style==='function' ? def.style() : def.style };
+}
+
+function createCell(def){
+  const spec = styleSpecFor(def);
+  if(!spec) return;
+  const cell = document.createElement('div');
+  cell.className='cell';
+  cell.innerHTML = `
+    <div class="map"></div>
+    <div class="cap"><span class="dot"></span><span>${def.label}</span><span class="prov">${def.provider}</span></div>
+    <div class="tools">
+      <button data-act="shot" title="Screenshot PNG">⤓</button>
+      <button data-act="rec" title="Record WebM">●</button>
+      <button data-act="solo" title="Show only this">◳</button>
+    </div>
+    <div class="recdot"><span class="b"></span>REC</div>`;
+  $('#grid').appendChild(cell);
+
+  const start = waypoints[0] || {lng:0,lat:20};
+  const map = new maplibregl.Map({
+    container: cell.querySelector('.map'),
+    style: spec.style,
+    center:[start.lng, start.lat],
+    zoom: 3.2, pitch: 0, bearing: 0,
+    attributionControl:{compact:true},
+    preserveDrawingBuffer:true,
+    transformRequest: spec.transform || undefined,
+  });
+  map.on('error', e=>console.warn('['+def.id+']', e && e.error && e.error.message));
+  map.on('style.load', ()=>applyTerrain(map));
+  // camera sync
+  map.on('move', ()=>{
+    if(syncing || !opts.lock || playing) return;
+    syncing = true;
+    const c = map.getCenter();
+    const cam = {center:[c.lng,c.lat], zoom:map.getZoom(), pitch:map.getPitch(), bearing:map.getBearing()};
+    cells.forEach(other=>{ if(other.map!==map) other.map.jumpTo(cam); });
+    syncing = false;
+  });
+
+  const rec = {recorder:null, chunks:[]};
+  cell.querySelector('[data-act=shot]').onclick = ()=>screenshot(def, map);
+  cell.querySelector('[data-act=rec]').onclick  = ()=>toggleRecord(def, map, cell, rec);
+  cell.querySelector('[data-act=solo]').onclick = ()=>soloStyle(def.id);
+
+  cells.set(def.id, {def, map, cell, rec});
+}
+
+function destroyCell(id){
+  const c = cells.get(id);
+  if(!c) return;
+  try{ if(c.rec.recorder && c.rec.recorder.state!=='inactive') c.rec.recorder.stop(); }catch(e){}
+  c.map.remove();
+  c.cell.remove();
+  cells.delete(id);
+}
+
+/* ---------------- grid layout ---------------- */
+function colCount(n){ return n<=1?1 : n<=2?2 : n<=4?2 : n<=6?3 : n<=9?3 : 4; }
+
+function frameDims(){
+  if(opts.frame==='fit') return null;
+  if(opts.frame==='custom') return {w:+$('#frameW').value, h:+$('#frameH').value};
+  const [w,h]=opts.frame.split('x').map(Number);
+  return {w,h};
+}
+
+function layoutGrid(){
+  const n = cells.size;
+  $('#empty').style.display = n? 'none':'grid';
+  const g = $('#grid');
+  const f = frameDims();
+
+  if(!f || !f.w || !f.h){
+    // responsive "fit" mode — cells stretch to fill the stage
+    g.classList.remove('framed');
+    g.style.transform=''; g.style.width=''; g.style.height='';
+    cells.forEach(c=>{ c.cell.style.width=''; c.cell.style.height=''; });
+    const cols = colCount(n), rows = Math.ceil(n/cols);
+    g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    g.style.gridTemplateRows = `repeat(${rows},1fr)`;
+    requestAnimationFrame(()=>cells.forEach(c=>c.map.resize()));
+    return;
+  }
+
+  // fixed-frame mode — each panel renders (and records) at exactly f.w × f.h px,
+  // laid out at its true size then scaled as a whole to fit the stage.
+  const dpr = window.devicePixelRatio || 1;
+  const cellW = Math.max(1, Math.round(f.w/dpr));
+  const cellH = Math.max(1, Math.round(f.h/dpr));
+  const cols = colCount(n), rows = Math.ceil(n/cols), gap = 1;
+  const gridW = cols*cellW + (cols-1)*gap;
+  const gridH = rows*cellH + (rows-1)*gap;
+
+  g.classList.add('framed');
+  g.style.gridTemplateColumns=''; g.style.gridTemplateRows='';
+  g.style.width = gridW+'px';
+  g.style.height = gridH+'px';
+  cells.forEach(c=>{ c.cell.style.width=cellW+'px'; c.cell.style.height=cellH+'px'; });
+
+  const sr = document.querySelector('.stage').getBoundingClientRect();
+  const scale = Math.min((sr.width-2)/gridW, (sr.height-2)/gridH);
+  g.style.transform = `translate(-50%,-50%) scale(${scale})`;
+  requestAnimationFrame(()=>cells.forEach(c=>c.map.resize()));
+}
+
+function rebuildCells(){
+  // remove deselected
+  [...cells.keys()].forEach(id=>{ if(!selected.includes(id)) destroyCell(id); });
+  // add newly selected (preserve order of selection)
+  selected.forEach(id=>{
+    if(cells.has(id)) return;
+    const def = STYLES.find(s=>s.id===id);
+    if(def) createCell(def);
+  });
+  layoutGrid();
+}
+
+let soloMemory = null;
+function soloStyle(id){
+  if(soloMemory){ selected = soloMemory; soloMemory=null; }
+  else { soloMemory = selected.slice(); selected = [id]; }
+  LS.set('styles', selected);
+  renderStyleList(); rebuildCells();
+}
+
+/* ---------------- montage ---------------- */
+function toRad(d){return d*Math.PI/180}
+function toDeg(r){return r*180/Math.PI}
+function bearingBetween(a,b){
+  const y=Math.sin(toRad(b.lng-a.lng))*Math.cos(toRad(b.lat));
+  const x=Math.cos(toRad(a.lat))*Math.sin(toRad(b.lat))-Math.sin(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.cos(toRad(b.lng-a.lng));
+  return (toDeg(Math.atan2(y,x))+360)%360;
+}
+const wait = ms => new Promise(r=>setTimeout(r,ms));
+
+function flyAll(camera, durationMs){
+  cells.forEach(c=>c.map.flyTo({...camera, duration:durationMs, curve:1.5, essential:true}));
+}
+function easeAll(camera, durationMs){
+  cells.forEach(c=>c.map.easeTo({...camera, duration:durationMs, essential:true}));
+}
+
+async function playRoute(){
+  if(cells.size===0 || waypoints.length===0) return;
+  if(playing){ return; }
+  playing = true;
+  const token = ++playToken;
+  $('#now').classList.add('show');
+  const total = waypoints.length;
+
+  do{
+    for(let i=0;i<waypoints.length;i++){
+      if(token!==playToken) break;
+      const wp = waypoints[i];
+      const prev = waypoints[i-1] || waypoints[(i-1+waypoints.length)%waypoints.length] || wp;
+      const brng = opts.north ? 0
+        : ((i===0 && waypoints.length>1) ? bearingBetween(wp, waypoints[1]) : bearingBetween(prev, wp));
+      // update overlay
+      $('#nowLeg').textContent = `LEG ${i+1} / ${total}`;
+      $('#nowTo').textContent = wp.name;
+      $('#nowCo').textContent = `${wp.lat.toFixed(3)}, ${wp.lng.toFixed(3)}`;
+
+      const dur = opts.legdur*1000;
+      flyAll({center:[wp.lng,wp.lat], zoom:opts.zoom, pitch:opts.pitch, bearing:brng}, dur);
+      await animateProgress(dur, token);
+      if(token!==playToken) break;
+
+      if(opts.orbit && !opts.north){
+        const odur = Math.max(2200, dur*0.6);
+        easeAll({bearing:brng+38, pitch:opts.pitch}, odur);
+        await animateProgress(odur, token);
+      }
+    }
+  } while(opts.loop && token===playToken);
+
+  if(token===playToken){ playing=false; $('#now').classList.remove('show'); $('#progress').style.width='0'; $('#play').textContent='▶ Fly route'; }
+}
+
+function animateProgress(durationMs, token){
+  return new Promise(resolve=>{
+    const t0=performance.now();
+    const bar=$('#progress');
+    (function tick(now){
+      if(token!==playToken){ resolve(); return; }
+      const p=Math.min(1,(now-t0)/durationMs);
+      bar.style.width=(p*100).toFixed(1)+'%';
+      if(p<1) requestAnimationFrame(tick); else resolve();
+    })(t0);
+  });
+}
+
+function stopRoute(){
+  playToken++; playing=false;
+  cells.forEach(c=>c.map.stop());
+  $('#now').classList.remove('show');
+  $('#progress').style.width='0';
+  $('#play').textContent='▶ Fly route';
+}
+
+function fitRoute(){
+  if(waypoints.length===0) return;
+  stopRoute();
+  const b = new maplibregl.LngLatBounds();
+  waypoints.forEach(w=>b.extend([w.lng,w.lat]));
+  cells.forEach(c=>c.map.fitBounds(b,{padding:60,pitch:0,bearing:0,duration:1200,maxZoom:9}));
+}
+
+/* ---------------- recording / screenshots ---------------- */
+function screenshot(def, map){
+  map.once('idle',()=>{
+    const url = map.getCanvas().toDataURL('image/png');
+    const a=document.createElement('a');
+    a.href=url; a.download=`flyover-${def.id}.png`; a.click();
+  });
+  map.triggerRepaint();
+}
+function toggleRecord(def, map, cell, rec){
+  if(rec.recorder && rec.recorder.state!=='inactive'){
+    rec.recorder.stop();
+    return;
+  }
+  const stream = map.getCanvas().captureStream(30);
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+  rec.chunks=[];
+  rec.recorder = new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000});
+  rec.recorder.ondataavailable = e=>{ if(e.data.size) rec.chunks.push(e.data); };
+  rec.recorder.onstop = ()=>{
+    cell.classList.remove('recording');
+    const blob=new Blob(rec.chunks,{type:'video/webm'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=`flyover-${def.id}.webm`; a.click();
+  };
+  rec.recorder.start();
+  cell.classList.add('recording');
+}
+
+function downloadBlob(blob, name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+function frameTag(){ const f=frameDims(); return f && f.w && f.h ? `${f.w}x${f.h}` : 'fit'; }
+
+// Jump every map to a wide framing of the whole route, instantly — a consistent opening shot.
+function jumpFitAll(){
+  if(waypoints.length===0) return;
+  const b=new maplibregl.LngLatBounds();
+  waypoints.forEach(w=>b.extend([w.lng,w.lat]));
+  cells.forEach(c=>c.map.fitBounds(b,{padding:60,pitch:0,bearing:0,maxZoom:9,duration:0}));
+}
+
+/* Record the flight once and save one WebM per selected panel, each at the frame resolution. */
+async function recordAll(){
+  if(recSession) return;
+  if(cells.size===0 || waypoints.length===0) return;
+  if(typeof MediaRecorder==='undefined'){ alert('This browser does not support MediaRecorder.'); return; }
+  if(playing) stopRoute();
+
+  const btn=$('#recAll');
+  btn.setAttribute('aria-pressed','true'); btn.textContent='⏺ Preparing…';
+
+  // consistent opening frame, then let tiles settle a moment
+  jumpFitAll();
+  await wait(900);
+  if(!btn.getAttribute('aria-pressed')) return; // aborted during prep
+
+  const tag=frameTag();
+  const order={}; selected.forEach((id,i)=>order[id]=i+1);
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+  const recs=[];
+  cells.forEach(c=>{
+    const stream=c.map.getCanvas().captureStream(30);
+    const chunks=[];
+    const r=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:12_000_000});
+    r.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+    r.onstop=()=>{
+      c.cell.classList.remove('recording');
+      const n=String(order[c.def.id]||0).padStart(2,'0');
+      downloadBlob(new Blob(chunks,{type:'video/webm'}), `flyover-${n}-${c.def.id}-${tag}.webm`);
+    };
+    c.cell.classList.add('recording');
+    r.start();
+    recs.push(r);
+  });
+  recSession={recorders:recs};
+  btn.textContent='⏺ Recording…';
+
+  const prevLoop=opts.loop; opts.loop=false;   // single pass while recording
+  await playRoute();                            // resolves when the route finishes or is stopped
+  opts.loop=prevLoop;
+
+  stopRecordAll();
+}
+
+function stopRecordAll(){
+  if(!recSession){ $('#recAll').setAttribute('aria-pressed',''); $('#recAll').textContent='⏺ Record'; return; }
+  const session=recSession; recSession=null;
+  session.recorders.forEach(r=>{ try{ if(r.state!=='inactive') r.stop(); }catch(e){} });
+  $('#recAll').setAttribute('aria-pressed','');
+  $('#recAll').textContent='⏺ Record';
+}
+
+/* ---------------- sidebar rendering ---------------- */
+function renderWaypoints(){
+  const list=$('#wpList'); list.innerHTML='';
+  waypoints.forEach((w,i)=>{
+    const el=document.createElement('div');
+    el.className='wp'; el.draggable=true; el.dataset.i=i;
+    el.innerHTML=`<span class="grip">⠿</span><span class="idx">${i+1}</span>
+      <span class="nm" title="${w.name}">${w.name}</span>
+      <span class="co">${w.lat.toFixed(1)},${w.lng.toFixed(1)}</span>
+      <span class="x" title="Remove">✕</span>`;
+    el.querySelector('.x').onclick=()=>{ waypoints.splice(i,1); persistRoute(); renderWaypoints(); };
+    el.addEventListener('dragstart',e=>{ el.classList.add('dragging'); e.dataTransfer.setData('text/plain',i); });
+    el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+    el.addEventListener('dragover',e=>e.preventDefault());
+    el.addEventListener('drop',e=>{
+      e.preventDefault();
+      const from=+e.dataTransfer.getData('text/plain'), to=i;
+      if(from===to) return;
+      const [m]=waypoints.splice(from,1); waypoints.splice(to,0,m);
+      persistRoute(); renderWaypoints();
+    });
+    list.appendChild(el);
+  });
+}
+function persistRoute(){ LS.set('route', waypoints); }
+
+async function addPlace(q){
+  if(!q.trim()) return;
+  $('#wpAdd').textContent='…';
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+      {headers:{'Accept':'application/json'}});
+    const j=await r.json();
+    if(j && j[0]){
+      waypoints.push({name:j[0].display_name.split(',')[0], lng:+j[0].lon, lat:+j[0].lat});
+      persistRoute(); renderWaypoints();
+      $('#wpSearch').value='';
+    } else { $('#wpSearch').value=''; $('#wpSearch').placeholder='Not found — try again'; }
+  }catch(e){ alert('Geocoding failed: '+e.message); }
+  $('#wpAdd').textContent='+';
+}
+
+function renderStyleList(){
+  const list=$('#styleList'); list.innerHTML='';
+  let lastProv=null;
+  STYLES.forEach(def=>{
+    const locked = (def.needs==='maptiler' && !keys.maptiler) || (def.mb && !keys.mapbox);
+    const row=document.createElement('label');
+    row.className='style-item'+(locked?' locked':'');
+    const keyTag = (def.needs==='maptiler'||def.mb)?'<span class="tag key">key</span>':'<span class="tag">free</span>';
+    row.innerHTML=`<input type="checkbox" ${selected.includes(def.id)?'checked':''} ${locked?'disabled':''}>
+      <span class="meta"><span class="lbl">${def.label}</span><span class="prov">${def.provider}</span></span>${keyTag}`;
+    row.querySelector('input').onchange=e=>{
+      if(e.target.checked){ if(!selected.includes(def.id)) selected.push(def.id); }
+      else selected = selected.filter(s=>s!==def.id);
+      LS.set('styles', selected);
+      soloMemory=null;
+      rebuildCells();
+    };
+    list.appendChild(row);
+  });
+}
+
+/* ---------------- controls wiring ---------------- */
+function bindToggle(id, key, after){
+  const b=$('#'+id);
+  b.setAttribute('aria-pressed', String(opts[key]));
+  b.onclick=()=>{ opts[key]=!opts[key]; b.setAttribute('aria-pressed',String(opts[key])); LS.set('opt.'+key,opts[key]); if(after) after(); };
+}
+bindToggle('lock','lock');
+bindToggle('terrain','terrain', refreshTerrain);
+bindToggle('orbit','orbit');
+bindToggle('loopBtn','loop');
+bindToggle('north','north');
+
+function bindRange(id, key, fmt){
+  const el=$('#'+id), out=$('#'+id+'V');
+  el.value=opts[key]; out.textContent=fmt(opts[key]);
+  el.oninput=()=>{ opts[key]=+el.value; out.textContent=fmt(opts[key]); };
+}
+bindRange('pitch','pitch', v=>v+'°');
+bindRange('zoom','zoom', v=>(+v).toFixed(1));
+bindRange('legdur','legdur', v=>(+v).toFixed(1)+'s');
+
+$('#play').onclick=()=>{ if(playing){ stopRoute(); } else { $('#play').textContent='⏸ Stop'; playRoute(); } };
+$('#stop').onclick=()=>{ if($('#recAll').getAttribute('aria-pressed')==='true') $('#recAll').setAttribute('aria-pressed',''); stopRoute(); };
+$('#reset').onclick=fitRoute;
+$('#recAll').onclick=()=>{
+  if($('#recAll').getAttribute('aria-pressed')==='true'){
+    $('#recAll').setAttribute('aria-pressed','');   // mark aborted
+    if(recSession) stopRoute();                      // playRoute resolves -> recordAll saves what it has
+    else stopRecordAll();                            // aborted during prep, nothing recording yet
+  } else {
+    recordAll();
+  }
+};
+$('#toggleAside').onclick=()=>{ $('#aside').classList.toggle('collapsed'); setTimeout(layoutGrid,210); };
+
+// resolution / frame control
+const frameSel=$('#frame');
+$('#frameW').value = LS.get('opt.frameW',1920);
+$('#frameH').value = LS.get('opt.frameH',1080);
+frameSel.value = ['fit','custom','1920x1080','1280x720','1080x1920','1080x1080'].includes(opts.frame) ? opts.frame : 'fit';
+function updateFrameUI(){
+  const custom = frameSel.value==='custom';
+  document.querySelectorAll('.cust').forEach(el=>el.style.display = custom ? '' : 'none');
+}
+frameSel.onchange=()=>{ opts.frame=frameSel.value; LS.set('opt.frame',opts.frame); updateFrameUI(); layoutGrid(); };
+['frameW','frameH'].forEach(id=>$('#'+id).oninput=()=>{
+  LS.set('opt.'+id, +$('#'+id).value);
+  if(frameSel.value==='custom') layoutGrid();
+});
+updateFrameUI();
+
+$('#wpAdd').onclick=()=>addPlace($('#wpSearch').value);
+$('#wpSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') addPlace($('#wpSearch').value); });
+
+$('#keyMaptiler').value=keys.maptiler;
+$('#keyMapbox').value=keys.mapbox;
+$('#keyMaptiler').addEventListener('change',e=>{ keys.maptiler=e.target.value.trim(); LS.set('key.maptiler',keys.maptiler); renderStyleList(); });
+$('#keyMapbox').addEventListener('change',e=>{ keys.mapbox=e.target.value.trim(); LS.set('key.mapbox',keys.mapbox); renderStyleList(); });
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.code==='Space'){ e.preventDefault(); $('#play').click(); }
+  if(e.key==='f') fitRoute();
+});
+window.addEventListener('resize',()=>layoutGrid());
+
+/* ---------------- boot ---------------- */
+renderWaypoints();
+renderStyleList();
+rebuildCells();
+</script>
+</body>
+</html>
