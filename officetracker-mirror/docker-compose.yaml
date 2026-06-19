@@ -1,0 +1,15 @@
+services:
+  officetracker:
+    build: .
+    image: registry.baileys.dev/officetracker-mirror
+    restart: unless-stopped
+    environment:
+      ADDR: ":8080"
+      UPSTREAM: "${UPSTREAM:-https://officetracker.com.au}"
+      # API token tied to your officetracker.com.au account
+      # (value: officetracker:<64 chars>). Required.
+      OFFICETRACKER_TOKEN: "${OFFICETRACKER_TOKEN:?set OFFICETRACKER_TOKEN}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.officetracker.rule=Host(`officetracker.baileys.app`)
+      - traefik.http.services.officetracker.loadbalancer.server.port=8080
