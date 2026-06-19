@@ -1,0 +1,13 @@
+{
+  "name": "covers",
+  "version": "1.0.0",
+  "description": "A personal log of restaurants you've been to — map, itemised menu items, ratings and spend.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

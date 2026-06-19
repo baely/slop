@@ -1,0 +1,7 @@
+.git
+.env
+data
+*.md
+.DS_Store
+.playwright-mcp
+*.png
