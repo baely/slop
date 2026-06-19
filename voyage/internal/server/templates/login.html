@@ -1,0 +1,15 @@
+{{define "login"}}{{template "head" .}}
+<header class="topbar"><span class="wordmark">Voyage</span></header>
+<div class="card" style="max-width:360px;margin:48px auto;">
+  <h2>Sign in</h2>
+  {{if .Error}}<p class="muted" style="color:var(--danger)">Incorrect token.</p>{{end}}
+  <form method="post" action="/login" class="stack">
+    <input type="hidden" name="next" value="{{.Next}}">
+    <div>
+      <label for="token">Access token</label>
+      <input id="token" name="token" type="password" autofocus style="width:100%">
+    </div>
+    <button class="btn-primary" style="width:100%">Sign in</button>
+  </form>
+</div>
+{{template "foot" .}}{{end}}

@@ -1,0 +1,6 @@
+.env
+docker-compose.override.yaml
+*.db
+*.db-shm
+*.db-wal
+voyage-bin

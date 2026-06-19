@@ -1,0 +1,43 @@
+{{define "dashboard"}}{{template "head" .}}
+<header class="topbar">
+  <span class="wordmark">Voyage</span>
+  <form method="post" action="/logout"><button class="btn-ghost btn-sm">Sign out</button></form>
+</header>
+
+<div class="ticket"><span class="stamp">Voyage</span></div>
+<h1>Where to next?</h1>
+<p class="lead">Dream up the options, then let your travel crew vote on the good stuff.</p>
+
+{{if .Trips}}
+<div class="stack" style="margin-top:16px">
+{{range .Trips}}
+  <div class="card row" style="justify-content:space-between">
+    <div>
+      <a href="/trips/{{.ID}}?mode=ideate" style="font-weight:500;text-decoration:none;font-size:16px">{{.Title}}</a>
+      <div class="meta">{{.Scenarios}} scenario(s) · {{.Activities}} activit{{if eq .Activities 1}}y{{else}}ies{{end}} · <span class="pill">{{.Stage}}</span></div>
+    </div>
+    <form method="post" action="/trips/{{.ID}}/delete" onsubmit="return confirm('Delete this trip and everything in it?')">
+      <button class="btn-danger btn-sm">Delete</button>
+    </form>
+  </div>
+{{end}}
+</div>
+{{else}}
+<div class="empty">No trips yet — create your first below.</div>
+{{end}}
+
+<div class="card">
+  <h2>New trip</h2>
+  <form method="post" action="/trips" class="stack">
+    <div>
+      <label for="title">Title</label>
+      <input id="title" name="title" placeholder="e.g. Italy 2026" required style="width:100%">
+    </div>
+    <div>
+      <label for="locations">Locations <span style="text-transform:none;letter-spacing:0">(one per line, optional)</span></label>
+      <textarea id="locations" name="locations" rows="3" placeholder="Rome&#10;Florence"></textarea>
+    </div>
+    <button class="btn-primary">Create trip</button>
+  </form>
+</div>
+{{template "foot" .}}{{end}}
