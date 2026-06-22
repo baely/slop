@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Covers · a dining log</title>
+<title>Covers (a dining log)</title>
 <meta name="description" content="A personal log of restaurants you've been to.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2318181b'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fafafa'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -872,6 +872,7 @@ window.logAgain=function(id){
   $("#f-currency").value=cur(e);
   $$(".i-cur").forEach(s=>s.textContent=cur(e));
   draftTags=(e.tags||[]).slice(); renderTagChips();   // cuisine etc. carries over; notes do not
+  draftRating=e.rating||0; renderStarPick(draftRating);   // start from last rating, adjust if it differed
 };
 
 // typing/picking a known restaurant fills in its last-used location + currency
@@ -879,7 +880,11 @@ $("#f-name").addEventListener('change',()=>{
   if($("#f-location").value.trim())return;
   const v=$("#f-name").value.trim().toLowerCase(); if(!v)return;
   const m=entries.filter(e=>e.name.toLowerCase()===v).sort((a,b)=>b.date.localeCompare(a.date))[0];
-  if(m){ $("#f-location").value=m.location||""; if(m.currency){$("#f-currency").value=m.currency;$$(".i-cur").forEach(s=>s.textContent=m.currency);} }
+  if(m){
+    $("#f-location").value=m.location||"";
+    if(m.currency){$("#f-currency").value=m.currency;$$(".i-cur").forEach(s=>s.textContent=m.currency);}
+    if(!draftRating&&m.rating){draftRating=m.rating;renderStarPick(draftRating);}
+  }
 });
 
 $("#form").addEventListener('submit',async e=>{
