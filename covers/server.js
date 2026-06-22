@@ -16,12 +16,6 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Optional: pull location history from a Traccar instance (track.baileys.dev),
-// the same source trackui uses. Token stays server-side.
-const TRACK_TOKEN = process.env.TRACK_TOKEN || '';
-const TRACK_BASE = process.env.TRACK_BASE || 'https://track.baileys.dev/api';
-const TRACK_DEVICE = process.env.TRACK_DEVICE || '1';
-
 if (!process.env.APP_PASSWORD) {
   console.warn('[covers] WARNING: APP_PASSWORD not set — using the default "covers". Set APP_PASSWORD in production.');
 }
@@ -88,12 +82,13 @@ function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
 function sanitize(b) {
   if (!b || typeof b !== 'object') return null;
   const name = String(b.name || '').trim();
-  const location = String(b.location || '').trim();
   const date = String(b.date || '').trim();
-  if (!name || !location || !date) return null;
+  if (!name || !date) return null;
   const e = {
-    name, location, date,
-    time: b.time ? String(b.time) : '',
+    name,
+    location: b.location ? String(b.location).trim() : '',
+    date,
+    meal: b.meal ? String(b.meal).slice(0, 16) : '',
     rating: num(b.rating) || 0,
     amount: num(b.amount) || 0,
     currency: b.currency ? String(b.currency).slice(0, 4) : '$',
@@ -154,8 +149,17 @@ const server = http.createServer(async (req, res) => {
         return send(res, 401, { error: 'Invalid password' });
       }
 
-      // everything else needs a valid token
+      // public read: anyone can view the log (no auth required)
+      if (url === '/api/entries' && req.method === 'GET') {
+        return send(res, 200, db.entries);
+      }
+
+      // everything below needs a valid token (owner only)
       if (!authed(req)) return send(res, 401, { error: 'Unauthorized' });
+
+      if (url === '/api/session' && req.method === 'GET') {
+        return send(res, 200, { ok: true });
+      }
 
       if (url === '/api/logout' && req.method === 'POST') {
         const t = tokenOf(req);
@@ -164,35 +168,9 @@ const server = http.createServer(async (req, res) => {
         return send(res, 204, null);
       }
 
-      // tracker (Traccar proxy) — token held server-side
-      if (url === '/api/track/status' && req.method === 'GET') {
-        return send(res, 200, { enabled: !!TRACK_TOKEN });
-      }
-      if (url === '/api/track/positions' && req.method === 'GET') {
-        if (!TRACK_TOKEN) return send(res, 503, { error: 'Tracker not configured' });
-        const qs = new URL(req.url, 'http://localhost').searchParams;
-        const up = new URL(TRACK_BASE + '/positions');
-        up.searchParams.set('deviceId', TRACK_DEVICE);
-        if (qs.get('from')) up.searchParams.set('from', qs.get('from'));
-        if (qs.get('to')) up.searchParams.set('to', qs.get('to'));
-        let r;
-        try { r = await fetch(up, { headers: { Authorization: 'Bearer ' + TRACK_TOKEN } }); }
-        catch { return send(res, 502, { error: 'Tracker unreachable' }); }
-        if (!r.ok) return send(res, 502, { error: 'Tracker error ' + r.status });
-        const arr = await r.json();
-        const slim = (Array.isArray(arr) ? arr : [])
-          .map((p) => ({ fixTime: p.fixTime, lat: p.latitude, lng: p.longitude }))
-          .filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number');
-        return send(res, 200, slim);
-      }
-
-      if (url === '/api/entries' && req.method === 'GET') {
-        return send(res, 200, db.entries);
-      }
-
       if (url === '/api/entries' && req.method === 'POST') {
         const e = sanitize(await readBody(req));
-        if (!e) return send(res, 400, { error: 'name, location and date are required' });
+        if (!e) return send(res, 400, { error: 'name and date are required' });
         e.id = genId(); e.createdAt = Date.now(); e.updatedAt = e.createdAt;
         db.entries.push(e);
         await persist();
@@ -224,7 +202,7 @@ const server = http.createServer(async (req, res) => {
         if (idx < 0) return send(res, 404, { error: 'Not found' });
         if (req.method === 'PUT') {
           const e = sanitize(await readBody(req));
-          if (!e) return send(res, 400, { error: 'name, location and date are required' });
+          if (!e) return send(res, 400, { error: 'name and date are required' });
           e.id = id;
           e.createdAt = db.entries[idx].createdAt || Date.now();
           e.updatedAt = Date.now();

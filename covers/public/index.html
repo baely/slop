@@ -41,6 +41,10 @@
   }
   .wrap{max-width:820px;margin:0 auto;padding:clamp(24px,4vw,52px) clamp(16px,4vw,32px) 120px}
 
+  /* owner vs public (anon read-only) visibility */
+  body:not(.is-owner) .owner-only{display:none!important}
+  body.is-owner .anon-only{display:none!important}
+
   /* masthead */
   .masthead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .wordmark{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
@@ -102,7 +106,7 @@
   .datechip{text-align:center;border-right:1px solid var(--line-2);padding-right:14px}
   .datechip .d{font-weight:700;font-size:1.5rem;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
   .datechip .wd{text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;color:var(--faint);margin-top:5px}
-  .datechip .tm{font-size:.75rem;color:var(--muted);margin-top:6px}
+  .datechip .tm{font-size:.72rem;color:var(--muted);margin-top:6px;text-transform:capitalize}
 
   .body .name{font-weight:600;font-size:1.12rem;line-height:1.2;color:var(--ink)}
   .body .loc{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.9rem;margin-top:3px}
@@ -157,6 +161,13 @@
   .field input[type=text],.field input[type=date],.field input[type=time],.field input[type=password],.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--surface);border-radius:9px;outline:none;transition:.15s}
   .field input:focus,.field textarea:focus{border-color:var(--ink);box-shadow:var(--ring)}
   .field textarea{resize:vertical;min-height:62px;line-height:1.4}
+  .field select.meal-select{
+    width:100%;padding:10px 34px 10px 12px;border:1px solid var(--line);background:var(--surface);border-radius:9px;outline:none;cursor:pointer;color:var(--ink);
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.6'%3E%3Cpath d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;transition:.15s;
+  }
+  .field select.meal-select:focus{border-color:var(--ink);box-shadow:var(--ring)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 
   .locrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -221,6 +232,8 @@
   .login-card input{width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--surface);border-radius:10px;outline:none;text-align:center;transition:.15s}
   .login-card input:focus{border-color:var(--ink);box-shadow:var(--ring)}
   .login-card .btn-primary{width:100%;justify-content:center;padding:12px}
+  .login-cancel{background:none;border:none;color:var(--muted);font-family:inherit;font-size:.85rem;cursor:pointer;text-decoration:underline}
+  .login-cancel:hover{color:var(--ink)}
   .login-err{color:var(--danger);font-size:.88rem;min-height:1.2em}
 
   @media (max-width:560px){
@@ -236,11 +249,14 @@
   <header class="masthead">
     <h1 class="wordmark">Covers<span class="dot">.</span></h1>
     <div class="top-actions">
-      <button class="btn btn-primary" id="addBtn">
+      <button class="icon-btn anon-only" id="loginBtn" title="Sign in to edit" aria-label="Sign in">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="6.5" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="btn btn-primary owner-only" id="addBtn">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
         Log a visit
       </button>
-      <div class="menu-wrap">
+      <div class="menu-wrap owner-only">
         <button class="icon-btn" id="menuBtn" aria-label="More" title="Data &amp; export">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><circle cx="9" cy="3.5" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="9" cy="14.5" r="1.5"/></svg>
         </button>
@@ -293,7 +309,7 @@
   <div id="empty" class="empty" style="display:none">
     <h3>No covers yet</h3>
     <p>Start your dining log — record where you ate, what you had, and what you thought.</p>
-    <button class="btn btn-primary" onclick="openDialog()">Log your first visit</button>
+    <button class="btn btn-primary owner-only" onclick="openDialog()">Log your first visit</button>
   </div>
 </div>
 
@@ -304,15 +320,15 @@
 
     <div class="field">
       <label>Restaurant <span class="req">•</span></label>
-      <input type="text" id="f-name" autocomplete="off" placeholder="e.g. Firedoor" required>
+      <input type="text" id="f-name" autocomplete="off" list="restNames" placeholder="e.g. Firedoor" required>
+      <datalist id="restNames"></datalist>
     </div>
 
     <div class="field">
-      <label>Location <span class="req">•</span></label>
+      <label>Location</label>
       <div class="locrow">
-        <input type="text" id="f-location" autocomplete="off" placeholder="e.g. Surry Hills, Sydney" required>
+        <input type="text" id="f-location" autocomplete="off" placeholder="e.g. Surry Hills, Sydney">
         <button type="button" class="btn-locate" id="locateBtn">Find on map</button>
-        <button type="button" class="btn-locate" id="trackBtn" style="display:none" title="Pin where you were at this date &amp; time">From tracker</button>
       </div>
       <div id="formMapWrap">
         <div id="formMap"></div>
@@ -326,8 +342,15 @@
         <input type="date" id="f-date" required>
       </div>
       <div class="field">
-        <label>Time</label>
-        <input type="time" id="f-time">
+        <label>Meal</label>
+        <select id="f-meal" class="meal-select">
+          <option value="">—</option>
+          <option value="breakfast">Breakfast</option>
+          <option value="brunch">Brunch</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="treat">Treat</option>
+        </select>
       </div>
     </div>
 
@@ -373,9 +396,10 @@
 <div id="login">
   <form class="login-card" id="loginForm">
     <h1 class="wordmark">Covers<span class="dot">.</span></h1>
-    <div class="login-sub">A private dining log.</div>
-    <input type="password" id="loginPw" placeholder="Password" autocomplete="current-password" autofocus>
+    <div class="login-sub">Sign in to edit your log.</div>
+    <input type="password" id="loginPw" placeholder="Password" autocomplete="current-password">
     <button class="btn btn-primary" type="submit">Enter</button>
+    <button type="button" class="login-cancel" id="loginCancel">View the log instead</button>
     <div class="login-err" id="loginErr"></div>
   </form>
 </div>
@@ -387,6 +411,7 @@
 "use strict";
 const PREF="covers.prefs.v1", GCACHE="covers.geocache.v1", TOKKEY="covers.token";
 const DEFAULT_CUR="$";
+const MEALS=["breakfast","brunch","lunch","dinner","treat"];
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -396,7 +421,7 @@ let prefs=loadPrefs();
 let geocache=loadGcache();
 let token=localStorage.getItem(TOKKEY)||"";
 let editingId=null, draftRating=0, draftLat=null, draftLng=null, amountAuto=true;
-let currentView="log", trackerEnabled=false;
+let currentView="log", owner=false;
 let map=null, markersLayer=null, formMap=null, formMarker=null, geocoding=false;
 
 /* ---------- api ---------- */
@@ -406,7 +431,7 @@ async function api(method,path,body){
     headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},
     body:body!=null?JSON.stringify(body):undefined
   });
-  if(res.status===401){ token=""; localStorage.removeItem(TOKKEY); showLogin(); throw new Error('unauthorized'); }
+  if(res.status===401){ token=""; localStorage.removeItem(TOKKEY); if(owner){owner=false;applyMode();render();} throw new Error('unauthorized'); }
   if(!res.ok){ let m='Request failed'; try{m=(await res.json()).error||m;}catch{} throw new Error(m); }
   return res.status===204?null:res.json();
 }
@@ -424,10 +449,10 @@ function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-
 function dayNum(s){return parseDate(s).getDate();}
 function weekday(s){return parseDate(s).toLocaleDateString('en-GB',{weekday:'short'});}
 function monthKey(s){return parseDate(s).toLocaleDateString('en-GB',{month:'long',year:'numeric'});}
-function fmtTime(t){if(!t)return"";let[h,m]=t.split(':').map(Number);const ap=h>=12?'pm':'am';let hh=h%12;if(hh===0)hh=12;return `${hh}:${String(m).padStart(2,'0')} ${ap}`;}
 function fmtMoney(n){return n%1===0?n.toLocaleString('en-AU'):n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function trimNum(n){return n%1===0?String(n):n.toFixed(2);}
 function cur(e){return (e&&e.currency)||DEFAULT_CUR;}
+function mealRank(m){const i=MEALS.indexOf(m);return i<0?99:i;}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function normLoc(s){return (s||"").trim().toLowerCase().replace(/\s+/g,' ');}
 
@@ -521,7 +546,7 @@ function renderStats(){
   const byCur={};
   entries.forEach(e=>{if(e.amount>0)byCur[cur(e)]=(byCur[cur(e)]||0)+e.amount;});
   const spentStr=Object.entries(byCur).map(([c,v])=>`${c}${fmtMoney(v)}`).join("  ·  ")||"—";
-  const places=new Set(entries.map(e=>normLoc(e.location))).size;
+  const places=new Set(entries.map(e=>normLoc(e.location)).filter(Boolean)).size;
   el.innerHTML=`
     <span class="stat"><b>${visits}</b><span class="lab">visit${visits!==1?'s':''}</span></span>
     <span class="stat"><b>${spentStr}</b><span class="lab">spent</span></span>
@@ -567,7 +592,7 @@ function render(){
   }
   log.innerHTML=html;
 }
-function cmpDate(a,b){const d=a.date.localeCompare(b.date);return d!==0?d:(a.time||"").localeCompare(b.time||"");}
+function cmpDate(a,b){const d=a.date.localeCompare(b.date);return d!==0?d:mealRank(a.meal)-mealRank(b.meal);}
 
 function itemsHTML(e){
   if(e.items&&e.items.length){
@@ -582,14 +607,17 @@ function entryHTML(e,idx){
   const loc=e.location?`<div class="loc"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14s5-4.2 5-8A5 5 0 0 0 3 6c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.8"/></svg>${esc(e.location)}</div>`:"";
   const rating=e.rating>0?starsDisplay(e.rating):"";
   const amount=e.amount>0?`<div class="amount">${esc(cur(e))}${fmtMoney(e.amount)}</div>`:"";
-  const time=e.time?`<div class="tm">${fmtTime(e.time)}</div>`:"";
-  return `
-  <article class="entry" style="animation-delay:${Math.min(idx*40,320)}ms">
+  const meal=e.meal?`<div class="tm">${esc(e.meal)}</div>`:"";
+  const tools=owner?`
     <div class="tools">
+      <button title="Log again" onclick="logAgain('${e.id}')" aria-label="Log another visit here"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2.5V6H10"/></svg></button>
       <button title="Edit" onclick="openDialog('${e.id}')" aria-label="Edit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L6 12l-2.6.6L4 10z"/></svg></button>
       <button class="del" title="Delete" onclick="del('${e.id}')" aria-label="Delete"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.6 9h4.8L11 4" stroke-linecap="round"/></svg></button>
-    </div>
-    <div class="datechip"><div class="d">${dayNum(e.date)}</div><div class="wd">${weekday(e.date)}</div>${time}</div>
+    </div>`:"";
+  return `
+  <article class="entry" style="animation-delay:${Math.min(idx*40,320)}ms">
+    ${tools}
+    <div class="datechip"><div class="d">${dayNum(e.date)}</div><div class="wd">${weekday(e.date)}</div>${meal}</div>
     <div class="body"><div class="name">${esc(e.name)}</div>${loc}${itemsHTML(e)}</div>
     <div class="aside">${rating}${amount}</div>
   </article>`;
@@ -637,19 +665,20 @@ function updateMapNote(pending){
   const note=$("#mapNote");
   if(!entries.length){note.textContent="";return;}
   if(pending){note.textContent=`Locating ${pending} place${pending!==1?'s':''}…`;return;}
-  const total=new Set(entries.map(e=>normLoc(e.location))).size;
+  const total=new Set(entries.map(e=>normLoc(e.location)).filter(Boolean)).size;
   const located=new Set(entries.filter(e=>typeof e.lat==='number').map(e=>normLoc(e.location))).size;
   const missing=total-located;
+  if(!total){note.textContent="No places to map yet.";return;}
   note.textContent=missing>0
-    ?`${located} of ${total} places mapped · ${missing} couldn't be located — open a visit and use “Find on map”.`
+    ?`${located} of ${total} places mapped · ${missing} not yet located${owner?" — open a visit and use “Find on map”.":"."}`
     :`${located} place${located!==1?'s':''} mapped.`;
 }
 async function ensureCoords(){
-  if(geocoding) return;
+  if(geocoding||!owner) return;   // only the owner geocodes (writes coords back)
   const need=[]; const seen=new Set();
   entries.forEach(e=>{
     const k=normLoc(e.location);
-    if(!(typeof e.lat==='number')&&!seen.has(k)){seen.add(k);need.push(e.location);}
+    if(k&&!(typeof e.lat==='number')&&!seen.has(k)){seen.add(k);need.push(e.location);}
   });
   if(!need.length){updateMapNote();return;}
   geocoding=true; updateMapNote(need.length);
@@ -693,20 +722,25 @@ function showFormMap(lat,lng,zoom){
 
 /* ---------- dialog ---------- */
 const dialog=$("#dialog");
+function populateNames(){
+  const names=[...new Set(entries.map(e=>e.name))].sort((a,b)=>a.localeCompare(b));
+  $("#restNames").innerHTML=names.map(n=>`<option value="${esc(n)}"></option>`).join('');
+}
 function openDialog(id){
   editingId=id||null;
   $("#formErr").textContent="";
   $("#items").innerHTML="";
   $("#formMapWrap").style.display="none";
   draftLat=null; draftLng=null;
+  populateNames();
   if(id){
     const e=entries.find(x=>x.id===id);
     $("#dlgTitle").textContent="Edit visit";
     $("#saveBtn").textContent="Save changes";
     $("#f-name").value=e.name;
-    $("#f-location").value=e.location;
+    $("#f-location").value=e.location||"";
     $("#f-date").value=e.date;
-    $("#f-time").value=e.time||"";
+    $("#f-meal").value=e.meal||"";
     $("#f-currency").value=cur(e);
     if(e.items&&e.items.length) e.items.forEach(it=>addItemRow(it.name,it.price!=null?it.price:""));
     else if(e.food) e.food.split(/[,;·\n]/).map(s=>s.trim()).filter(Boolean).forEach(n=>addItemRow(n,""));
@@ -731,10 +765,27 @@ function openDialog(id){
 }
 window.openDialog=openDialog;
 
+window.logAgain=function(id){
+  const e=entries.find(x=>x.id===id); if(!e)return;
+  openDialog();
+  $("#f-name").value=e.name;
+  $("#f-location").value=e.location||"";
+  $("#f-currency").value=cur(e);
+  $$(".i-cur").forEach(s=>s.textContent=cur(e));
+};
+
+// typing/picking a known restaurant fills in its last-used location + currency
+$("#f-name").addEventListener('change',()=>{
+  if($("#f-location").value.trim())return;
+  const v=$("#f-name").value.trim().toLowerCase(); if(!v)return;
+  const m=entries.filter(e=>e.name.toLowerCase()===v).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(m){ $("#f-location").value=m.location||""; if(m.currency){$("#f-currency").value=m.currency;$$(".i-cur").forEach(s=>s.textContent=m.currency);} }
+});
+
 $("#form").addEventListener('submit',async e=>{
   e.preventDefault();
   const name=$("#f-name").value.trim(), location=$("#f-location").value.trim(), date=$("#f-date").value;
-  if(!name||!location||!date){$("#formErr").textContent="Restaurant, location and date are required.";return;}
+  if(!name||!date){$("#formErr").textContent="Restaurant and date are required.";return;}
   const amtRaw=$("#f-amount").value.replace(/[^0-9.]/g,'');
   const amount=amtRaw?parseFloat(amtRaw):0;
   const currency=$("#f-currency").value;
@@ -744,7 +795,7 @@ $("#form").addEventListener('submit',async e=>{
   if(draftLat!=null){lat=draftLat;lng=draftLng;}
   else if(editingId){const old=entries.find(x=>x.id===editingId);if(old&&normLoc(old.location)===normLoc(location)){lat=old.lat;lng=old.lng;}}
 
-  const data={name,location,date,time:$("#f-time").value||"",items:readItems(),rating:draftRating||0,amount:isNaN(amount)?0:amount,currency};
+  const data={name,location,date,meal:$("#f-meal").value||"",items:readItems(),rating:draftRating||0,amount:isNaN(amount)?0:amount,currency};
   if(typeof lat==='number'){data.lat=lat;data.lng=lng;}
 
   const btn=$("#saveBtn"); btn.disabled=true;
@@ -759,7 +810,7 @@ $("#form").addEventListener('submit',async e=>{
       entries.push(saved); toast("Visit logged");
     }
     render(); if(currentView==="map")renderMap(); dialog.close();
-    if(typeof saved.lat!=='number') backgroundGeocode(saved);
+    if(saved.location && typeof saved.lat!=='number') backgroundGeocode(saved);
   }catch(err){
     $("#formErr").textContent="Couldn't save — check your connection.";
   }finally{ btn.disabled=false; }
@@ -792,31 +843,6 @@ $("#locateBtn").addEventListener('click',async()=>{
   draftLat=res.lat; draftLng=res.lng; showFormMap(res.lat,res.lng,14);
 });
 
-/* locate from tracker (where I actually was at the visit's date/time) */
-function trackWindow(date,time){
-  const target=new Date(`${date}T${time||'19:30'}`);
-  if(time){const span=3*3600e3;return {from:new Date(target-span),to:new Date(target.getTime()+span),target};}
-  return {from:new Date(`${date}T00:00`),to:new Date(`${date}T23:59`),target};
-}
-$("#trackBtn").addEventListener('click',async()=>{
-  const date=$("#f-date").value;
-  if(!date){toast("Set the date first");return;}
-  const btn=$("#trackBtn"); const label=btn.textContent; btn.textContent="Locating…"; btn.disabled=true;
-  try{
-    const {from,to,target}=trackWindow(date,$("#f-time").value);
-    const pts=await api('GET',`/track/positions?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
-    if(!pts||!pts.length){toast("No tracker fixes around then");return;}
-    let best=pts[0],bd=Infinity;
-    for(const p of pts){const d=Math.abs(new Date(p.fixTime)-target);if(d<bd){bd=d;best=p;}}
-    draftLat=best.lat; draftLng=best.lng; showFormMap(best.lat,best.lng,16);
-    toast("Pinned where you were");
-  }catch{ toast("Couldn't reach the tracker"); }
-  finally{ btn.textContent=label; btn.disabled=false; }
-});
-function checkTracker(){
-  api('GET','/track/status').then(s=>{trackerEnabled=!!(s&&s.enabled);$("#trackBtn").style.display=trackerEnabled?"":"none";}).catch(()=>{});
-}
-
 async function del(id){
   const e=entries.find(x=>x.id===id);
   if(!confirm(`Delete your visit to ${e.name}?`))return;
@@ -846,7 +872,7 @@ function itemsToText(e){if(e.items&&e.items.length)return e.items.map(it=>it.pri
 function csvCell(v){if(v===undefined||v===null)return"";const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 function exportCSV(){
   if(!entries.length){toast("Nothing to export");return;}
-  const cols=["date","time","name","location","rating","currency","amount","items","lat","lng"];
+  const cols=["date","meal","name","location","rating","currency","amount","items","lat","lng"];
   const rows=entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
     cols.map(c=>c==="items"?csvCell(itemsToText(e)):csvCell(e[c])).join(","));
   download(`covers-${today()}.csv`,[cols.join(","),...rows].join("\n"),"text/csv");
@@ -876,11 +902,11 @@ async function clearAll(){
 async function loadSample(){
   if(entries.length&&!confirm("Add sample visits to your log?"))return;
   const s=[
-    {name:"Firedoor",location:"Surry Hills, Sydney",date:back(6),time:"19:30",rating:5,currency:"$",lat:-33.8859,lng:151.2118,items:[{name:"Blackmore wagyu",price:62},{name:"Grilled flatbread",price:12},{name:"Clare Valley riesling",price:16}],amount:128},
-    {name:"Chin Chin",location:"Melbourne CBD",date:back(20),time:"20:00",rating:4.5,currency:"$",lat:-37.8146,lng:144.9709,items:[{name:"Son-in-law eggs",price:14},{name:"Massaman curry",price:32}],amount:74},
-    {name:"Restaurant Hubert",location:"Sydney CBD",date:back(45),time:"19:15",rating:4.5,currency:"$",lat:-33.8665,lng:151.2094,items:[{name:"Chicken liver parfait",price:18},{name:"Steak frites",price:46}],amount:96},
-    {name:"Sungei Road Laksa",location:"Jalan Berseh, Singapore",date:back(70),time:"12:30",rating:4,currency:"S$",lat:1.3066,lng:103.8576,items:[{name:"Laksa (large)",price:5},{name:"Iced kopi",price:2}],amount:7},
-    {name:"Tsuta",location:"Sumida, Tokyo",date:back(95),rating:5,currency:"¥",lat:35.7101,lng:139.8107,items:[{name:"Shoyu soba",price:1200},{name:"Ajitama egg",price:150}],amount:1350}
+    {name:"Firedoor",location:"Surry Hills, Sydney",date:back(6),meal:"dinner",rating:5,currency:"$",lat:-33.8859,lng:151.2118,items:[{name:"Blackmore wagyu",price:62},{name:"Grilled flatbread",price:12},{name:"Clare Valley riesling",price:16}],amount:128},
+    {name:"Chin Chin",location:"Melbourne CBD",date:back(20),meal:"dinner",rating:4.5,currency:"$",lat:-37.8146,lng:144.9709,items:[{name:"Son-in-law eggs",price:14},{name:"Massaman curry",price:32}],amount:74},
+    {name:"Restaurant Hubert",location:"Sydney CBD",date:back(45),meal:"dinner",rating:4.5,currency:"$",lat:-33.8665,lng:151.2094,items:[{name:"Chicken liver parfait",price:18},{name:"Steak frites",price:46}],amount:96},
+    {name:"Sungei Road Laksa",location:"Jalan Berseh, Singapore",date:back(70),meal:"lunch",rating:4,currency:"S$",lat:1.3066,lng:103.8576,items:[{name:"Laksa (large)",price:5},{name:"Iced kopi",price:2}],amount:7},
+    {name:"Tsuta",location:"Sumida, Tokyo",date:back(95),meal:"lunch",rating:5,currency:"¥",lat:35.7101,lng:139.8107,items:[{name:"Shoyu soba",price:1200},{name:"Ajitama egg",price:150}],amount:1350}
   ];
   try{ const res=await api('POST','/import',{entries:s}); entries=res.entries; render(); if(currentView==="map")renderMap(); toast("Sample data loaded"); }
   catch{ toast("Couldn't load sample"); }
@@ -891,20 +917,24 @@ function back(days){const d=new Date();d.setDate(d.getDate()-days);return d.toIS
 let toastTimer=null;
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 
-/* ---------- auth ---------- */
-function showLogin(){ $("#login").classList.add('show'); setTimeout(()=>$("#loginPw").focus(),50); }
-function hideLogin(){ $("#login").classList.remove('show'); }
+/* ---------- auth / mode ---------- */
+function applyMode(){ document.body.classList.toggle('is-owner',owner); }
+function showLogin(){ $("#login").classList.add('show'); $("#loginErr").textContent=""; setTimeout(()=>$("#loginPw").focus(),50); }
+function hideLogin(){ $("#login").classList.remove('show'); $("#loginPw").value=""; }
+$("#loginBtn").addEventListener('click',showLogin);
+$("#loginCancel").addEventListener('click',hideLogin);
+$("#login").addEventListener('click',e=>{ if(e.target===$("#login")) hideLogin(); });
 $("#loginForm").addEventListener('submit',async e=>{
   e.preventDefault();
   const pw=$("#loginPw").value;
   $("#loginErr").textContent="";
-  const btn=$("#loginForm button"); btn.disabled=true;
+  const btn=$("#loginForm button[type=submit]"); btn.disabled=true;
   try{
     const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
     if(!res.ok){ $("#loginErr").textContent="Wrong password."; $("#loginPw").select(); return; }
     const j=await res.json();
     token=j.token; localStorage.setItem(TOKKEY,token);
-    $("#loginPw").value="";
+    owner=true; applyMode();
     hideLogin();
     await loadEntries();
   }catch{ $("#loginErr").textContent="Couldn't reach the server."; }
@@ -912,12 +942,13 @@ $("#loginForm").addEventListener('submit',async e=>{
 });
 async function logout(){
   try{ await api('POST','/logout'); }catch{}
-  token=""; localStorage.removeItem(TOKKEY); entries=[]; render(); showLogin();
+  token=""; localStorage.removeItem(TOKKEY); owner=false; applyMode(); render();
 }
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
-  if(e.key==='n'&&!dialog.open&&!$("#login").classList.contains('show')&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){e.preventDefault();openDialog();}
+  if(e.key==='Escape'&&$("#login").classList.contains('show')){hideLogin();return;}
+  if(e.key==='n'&&owner&&!dialog.open&&!$("#login").classList.contains('show')&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){e.preventDefault();openDialog();}
 });
 
 /* ---------- init ---------- */
@@ -925,13 +956,16 @@ async function loadEntries(){
   entries=await api('GET','/entries');
   render();
   if(currentView==="map")renderMap();
-  checkTracker();
 }
 async function init(){
   bindStarPick();
-  if(!token){ showLogin(); return; }
-  try{ await loadEntries(); }
-  catch{ /* api() already showed login on 401 */ }
+  try{ entries=await api('GET','/entries'); }catch{ entries=[]; }
+  if(token){
+    try{ const r=await fetch('/api/session',{headers:{'Authorization':'Bearer '+token}}); owner=r.ok; if(!r.ok){token="";localStorage.removeItem(TOKKEY);} }
+    catch{ owner=false; }
+  }
+  applyMode();
+  render();
 }
 init();
 </script>
