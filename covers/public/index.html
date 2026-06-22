@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Covers — a dining log</title>
+<title>Covers · a dining log</title>
 <meta name="description" content="A personal log of restaurants you've been to.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2318181b'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fafafa'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,11 +111,15 @@
   .body .name{font-weight:600;font-size:1.12rem;line-height:1.2;color:var(--ink)}
   .body .loc{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.9rem;margin-top:3px}
   .body .loc svg{color:var(--faint);flex:none}
-  .body .food{margin-top:10px;font-size:.95rem;color:var(--ink-2);white-space:pre-wrap}
+  .body .notes{margin-top:9px;font-size:.92rem;color:var(--ink-2);white-space:pre-wrap;font-style:italic}
 
   .items{margin-top:11px;display:flex;flex-direction:column;gap:5px;max-width:420px}
   .items li{display:flex;align-items:baseline;justify-content:space-between;gap:16px;list-style:none;font-size:.95rem;color:var(--ink-2)}
   .items .it-price{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .tag{font-size:.74rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 9px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .tag:hover{border-color:var(--muted);color:var(--ink)}
 
   .aside{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:70px}
   .amount{font-weight:700;font-size:1.05rem;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -127,6 +131,21 @@
   .tools button{width:28px;height:28px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.15s}
   .tools button:hover{color:var(--ink);background:var(--bg)}
   .tools button.del:hover{color:var(--danger);background:var(--bg)}
+
+  /* repeat-visit grouping */
+  .entry.multi{cursor:pointer}
+  .vcount{margin-top:7px;display:inline-flex;align-items:center;justify-content:center;gap:3px;font-size:.66rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .vcount svg{width:9px;height:9px;transition:transform .2s}
+  .entry.expanded .vcount svg{transform:rotate(180deg)}
+  .prev-visits{grid-column:1 / -1;display:none;flex-direction:column;gap:1px;margin-top:2px;padding-top:10px;border-top:1px solid var(--line-2)}
+  .entry.expanded .prev-visits{display:flex}
+  .prev-v{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:7px;font-size:.9rem;color:var(--ink-2)}
+  body.is-owner .prev-v{cursor:pointer}
+  body.is-owner .prev-v:hover{background:var(--bg)}
+  .pv-date{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pv-meal{color:var(--faint);text-transform:capitalize}
+  .pv-stars{margin-left:auto;display:inline-flex;align-items:center}
+  .pv-amount{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 
   /* map */
   #mapView{margin-top:14px}
@@ -177,6 +196,14 @@
   #formMapWrap{display:none;margin-top:10px}
   #formMap{height:180px;border-radius:9px;border:1px solid var(--line);overflow:hidden}
   .map-hint{font-size:.8rem;color:var(--faint);margin-top:6px}
+
+  /* tags input */
+  .tagbox{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);transition:.15s;cursor:text}
+  .tagbox:focus-within{border-color:var(--ink);box-shadow:var(--ring)}
+  #f-tag{border:none;outline:none;background:none;flex:1;min-width:110px;padding:4px 6px;font-family:inherit;font-size:1rem}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 5px 3px 11px;font-size:.84rem;color:var(--ink-2)}
+  .chip button{border:none;background:none;cursor:pointer;color:var(--faint);font-size:15px;line-height:1;padding:0 2px;display:grid;place-items:center}
+  .chip button:hover{color:var(--danger)}
 
   .amount-input{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);transition:.15s;max-width:240px}
   .amount-input:focus-within{border-color:var(--ink);box-shadow:var(--ring)}
@@ -288,7 +315,7 @@
     </div>
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
-      <input type="search" id="search" placeholder="Search restaurants, places, dishes…">
+      <input type="search" id="search" placeholder="Search names, places, dishes, tags, notes…">
     </div>
     <select class="sort" id="sort">
       <option value="date-desc">Newest first</option>
@@ -308,7 +335,7 @@
 
   <div id="empty" class="empty" style="display:none">
     <h3>No covers yet</h3>
-    <p>Start your dining log — record where you ate, what you had, and what you thought.</p>
+    <p>Start your dining log. Record where you ate, what you had, and what you thought.</p>
     <button class="btn btn-primary owner-only" onclick="openDialog()">Log your first visit</button>
   </div>
 </div>
@@ -344,7 +371,7 @@
       <div class="field">
         <label>Meal</label>
         <select id="f-meal" class="meal-select">
-          <option value="">—</option>
+          <option value="">(none)</option>
           <option value="breakfast">Breakfast</option>
           <option value="brunch">Brunch</option>
           <option value="lunch">Lunch</option>
@@ -361,6 +388,14 @@
         <span class="ratingval" id="ratingval"></span>
         <button type="button" class="clearstar" id="clearStar" style="display:none">clear</button>
       </div>
+    </div>
+
+    <div class="field">
+      <label>Tags</label>
+      <div class="tagbox" id="tagbox">
+        <input type="text" id="f-tag" list="tagSuggest" placeholder="cuisine, vibe, occasion…" autocomplete="off">
+      </div>
+      <datalist id="tagSuggest"></datalist>
     </div>
 
     <div class="field">
@@ -382,7 +417,12 @@
         <input type="text" inputmode="decimal" id="f-amount" placeholder="0.00">
         <button type="button" class="sumbtn" id="sumBtn" title="Total the item prices">Σ</button>
       </div>
-      <div class="map-hint" id="autoHint" style="display:none">Auto-totalled from items — type to override.</div>
+      <div class="map-hint" id="autoHint" style="display:none">Auto-totalled from items. Type to override.</div>
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="f-notes" placeholder="Anything memorable: service, the room, who you were with…"></textarea>
     </div>
 
     <div class="form-actions">
@@ -420,7 +460,7 @@ let entries=[];
 let prefs=loadPrefs();
 let geocache=loadGcache();
 let token=localStorage.getItem(TOKKEY)||"";
-let editingId=null, draftRating=0, draftLat=null, draftLng=null, amountAuto=true;
+let editingId=null, draftRating=0, draftLat=null, draftLng=null, amountAuto=true, draftTags=[];
 let currentView="log", owner=false;
 let map=null, markersLayer=null, formMap=null, formMarker=null, geocoding=false;
 
@@ -455,6 +495,7 @@ function cur(e){return (e&&e.currency)||DEFAULT_CUR;}
 function mealRank(m){const i=MEALS.indexOf(m);return i<0?99:i;}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function normLoc(s){return (s||"").trim().toLowerCase().replace(/\s+/g,' ');}
+function normName(s){return (s||"").trim().toLowerCase().replace(/\s+/g,' ');}
 
 /* ---------- geocoding (OpenStreetMap / Nominatim) ---------- */
 async function geocode(loc){
@@ -507,6 +548,39 @@ function bindStarPick(){
   $("#clearStar").addEventListener('click',()=>{draftRating=0;renderStarPick(0);});
 }
 
+/* ---------- tags input ---------- */
+function renderTagChips(){
+  const box=$("#tagbox"), input=$("#f-tag");
+  box.querySelectorAll('.chip').forEach(c=>c.remove());
+  draftTags.forEach((t,i)=>{
+    const chip=document.createElement('span'); chip.className='chip';
+    chip.innerHTML=`${esc(t)}<button type="button" data-i="${i}" aria-label="Remove tag">×</button>`;
+    box.insertBefore(chip,input);
+  });
+}
+function addTag(raw){
+  String(raw).split(',').forEach(part=>{
+    const t=part.trim();
+    if(t&&!draftTags.some(x=>x.toLowerCase()===t.toLowerCase())) draftTags.push(t.slice(0,40));
+  });
+  renderTagChips();
+}
+function populateTagSuggest(){
+  const tags=[...new Set(entries.flatMap(e=>e.tags||[]))].sort((a,b)=>a.localeCompare(b));
+  $("#tagSuggest").innerHTML=tags.map(t=>`<option value="${esc(t)}"></option>`).join('');
+}
+$("#f-tag").addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===','){ e.preventDefault(); addTag($("#f-tag").value); $("#f-tag").value=''; }
+  else if(e.key==='Backspace'&&!$("#f-tag").value&&draftTags.length){ draftTags.pop(); renderTagChips(); }
+});
+$("#f-tag").addEventListener('input',()=>{ if($("#f-tag").value.includes(',')){ addTag($("#f-tag").value); $("#f-tag").value=''; } });
+$("#f-tag").addEventListener('blur',()=>{ if($("#f-tag").value.trim()){ addTag($("#f-tag").value); $("#f-tag").value=''; } });
+$("#tagbox").addEventListener('click',e=>{
+  const b=e.target.closest('.chip button');
+  if(b){ draftTags.splice(+b.dataset.i,1); renderTagChips(); return; }
+  $("#f-tag").focus();
+});
+
 /* ---------- items editor ---------- */
 function addItemRow(name="",price=""){
   const row=document.createElement('div'); row.className="item-row";
@@ -545,7 +619,7 @@ function renderStats(){
   const avg=rated.length?(rated.reduce((a,e)=>a+e.rating,0)/rated.length):0;
   const byCur={};
   entries.forEach(e=>{if(e.amount>0)byCur[cur(e)]=(byCur[cur(e)]||0)+e.amount;});
-  const spentStr=Object.entries(byCur).map(([c,v])=>`${c}${fmtMoney(v)}`).join("  ·  ")||"—";
+  const spentStr=Object.entries(byCur).map(([c,v])=>`${c}${fmtMoney(v)}`).join("  ·  ")||"0";
   const places=new Set(entries.map(e=>normLoc(e.location)).filter(Boolean)).size;
   el.innerHTML=`
     <span class="stat"><b>${visits}</b><span class="lab">visit${visits!==1?'s':''}</span></span>
@@ -554,15 +628,24 @@ function renderStats(){
     <span class="stat"><b>${places}</b><span class="lab">place${places!==1?'s':''}</span></span>`;
 }
 
-/* ---------- render log ---------- */
+/* ---------- render log (one row per restaurant; repeats collapse) ---------- */
 function render(){
   renderStats();
   const log=$("#log");
   const q=$("#search").value.trim().toLowerCase();
   const sort=$("#sort").value;
   let list=entries.slice();
-  if(q) list=list.filter(e=>(e.name+" "+e.location+" "+(e.food||"")+" "+(e.items||[]).map(i=>i.name).join(" ")).toLowerCase().includes(q));
-  list.sort((a,b)=>{
+  if(q) list=list.filter(e=>(e.name+" "+e.location+" "+(e.notes||"")+" "+(e.food||"")+" "+(e.items||[]).map(i=>i.name).join(" ")+" "+(e.tags||[]).join(" ")).toLowerCase().includes(q));
+
+  if(!entries.length){log.innerHTML="";if(currentView==="log")$("#empty").style.display="block";return;}
+  $("#empty").style.display="none";
+  if(!list.length){log.innerHTML=`<div class="empty"><h3>No matches</h3><p>Nothing matches “${esc(q)}”.</p></div>`;return;}
+
+  const groups=new Map();
+  for(const e of list){ const k=normName(e.name); if(!groups.has(k))groups.set(k,[]); groups.get(k).push(e); }
+  const rows=[...groups.values()].map(v=>{v.sort((a,b)=>cmpDate(b,a));return v;});  // latest first within each
+  rows.sort((A,B)=>{
+    const a=A[0],b=B[0];
     switch(sort){
       case "date-asc":return cmpDate(a,b);
       case "rating-desc":return (b.rating||0)-(a.rating||0)||cmpDate(b,a);
@@ -572,23 +655,19 @@ function render(){
     }
   });
 
-  if(!entries.length){log.innerHTML="";if(currentView==="log")$("#empty").style.display="block";return;}
-  $("#empty").style.display="none";
-
-  if(!list.length){log.innerHTML=`<div class="empty"><h3>No matches</h3><p>Nothing matches “${esc(q)}”.</p></div>`;return;}
-
   const grouped=(sort==="date-desc"||sort==="date-asc");
   let html="",lastMonth=null,idx=0;
-  for(const e of list){
+  for(const visits of rows){
+    const rep=visits[0];
     if(grouped){
-      const mk=monthKey(e.date);
+      const mk=monthKey(rep.date);
       if(mk!==lastMonth){
-        const count=list.filter(x=>monthKey(x.date)===mk).length;
-        html+=`<div class="month"><h2>${mk}</h2><span class="rule"></span><span class="mcount">${count} visit${count!==1?'s':''}</span></div>`;
+        const count=rows.filter(v=>monthKey(v[0].date)===mk).length;
+        html+=`<div class="month"><h2>${mk}</h2><span class="rule"></span><span class="mcount">${count} restaurant${count!==1?'s':''}</span></div>`;
         lastMonth=mk;
       }
     }
-    html+=entryHTML(e,idx++);
+    html+=entryHTML(rep,idx++,visits);
   }
   log.innerHTML=html;
 }
@@ -601,26 +680,43 @@ function itemsHTML(e){
       return `<li><span class="it-name">${esc(it.name)}</span>${price}</li>`;
     }).join('')+`</ul>`;
   }
-  return e.food?`<div class="food">${esc(e.food)}</div>`:"";
+  return "";
 }
-function entryHTML(e,idx){
+function tagsHTML(e){
+  if(!(e.tags&&e.tags.length)) return "";
+  return `<div class="tags">`+e.tags.map(t=>`<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join('')+`</div>`;
+}
+function entryHTML(e,idx,visits){
+  visits=visits||[e];
+  const more=visits.length-1;
   const loc=e.location?`<div class="loc"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14s5-4.2 5-8A5 5 0 0 0 3 6c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.8"/></svg>${esc(e.location)}</div>`:"";
   const rating=e.rating>0?starsDisplay(e.rating):"";
   const amount=e.amount>0?`<div class="amount">${esc(cur(e))}${fmtMoney(e.amount)}</div>`:"";
   const meal=e.meal?`<div class="tm">${esc(e.meal)}</div>`:"";
+  const notes=(e.notes||e.food)?`<div class="notes">${esc(e.notes||e.food)}</div>`:"";
+  const vcount=more>0?`<div class="vcount" title="${visits.length} visits, click to expand"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>${visits.length}</div>`:"";
   const tools=owner?`
     <div class="tools">
       <button title="Log again" onclick="logAgain('${e.id}')" aria-label="Log another visit here"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2.5V6H10"/></svg></button>
       <button title="Edit" onclick="openDialog('${e.id}')" aria-label="Edit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L6 12l-2.6.6L4 10z"/></svg></button>
       <button class="del" title="Delete" onclick="del('${e.id}')" aria-label="Delete"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.6 9h4.8L11 4" stroke-linecap="round"/></svg></button>
     </div>`:"";
+  const prev=more>0?`<div class="prev-visits">`+visits.slice(1).map(prevVisitHTML).join('')+`</div>`:"";
   return `
-  <article class="entry" style="animation-delay:${Math.min(idx*40,320)}ms">
+  <article class="entry${more>0?' multi':''}" style="animation-delay:${Math.min(idx*40,320)}ms">
     ${tools}
-    <div class="datechip"><div class="d">${dayNum(e.date)}</div><div class="wd">${weekday(e.date)}</div>${meal}</div>
-    <div class="body"><div class="name">${esc(e.name)}</div>${loc}${itemsHTML(e)}</div>
+    <div class="datechip"><div class="d">${dayNum(e.date)}</div><div class="wd">${weekday(e.date)}</div>${meal}${vcount}</div>
+    <div class="body"><div class="name">${esc(e.name)}</div>${loc}${tagsHTML(e)}${itemsHTML(e)}${notes}</div>
     <div class="aside">${rating}${amount}</div>
+    ${prev}
   </article>`;
+}
+function prevVisitHTML(v){
+  const meal=v.meal?`<span class="pv-meal">${esc(v.meal)}</span>`:"";
+  const stars=`<span class="pv-stars">${v.rating>0?starsDisplay(v.rating):""}</span>`;
+  const amount=v.amount>0?`<span class="pv-amount">${esc(cur(v))}${fmtMoney(v.amount)}</span>`:"";
+  const click=owner?`onclick="event.stopPropagation();openDialog('${v.id}')"`:"";
+  return `<div class="prev-v" ${click}><span class="pv-date">${FMT.format(parseDate(v.date))}</span>${meal}${stars}${amount}</div>`;
 }
 
 /* ---------- map ---------- */
@@ -670,7 +766,7 @@ function updateMapNote(pending){
   const missing=total-located;
   if(!total){note.textContent="No places to map yet.";return;}
   note.textContent=missing>0
-    ?`${located} of ${total} places mapped · ${missing} not yet located${owner?" — open a visit and use “Find on map”.":"."}`
+    ?`${located} of ${total} places mapped · ${missing} not yet located${owner?". Open a visit and use “Find on map”.":"."}`
     :`${located} place${located!==1?'s':''} mapped.`;
 }
 async function ensureCoords(){
@@ -731,8 +827,9 @@ function openDialog(id){
   $("#formErr").textContent="";
   $("#items").innerHTML="";
   $("#formMapWrap").style.display="none";
+  $("#f-tag").value=""; draftTags=[];
   draftLat=null; draftLng=null;
-  populateNames();
+  populateNames(); populateTagSuggest();
   if(id){
     const e=entries.find(x=>x.id===id);
     $("#dlgTitle").textContent="Edit visit";
@@ -742,8 +839,9 @@ function openDialog(id){
     $("#f-date").value=e.date;
     $("#f-meal").value=e.meal||"";
     $("#f-currency").value=cur(e);
+    $("#f-notes").value=e.notes||e.food||"";
+    draftTags=(e.tags||[]).slice();
     if(e.items&&e.items.length) e.items.forEach(it=>addItemRow(it.name,it.price!=null?it.price:""));
-    else if(e.food) e.food.split(/[,;·\n]/).map(s=>s.trim()).filter(Boolean).forEach(n=>addItemRow(n,""));
     const sum=itemsSum();
     amountAuto=(!e.amount)||(sum>0&&Math.abs(e.amount-sum)<0.005);
     $("#f-amount").value=e.amount>0?trimNum(e.amount):"";
@@ -758,6 +856,7 @@ function openDialog(id){
     draftRating=0; amountAuto=true;
     addItemRow();
   }
+  renderTagChips();
   renderStarPick(draftRating);
   maybeAutoSum();
   dialog.showModal();
@@ -772,6 +871,7 @@ window.logAgain=function(id){
   $("#f-location").value=e.location||"";
   $("#f-currency").value=cur(e);
   $$(".i-cur").forEach(s=>s.textContent=cur(e));
+  draftTags=(e.tags||[]).slice(); renderTagChips();   // cuisine etc. carries over; notes do not
 };
 
 // typing/picking a known restaurant fills in its last-used location + currency
@@ -784,6 +884,7 @@ $("#f-name").addEventListener('change',()=>{
 
 $("#form").addEventListener('submit',async e=>{
   e.preventDefault();
+  if($("#f-tag").value.trim()){ addTag($("#f-tag").value); $("#f-tag").value=''; }
   const name=$("#f-name").value.trim(), location=$("#f-location").value.trim(), date=$("#f-date").value;
   if(!name||!date){$("#formErr").textContent="Restaurant and date are required.";return;}
   const amtRaw=$("#f-amount").value.replace(/[^0-9.]/g,'');
@@ -795,7 +896,7 @@ $("#form").addEventListener('submit',async e=>{
   if(draftLat!=null){lat=draftLat;lng=draftLng;}
   else if(editingId){const old=entries.find(x=>x.id===editingId);if(old&&normLoc(old.location)===normLoc(location)){lat=old.lat;lng=old.lng;}}
 
-  const data={name,location,date,meal:$("#f-meal").value||"",items:readItems(),rating:draftRating||0,amount:isNaN(amount)?0:amount,currency};
+  const data={name,location,date,meal:$("#f-meal").value||"",items:readItems(),tags:draftTags.slice(),notes:$("#f-notes").value.trim(),rating:draftRating||0,amount:isNaN(amount)?0:amount,currency};
   if(typeof lat==='number'){data.lat=lat;data.lng=lng;}
 
   const btn=$("#saveBtn"); btn.disabled=true;
@@ -812,7 +913,7 @@ $("#form").addEventListener('submit',async e=>{
     render(); if(currentView==="map")renderMap(); dialog.close();
     if(saved.location && typeof saved.lat!=='number') backgroundGeocode(saved);
   }catch(err){
-    $("#formErr").textContent="Couldn't save — check your connection.";
+    $("#formErr").textContent="Couldn't save. Check your connection.";
   }finally{ btn.disabled=false; }
 });
 async function backgroundGeocode(e){
@@ -839,7 +940,7 @@ $("#locateBtn").addEventListener('click',async()=>{
   const btn=$("#locateBtn"); btn.textContent="Finding…"; btn.disabled=true;
   const res=await geocode(loc);
   btn.textContent="Find on map"; btn.disabled=false;
-  if(!res){toast("Couldn't find that place — drop the pin manually");showFormMap(20,0,2);return;}
+  if(!res){toast("Couldn't find that place. Drop the pin manually");showFormMap(20,0,2);return;}
   draftLat=res.lat; draftLng=res.lng; showFormMap(res.lat,res.lng,14);
 });
 
@@ -851,10 +952,17 @@ async function del(id){
 }
 window.del=del;
 
-/* ---------- search / sort / view ---------- */
+/* ---------- search / sort / view / expand / tag-filter ---------- */
 $("#search").addEventListener('input',render);
 $("#sort").addEventListener('change',render);
 $("#seg").addEventListener('click',e=>{const b=e.target.closest('button');if(b)switchView(b.dataset.view);});
+$("#log").addEventListener('click',e=>{
+  const tag=e.target.closest('.tag');
+  if(tag){ e.stopPropagation(); $("#search").value=tag.dataset.tag; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(e.target.closest('.tools')||e.target.closest('.prev-visits'))return;
+  const art=e.target.closest('.entry.multi');
+  if(art)art.classList.toggle('expanded');
+});
 
 /* ---------- menu + data ---------- */
 const menu=$("#menu");
@@ -868,13 +976,13 @@ menu.addEventListener('click',e=>{
 function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function today(){return new Date().toISOString().slice(0,10);}
 function exportJSON(){if(!entries.length){toast("Nothing to export");return;}download(`covers-${today()}.json`,JSON.stringify(entries,null,2),"application/json");toast("Exported JSON");}
-function itemsToText(e){if(e.items&&e.items.length)return e.items.map(it=>it.price!=null?`${it.name} (${cur(e)}${fmtMoney(it.price)})`:it.name).join('; ');return e.food||"";}
+function itemsToText(e){if(e.items&&e.items.length)return e.items.map(it=>it.price!=null?`${it.name} (${cur(e)}${fmtMoney(it.price)})`:it.name).join('; ');return "";}
 function csvCell(v){if(v===undefined||v===null)return"";const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 function exportCSV(){
   if(!entries.length){toast("Nothing to export");return;}
-  const cols=["date","meal","name","location","rating","currency","amount","items","lat","lng"];
+  const cols=["date","meal","name","location","rating","currency","amount","tags","items","notes","lat","lng"];
   const rows=entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
-    cols.map(c=>c==="items"?csvCell(itemsToText(e)):csvCell(e[c])).join(","));
+    cols.map(c=>c==="items"?csvCell(itemsToText(e)):c==="tags"?csvCell((e.tags||[]).join('; ')):c==="notes"?csvCell(e.notes||e.food||""):csvCell(e[c])).join(","));
   download(`covers-${today()}.csv`,[cols.join(","),...rows].join("\n"),"text/csv");
   toast("Exported CSV");
 }
@@ -902,11 +1010,12 @@ async function clearAll(){
 async function loadSample(){
   if(entries.length&&!confirm("Add sample visits to your log?"))return;
   const s=[
-    {name:"Firedoor",location:"Surry Hills, Sydney",date:back(6),meal:"dinner",rating:5,currency:"$",lat:-33.8859,lng:151.2118,items:[{name:"Blackmore wagyu",price:62},{name:"Grilled flatbread",price:12},{name:"Clare Valley riesling",price:16}],amount:128},
-    {name:"Chin Chin",location:"Melbourne CBD",date:back(20),meal:"dinner",rating:4.5,currency:"$",lat:-37.8146,lng:144.9709,items:[{name:"Son-in-law eggs",price:14},{name:"Massaman curry",price:32}],amount:74},
-    {name:"Restaurant Hubert",location:"Sydney CBD",date:back(45),meal:"dinner",rating:4.5,currency:"$",lat:-33.8665,lng:151.2094,items:[{name:"Chicken liver parfait",price:18},{name:"Steak frites",price:46}],amount:96},
-    {name:"Sungei Road Laksa",location:"Jalan Berseh, Singapore",date:back(70),meal:"lunch",rating:4,currency:"S$",lat:1.3066,lng:103.8576,items:[{name:"Laksa (large)",price:5},{name:"Iced kopi",price:2}],amount:7},
-    {name:"Tsuta",location:"Sumida, Tokyo",date:back(95),meal:"lunch",rating:5,currency:"¥",lat:35.7101,lng:139.8107,items:[{name:"Shoyu soba",price:1200},{name:"Ajitama egg",price:150}],amount:1350}
+    {name:"Firedoor",location:"Surry Hills, Sydney",date:back(6),meal:"dinner",rating:5,currency:"$",lat:-33.8859,lng:151.2118,tags:["Modern Australian","wood fire","special occasion"],notes:"Sat at the bar by the fire. The wagyu was extraordinary.",items:[{name:"Blackmore wagyu",price:62},{name:"Grilled flatbread",price:12},{name:"Clare Valley riesling",price:16}],amount:128},
+    {name:"Firedoor",location:"Surry Hills, Sydney",date:back(120),meal:"dinner",rating:4.5,currency:"$",lat:-33.8859,lng:151.2118,tags:["Modern Australian","wood fire"],items:[{name:"Market fish",price:48},{name:"Beetroot",price:14}],amount:88},
+    {name:"Chin Chin",location:"Melbourne CBD",date:back(20),meal:"dinner",rating:4.5,currency:"$",lat:-37.8146,lng:144.9709,tags:["Thai","lively"],items:[{name:"Son-in-law eggs",price:14},{name:"Massaman curry",price:32}],amount:74},
+    {name:"Restaurant Hubert",location:"Sydney CBD",date:back(45),meal:"dinner",rating:4.5,currency:"$",lat:-33.8665,lng:151.2094,tags:["French","wine bar"],notes:"Downstairs, candlelit. Go late.",items:[{name:"Chicken liver parfait",price:18},{name:"Steak frites",price:46}],amount:96},
+    {name:"Sungei Road Laksa",location:"Jalan Berseh, Singapore",date:back(70),meal:"lunch",rating:4,currency:"S$",lat:1.3066,lng:103.8576,tags:["Malaysian","hawker","cheap eats"],items:[{name:"Laksa (large)",price:5},{name:"Iced kopi",price:2}],amount:7},
+    {name:"Tsuta",location:"Sumida, Tokyo",date:back(95),meal:"lunch",rating:5,currency:"¥",lat:35.7101,lng:139.8107,tags:["Japanese","ramen"],notes:"Michelin ramen, worth the queue.",items:[{name:"Shoyu soba",price:1200},{name:"Ajitama egg",price:150}],amount:1350}
   ];
   try{ const res=await api('POST','/import',{entries:s}); entries=res.entries; render(); if(currentView==="map")renderMap(); toast("Sample data loaded"); }
   catch{ toast("Couldn't load sample"); }

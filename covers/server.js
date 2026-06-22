@@ -1,6 +1,6 @@
 'use strict';
 /*
- * Covers — a tiny zero-dependency Node server.
+ * Covers: a tiny zero-dependency Node server.
  * Serves the static frontend from ./public and a small JSON REST API
  * backed by an atomically-written JSON file on disk. Single-user auth
  * via a shared password (APP_PASSWORD) exchanged for a bearer token.
@@ -17,7 +17,7 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 if (!process.env.APP_PASSWORD) {
-  console.warn('[covers] WARNING: APP_PASSWORD not set — using the default "covers". Set APP_PASSWORD in production.');
+  console.warn('[covers] WARNING: APP_PASSWORD not set; using the default "covers". Set APP_PASSWORD in production.');
 }
 
 /* ---------- store ---------- */
@@ -104,6 +104,12 @@ function sanitize(b) {
   } else if (b.food) {
     e.food = String(b.food);
   }
+  if (Array.isArray(b.tags)) {
+    const tags = [...new Set(b.tags.map((t) => String(t).trim()).filter(Boolean).map((t) => t.slice(0, 40)))].slice(0, 30);
+    if (tags.length) e.tags = tags;
+  }
+  const notes = b.notes != null ? String(b.notes).trim().slice(0, 4000) : '';
+  if (notes) e.notes = notes;
   if (b.lat != null && b.lng != null && isFinite(Number(b.lat)) && isFinite(Number(b.lng))) {
     e.lat = Number(b.lat);
     e.lng = Number(b.lng);
