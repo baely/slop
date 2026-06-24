@@ -1,0 +1,21 @@
+services:
+  letterboxd-prep:
+    image: registry.baileys.dev/letterboxd-prep:latest
+    container_name: letterboxd-prep
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+      - TMDB_READ_TOKEN=${TMDB_READ_TOKEN}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.letterboxd-prep.rule=Host(`letterboxd.baileys.app`)
+      - traefik.http.routers.letterboxd-prep.entrypoints=websecure
+      - traefik.http.routers.letterboxd-prep.tls=true
+      - traefik.http.routers.letterboxd-prep.tls.certresolver=le
+      - traefik.http.services.letterboxd-prep.loadbalancer.server.port=8080
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true
