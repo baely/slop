@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    background: #f5eedb;
+    color: #161616;
+    min-height: 100vh;
+    padding: 64px;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.3'/></svg>");
+    position: relative;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,.06) 1px, transparent 1.5px);
+    background-size: 4px 4px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  .blob.pink {
+    width: 420px; height: 420px;
+    background: #ff5a8a;
+    top: -120px; right: -80px;
+    opacity: .85;
+  }
+  .blob.blue {
+    width: 320px; height: 320px;
+    background: #1e3a8a;
+    bottom: -100px; left: -60px;
+    opacity: .8;
+  }
+  h1 {
+    font-weight: 800;
+    font-size: clamp(72px, 14vw, 200px);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    position: relative;
+    z-index: 2;
+  }
+  h1 em {
+    font-style: normal;
+    color: #ff5a8a;
+    position: relative;
+  }
+  h1 em::before {
+    content: attr(data-text);
+    position: absolute;
+    inset: 3px 0 0 4px;
+    color: #1e3a8a;
+    mix-blend-mode: multiply;
+    opacity: .7;
+    z-index: -1;
+  }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-size: clamp(22px, 3vw, 34px);
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+  }
+  ul a {
+    color: #161616;
+    text-decoration: none;
+    border-bottom: 2px solid #161616;
+    padding-bottom: 2px;
+    transition: color .25s ease, border-color .25s ease;
+  }
+  ul a:hover { color: #ff5a8a; border-color: #ff5a8a; }
+</style>
+</head>
+<body>
+  <div class="blob pink"></div>
+  <div class="blob blue"></div>
+  <h1>Bailey<br><em data-text="Butler.">Butler.</em></h1>
+  <ul>
+    <li><a href="#">GitHub</a></li>
+    <li><a href="#">LinkedIn</a></li>
+    <li><a href="#">Instagram</a></li>
+    <li><a href="#">Letterboxd</a></li>
+    <li><a href="#">Blog</a></li>
+  </ul>
+</body>
+</html>

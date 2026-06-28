@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler — 07 / Broadsheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Old Standard TT', serif;
+    background: #efe9da;
+    color: #181412;
+    min-height: 100vh;
+    padding: 30px;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.18'/></svg>");
+  }
+  .paper {
+    max-width: 1080px;
+    margin: 0 auto;
+    background: #f6f1e3;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2'/></filter><rect width='220' height='220' filter='url(%23n)' opacity='0.08'/></svg>");
+    padding: 36px 44px 44px;
+    border: 1px solid #2a2420;
+    box-shadow: 0 30px 60px rgba(0,0,0,.18);
+    position: relative;
+  }
+  .masthead {
+    text-align: center;
+    border-bottom: 4px double #181412;
+    padding-bottom: 14px;
+  }
+  .masthead .topbar {
+    display: flex;
+    justify-content: space-between;
+    font-variant: small-caps;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    border-bottom: 1px solid #181412;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+  .masthead h1 {
+    font-family: 'UnifrakturCook', 'Old Standard TT', serif;
+    font-weight: 700;
+    font-size: clamp(64px, 11vw, 144px);
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .masthead .deck {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 22px;
+    margin-top: 8px;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #181412;
+    border-bottom: 1px solid #181412;
+    padding: 6px 0;
+    margin: 14px 0 26px;
+    font-size: 11px;
+    font-variant: small-caps;
+    letter-spacing: 0.1em;
+  }
+  .cols {
+    column-count: 3;
+    column-gap: 28px;
+    column-rule: 1px solid #181412;
+    font-size: 14px;
+    line-height: 1.55;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .cols h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    line-height: 1.05;
+    margin: 0 0 8px;
+    text-align: left;
+    font-weight: 900;
+  }
+  .cols h2 .kicker {
+    display: block;
+    font-family: 'Old Standard TT', serif;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    font-variant: small-caps;
+    margin-bottom: 4px;
+    text-align: center;
+    border-bottom: 1px solid #181412;
+    padding-bottom: 4px;
+  }
+  .cols p { margin: 0 0 10px; }
+  .cols p::first-letter { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 48px; float: left; line-height: 0.9; padding: 6px 6px 0 0; }
+  .links {
+    column-span: all;
+    margin: 30px 0 0;
+    padding: 16px 0;
+    border-top: 4px double #181412;
+    border-bottom: 4px double #181412;
+    text-align: center;
+  }
+  .links h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .links nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0 28px;
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .links a {
+    color: #181412;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    position: relative;
+  }
+  .links a:not(:last-child)::after { content: '·'; position: absolute; right: -18px; }
+  .links a:hover { border-bottom-color: #181412; font-style: italic; }
+  .footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-variant: small-caps;
+    letter-spacing: 0.15em;
+  }
+  .footer a { color: inherit; }
+  .ornament { text-align: center; font-size: 14px; margin: 4px 0 10px; letter-spacing: 0.4em; }
+</style>
+</head>
+<body>
+  <div class="paper">
+    <div class="masthead">
+      <div class="topbar">
+        <span>Vol. MMXXVI · No. 07</span>
+        <span>One Penny</span>
+        <span>The Personal Edition</span>
+      </div>
+      <h1>The Daily Butler</h1>
+      <div class="ornament">❦ ❦ ❦</div>
+      <div class="deck">“A modest paper of one man's whereabouts, published irregularly.”</div>
+    </div>
+    <div class="meta-row">
+      <span>Friday Morning</span>
+      <span>Bound &amp; Stitched in California</span>
+      <span>Established 1995</span>
+    </div>
+    <div class="cols">
+      <h2><span class="kicker">Front Page</span>Local Man, Found Online, Maintains Modest Index of Self</h2>
+      <p>Bailey Butler, of indeterminate occupation but unmistakable presence, has issued a small directory of his appearances on the public web. The catalogue lists five entries and refuses, with characteristic restraint, to elaborate further.</p>
+      <p>Observers describe the page as “almost suspiciously brief.” A neighbour, reached for comment, said only: “It loaded quickly.”</p>
+      <h2 style="margin-top:14px"><span class="kicker">In Other News</span>Hyperlinks Still Functional, Reports Confirm</h2>
+      <p>Each of the five entries below has been independently verified to lead somewhere. Readers are advised to click at their discretion. The editors disclaim all responsibility for what may be found there.</p>
+      <p>This publication remains, as ever, free of subscription, advertisement, and conviction.</p>
+      <div class="links">
+        <h3>~ The Five Directories ~</h3>
+        <nav>
+          <a href="#">GitHub</a>
+          <a href="#">LinkedIn</a>
+          <a href="#">Instagram</a>
+          <a href="#">Letterboxd</a>
+          <a href="#">Blog</a>
+        </nav>
+      </div>
+    </div>
+    <div class="footer">
+      <span>— Printed in Pixels —</span>
+      <a href="../">‹ Return to the news-stand</a>
+      <span>End of Page</span>
+    </div>
+  </div>
+</body>
+</html>

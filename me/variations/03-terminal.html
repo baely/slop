@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>bailey@home:~$</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: #0d0e10;
+    color: #c9d1d9;
+    min-height: 100vh;
+    padding: 32px;
+    font-size: 14px;
+    line-height: 1.55;
+    background-image:
+      radial-gradient(ellipse at top, rgba(56, 139, 253, 0.05), transparent 60%),
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: auto, 100% 2px;
+  }
+  .window {
+    max-width: 820px;
+    margin: 24px auto;
+    border-radius: 10px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid #30363d;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .titlebar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.r { background: #ff5f56; }
+  .dot.y { background: #ffbd2e; }
+  .dot.g { background: #27c93f; }
+  .titlebar .title { margin-left: auto; margin-right: auto; }
+  .content { padding: 22px 24px 28px; }
+  .prompt { color: #7ee787; }
+  .user { color: #79c0ff; }
+  .dir { color: #d2a8ff; }
+  .key { color: #ffa657; }
+  .str { color: #a5d6ff; }
+  .dim { color: #6e7681; }
+  .out { color: #c9d1d9; }
+  pre, p, ul { font: inherit; }
+  .row { margin: 4px 0; white-space: pre-wrap; }
+  ul { list-style: none; padding-left: 22px; margin: 6px 0; }
+  ul li { position: relative; padding: 2px 0; }
+  ul li::before { content: '└─'; position: absolute; left: -18px; color: #484f58; }
+  ul li:not(:last-child)::before { content: '├─'; }
+  a { color: #58a6ff; text-decoration: none; border-bottom: 1px dashed transparent; }
+  a:hover { border-bottom-color: #58a6ff; background: rgba(88,166,255,0.08); }
+  .blink { display: inline-block; width: 8px; height: 16px; background: #c9d1d9; vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(2, end) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ascii {
+    color: #58a6ff;
+    font-size: 12px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .back { display: block; margin-top: 24px; font-size: 11px; color: #6e7681; }
+  .back a { color: #6e7681; }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="title">bailey@home: ~ — zsh — 84×24</span>
+    </div>
+    <div class="content">
+<pre class="ascii">  ____   ____
+ |  _ \ | __ )    bailey butler
+ | |_) ||  _ \    a small directory
+ |  _ < | |_) )
+ |____/ |____/
+</pre>
+      <div class="row"><span class="prompt">➜</span> <span class="dir">~</span> <span class="out">whoami</span></div>
+      <div class="row out">bailey butler</div>
+      <div class="row"><span class="prompt">➜</span> <span class="dir">~</span> <span class="out">cat about.txt</span></div>
+      <div class="row out">5 links. nothing more. nothing less.</div>
+      <div class="row"><span class="prompt">➜</span> <span class="dir">~</span> <span class="out">ls -la ./links/</span></div>
+      <div class="row out"><span class="dim">total 5</span></div>
+      <ul>
+        <li><span class="dim">-rw-r--r--</span>  <a href="#"><span class="key">github</span></a>      <span class="dim">→ <span class="str">"git.io"</span></span></li>
+        <li><span class="dim">-rw-r--r--</span>  <a href="#"><span class="key">linkedin</span></a>    <span class="dim">→ <span class="str">"the network"</span></span></li>
+        <li><span class="dim">-rw-r--r--</span>  <a href="#"><span class="key">instagram</span></a>   <span class="dim">→ <span class="str">"square pics"</span></span></li>
+        <li><span class="dim">-rw-r--r--</span>  <a href="#"><span class="key">letterboxd</span></a>  <span class="dim">→ <span class="str">"the film logs"</span></span></li>
+        <li><span class="dim">-rw-r--r--</span>  <a href="#"><span class="key">blog</span></a>        <span class="dim">→ <span class="str">"words in a feed"</span></span></li>
+      </ul>
+      <div class="row"><span class="prompt">➜</span> <span class="dir">~</span><span class="blink"></span></div>
+      <div class="back">[<a href="../">esc</a>] back to index</div>
+    </div>
+  </div>
+</body>
+</html>
