@@ -3,6 +3,8 @@ This repo serves as a sandbox for vibe coded apps. Each directory is a self-cont
 You should create a new directory when working on a new app, and work entirely within the subdirectory. All projects _must_ include the following:
 - README.md
 
+When building web UIs, refer to the [design system](design-system/index.html) (deployed at https://design.baileys.page) for shared conventions: color tokens, typography, spacing, component patterns, and layout. Each app should bake its own stylesheet — the design system is a reference, not a shared dependency. Copy the CSS variables block from the design system as a starting point.
+
 Choose an appropriate deployment method for the application:
 1. For a static web app (where the deployed project consists entirely of HTML, JS, CSS, etc. files) use staticer. This can include where a running an app locally produces a set of static files that is intended to be the final product. staticer can be used in the following manner:
 a) Temporary deployment
