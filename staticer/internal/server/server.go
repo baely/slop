@@ -57,6 +57,11 @@ func New(config *Config, store storage.Storage, logger *slog.Logger, temporalCli
 func (s *Server) Run() error {
 	mux := http.NewServeMux()
 
+	// Health check (bypasses subdomain routing)
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// API routes
 	mux.HandleFunc("/api/deploy", s.handleDeploy)
 	mux.HandleFunc("/api/sites", s.handleSites)
@@ -107,6 +112,12 @@ func (s *Server) Run() error {
 // subdomainRouter routes requests based on the Host header
 func (s *Server) subdomainRouter(apiMux http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Health check bypasses subdomain routing
+		if r.URL.Path == "/healthz" {
+			apiMux.ServeHTTP(w, r)
+			return
+		}
+
 		host := r.Host
 		// Strip port if present
 		if idx := strings.LastIndex(host, ":"); idx != -1 {
@@ -134,6 +145,12 @@ func (s *Server) subdomainRouter(apiMux http.Handler) http.Handler {
 		// Only serve API/dashboard on the main host
 		if host == s.config.Host {
 			apiMux.ServeHTTP(w, r)
+			return
+		}
+
+		site, err := s.store.GetSiteByCustomDomain("blog.baileys.dev")
+		if err == nil {
+			s.serveSite(w, r, site.Subdomain)
 			return
 		}
 

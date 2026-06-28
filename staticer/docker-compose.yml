@@ -3,10 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: staticer-server
     restart: unless-stopped
+    deploy:
+      replicas: 10
     ports:
-      - "8080:8080"
+      - "8080"
     environment:
       # Server configuration
       - SERVER_PORT=8080
@@ -28,7 +29,7 @@ services:
       - staticer-data:/app/data
       - staticer-sites:/app/sites
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
