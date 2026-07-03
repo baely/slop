@@ -119,9 +119,20 @@
   .pill-booked { background: var(--accent-tint); color: var(--accent-deep); border-color: #cde7e4; }
   .pill-paid { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+  /* Location hero photo (trip + share pages, dashboard thumbs) */
+  .hero { position: relative; border-radius: 12px; min-height: 190px; background-size: cover; background-position: center;
+    display: flex; align-items: flex-end; padding: 16px 18px; margin: 10px 0 4px; box-shadow: var(--shadow); overflow: hidden; }
+  .hero h1 { color: #fff; margin: 0; text-shadow: 0 1px 12px rgba(8,20,19,.45); }
+  .hero .credit { position: absolute; right: 12px; bottom: 8px; font-size: 10.5px; color: rgba(255,255,255,.75); text-decoration: none; }
+  .hero .credit:hover { color: #fff; text-decoration: underline; }
+  .thumb { width: 92px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; display: block; }
+
   /* Travel: countdown, itinerary slots, packing checklist */
   .countdown-card { text-align: center; padding: 26px 18px; }
   .countdown { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .countdown-card.hero-bg { background-size: cover; background-position: center; border-color: transparent; padding: 40px 18px; }
+  .countdown-card.hero-bg .countdown { color: #fff; text-shadow: 0 1px 12px rgba(8,20,19,.5); }
+  .countdown-card.hero-bg .meta { color: rgba(255,255,255,.88); }
   .slot { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); min-width: 76px; }
   .checkbox { width: 20px; height: 20px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); padding: 0; line-height: 1; font-size: 12px; color: transparent; }
   .checkbox.on { background: var(--accent); border-color: var(--accent); color: #fff; }

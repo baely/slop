@@ -60,6 +60,7 @@ type sharePage struct {
 	CanSuggestBudget bool         // current traveller hasn't used their 1 budget suggestion
 	CanSuggestDates  bool         // ... their 1 dates suggestion
 	ThePlan          *planSummary // what's locked in/booked, once planning firms up
+	Hero             *store.Image // location hero photo (nil when none resolves)
 }
 
 func (s *Server) loadVoter(r *http.Request, tripID int64) *store.Voter {
@@ -171,6 +172,7 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		CanSuggestBudget: canBudget,
 		CanSuggestDates:  canDates,
 		ThePlan:          buildPlanSummary(dateOpts, combos, itin, bookings, time.Now()),
+		Hero:             s.heroForTrip(trip),
 	})
 }
 

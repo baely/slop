@@ -144,6 +144,13 @@ func (s *Store) Migrate() error {
 			created_at TEXT NOT NULL,
 			UNIQUE(voter_id, target_type, target_id)
 		);`,
+		`CREATE TABLE IF NOT EXISTS images (
+			query TEXT PRIMARY KEY,
+			url TEXT NOT NULL DEFAULT '',
+			credit TEXT NOT NULL DEFAULT '',
+			credit_url TEXT NOT NULL DEFAULT '',
+			fetched_at TEXT NOT NULL
+		);`,
 	}
 	for _, q := range stmts {
 		if _, err := s.db.Exec(q); err != nil {

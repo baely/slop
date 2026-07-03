@@ -32,12 +32,13 @@ func main() {
 	}
 
 	srv := server.New(server.Options{
-		Store:      db,
-		Title:      cfg.Title,
-		AdminToken: cfg.AdminToken,
-		BaseURL:    cfg.BaseURL,
-		Currency:   cfg.Currency,
-		TrustProxy: cfg.TrustProxy,
+		Store:       db,
+		Title:       cfg.Title,
+		AdminToken:  cfg.AdminToken,
+		BaseURL:     cfg.BaseURL,
+		Currency:    cfg.Currency,
+		TrustProxy:  cfg.TrustProxy,
+		UnsplashKey: cfg.UnsplashKey,
 	})
 
 	httpSrv := &http.Server{
@@ -64,24 +65,26 @@ func main() {
 }
 
 type config struct {
-	Addr       string
-	DBPath     string
-	Title      string
-	AdminToken string
-	BaseURL    string
-	Currency   string
-	TrustProxy bool
+	Addr        string
+	DBPath      string
+	Title       string
+	AdminToken  string
+	BaseURL     string
+	Currency    string
+	TrustProxy  bool
+	UnsplashKey string
 }
 
 func loadConfig() config {
 	return config{
-		Addr:       getenv("ADDR", ":8080"),
-		DBPath:     getenv("DB_PATH", "/data/voyage.db"),
-		Title:      getenv("TITLE", "Voyage"),
-		AdminToken: os.Getenv("ADMIN_TOKEN"),
-		BaseURL:    os.Getenv("BASE_URL"),
-		Currency:   getenv("CURRENCY", "AUD"),
-		TrustProxy: os.Getenv("TRUST_PROXY") == "1" || os.Getenv("TRUST_PROXY") == "true",
+		Addr:        getenv("ADDR", ":8080"),
+		DBPath:      getenv("DB_PATH", "/data/voyage.db"),
+		Title:       getenv("TITLE", "Voyage"),
+		AdminToken:  os.Getenv("ADMIN_TOKEN"),
+		BaseURL:     os.Getenv("BASE_URL"),
+		Currency:    getenv("CURRENCY", "AUD"),
+		TrustProxy:  os.Getenv("TRUST_PROXY") == "1" || os.Getenv("TRUST_PROXY") == "true",
+		UnsplashKey: os.Getenv("UNSPLASH_ACCESS_KEY"),
 	}
 }
 

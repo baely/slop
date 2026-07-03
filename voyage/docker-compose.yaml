@@ -17,6 +17,8 @@ services:
       # Set TRUST_PROXY=1 when running behind a reverse proxy that terminates TLS
       # and sets X-Forwarded-Proto.
       TRUST_PROXY: "${TRUST_PROXY:-1}"
+      # Optional: prefer Unsplash for trip hero photos (Wikimedia when empty).
+      UNSPLASH_ACCESS_KEY: "${UNSPLASH_ACCESS_KEY:-}"
     labels:
       - traefik.enable=true
       - traefik.http.routers.voyage.rule=Host(`voyage.baileys.app`)

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/baileybutler/voyage/internal/images"
 	"github.com/baileybutler/voyage/internal/store"
 )
 
@@ -20,20 +21,22 @@ var templateFS embed.FS
 
 // Options configures the server.
 type Options struct {
-	Store      *store.Store
-	Title      string
-	AdminToken string // when empty, owner auth is disabled (dev only)
-	BaseURL    string // e.g. https://voyage.baileys.app, for absolute share links
-	Currency   string // default currency code prefilled in forms (e.g. AUD)
-	TrustProxy bool
+	Store       *store.Store
+	Title       string
+	AdminToken  string // when empty, owner auth is disabled (dev only)
+	BaseURL     string // e.g. https://voyage.baileys.app, for absolute share links
+	Currency    string // default currency code prefilled in forms (e.g. AUD)
+	TrustProxy  bool
+	UnsplashKey string // optional Unsplash API key; Wikimedia is used without one
 }
 
 // Server is the HTTP handler for Voyage.
 type Server struct {
-	opts  Options
-	store *store.Store
-	mux   *http.ServeMux
-	tpl   *template.Template
+	opts   Options
+	store  *store.Store
+	mux    *http.ServeMux
+	tpl    *template.Template
+	images *images.Resolver
 }
 
 // New builds a Server with routes and templates ready to serve.
@@ -45,10 +48,11 @@ func New(opts Options) *Server {
 		opts.Currency = "AUD"
 	}
 	s := &Server{
-		opts:  opts,
-		store: opts.Store,
-		mux:   http.NewServeMux(),
-		tpl:   template.Must(template.New("").Funcs(funcMap(opts.Currency)).ParseFS(templateFS, "templates/*.html")),
+		opts:   opts,
+		store:  opts.Store,
+		mux:    http.NewServeMux(),
+		tpl:    template.Must(template.New("").Funcs(funcMap(opts.Currency)).ParseFS(templateFS, "templates/*.html")),
+		images: images.New(opts.Store, opts.UnsplashKey),
 	}
 	s.routes()
 	return s
@@ -202,6 +206,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	for i := range trips {
+		trips[i].Img = s.images.Resolve(trips[i].FirstLocation, images.StripYears(trips[i].Title))
+	}
 	s.render(w, "dashboard", dashboardPage{Title: s.opts.Title, Trips: trips})
 }
 
@@ -260,8 +267,26 @@ type tripPage struct {
 	TripNightsLabel string
 	LockedBudget    *store.AxisOption
 	LockedDates     *store.AxisOption
-	Book            *bookData   // populated in Book mode
-	Travel          *travelData // populated in Travel mode
+	Book            *bookData    // populated in Book mode
+	Travel          *travelData  // populated in Travel mode
+	Hero            *store.Image // location hero photo (nil when none resolves)
+}
+
+// heroFor resolves a trip's hero photo: its first locations, then the title
+// (with any year stripped, so "Fiji 2026" finds Fiji).
+func (s *Server) heroFor(locations []store.Location, title string) *store.Image {
+	queries := make([]string, 0, 3)
+	for i := 0; i < len(locations) && i < 2; i++ {
+		queries = append(queries, locations[i].Name)
+	}
+	queries = append(queries, images.StripYears(title))
+	return s.images.Resolve(queries...)
+}
+
+// heroForTrip is heroFor for handlers that haven't loaded locations yet.
+func (s *Server) heroForTrip(trip *store.Trip) *store.Image {
+	locations, _ := s.store.LocationsForTrip(trip.ID)
+	return s.heroFor(locations, trip.Title)
 }
 
 // stageMode maps a trip's lifecycle stage to the tab it opens on.
@@ -342,6 +367,7 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		TripNightsLabel: nightsLabel,
 		LockedBudget:    lockedOption(budget.Options),
 		LockedDates:     lockedOption(dateOpts),
+		Hero:            s.heroFor(locations, trip.Title),
 	}
 
 	switch mode {

@@ -49,6 +49,22 @@ Once decisions are locked in or bookings made, the share page opens with **the
 plan** itself — dates and countdown, the chosen stay, confirmed bookings, and
 the day-by-day itinerary — above the voting sections.
 
+### Hero photos
+
+Trips get a **location hero photo** — on the trip page, the share page, the
+dashboard cards, and behind the Travel countdown. The photo is looked up from
+the trip's first location (falling back to the title with any year stripped,
+so "Fiji 2026" finds Fiji):
+
+- **Wikimedia** (default) — keyless, uses each place's Wikipedia lead image,
+  credited with a link to the article.
+- **Unsplash** — set `UNSPLASH_ACCESS_KEY` (an [Unsplash API](https://unsplash.com/developers)
+  access key) to use Unsplash search instead, credited "photographer · Unsplash".
+
+Lookups are cached in the `images` table, so each place is fetched once
+(misses retry daily). If nothing resolves, pages render photo-free exactly as
+before.
+
 ## Designed to generalise
 
 The data model is deliberately generic so future features slot in without schema
@@ -89,6 +105,7 @@ All via environment variables (see `.env.example`):
 | `ADMIN_TOKEN` | _(empty = open, dev only)_     | Planner access token (required in production)  |
 | `BASE_URL`    | _(empty = derive from request)_| Base for absolute share links                  |
 | `TRUST_PROXY` | `0`                            | Trust `X-Forwarded-Proto` behind a proxy       |
+| `UNSPLASH_ACCESS_KEY` | _(empty = Wikimedia)_  | Unsplash API key for hero photos               |
 
 ## Project layout
 

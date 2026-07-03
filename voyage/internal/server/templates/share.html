@@ -1,7 +1,15 @@
 {{define "share"}}{{template "head" .}}
-<header class="topbar"><span class="wordmark">{{.Trip.Title}}</span>
+<header class="topbar"><span class="wordmark">Voyage</span>
   {{if .Voter}}<span class="muted">Voting as <strong>{{.Voter.Name}}</strong></span>{{end}}
 </header>
+{{if and .Hero .Hero.URL}}
+<div class="hero" style="background-image:linear-gradient(180deg,rgba(12,28,26,0) 30%,rgba(12,28,26,.66)),url('{{.Hero.URL}}')">
+  <h1>{{.Trip.Title}}</h1>
+  {{if .Hero.Credit}}<a class="credit" href="{{.Hero.CreditURL}}" target="_blank" rel="noopener">{{.Hero.Credit}}</a>{{end}}
+</div>
+{{else}}
+<h1>{{.Trip.Title}}</h1>
+{{end}}
 <p class="lead">A shared trip plan. Vote for the options you like and rank the activities.</p>
 
 {{if not .Voter}}

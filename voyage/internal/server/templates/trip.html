@@ -5,7 +5,14 @@
 </header>
 
 <a class="back" href="/">&larr; All trips</a>
+{{if and .Hero .Hero.URL}}
+<div class="hero" style="background-image:linear-gradient(180deg,rgba(12,28,26,0) 30%,rgba(12,28,26,.66)),url('{{.Hero.URL}}')">
+  <h1>{{.Trip.Title}}</h1>
+  {{if .Hero.Credit}}<a class="credit" href="{{.Hero.CreditURL}}" target="_blank" rel="noopener">{{.Hero.Credit}}</a>{{end}}
+</div>
+{{else}}
 <h1>{{.Trip.Title}}</h1>
+{{end}}
 
 <div class="locations">
   {{range .Locations}}<span class="tag">{{.Name}}
@@ -362,7 +369,7 @@
 {{/* ---------------- TRAVEL: countdown, itinerary, packing ---------------- */}}
 {{with .Travel}}
 {{if .HasDates}}
-<div class="card countdown-card">
+<div class="card countdown-card{{if and $.Hero $.Hero.URL}} hero-bg{{end}}"{{if and $.Hero $.Hero.URL}} style="background-image:linear-gradient(rgba(12,28,26,.5),rgba(12,28,26,.6)),url('{{$.Hero.URL}}')"{{end}}>
   <div class="countdown">{{.Countdown}}</div>
   <div class="meta">{{$.Trip.Title}} · {{.DatesLabel}}</div>
 </div>

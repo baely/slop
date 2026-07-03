@@ -18,12 +18,14 @@ type Trip struct {
 
 // TripSummary is a lightweight row for the dashboard list.
 type TripSummary struct {
-	ID         int64
-	Title      string
-	Stage      string
-	CreatedAt  string
-	Scenarios  int // combos that have at least one item
-	Activities int
+	ID            int64
+	Title         string
+	Stage         string
+	CreatedAt     string
+	Scenarios     int    // combos that have at least one item
+	Activities    int
+	FirstLocation string // for the card's hero photo lookup
+	Img           *Image // computed
 }
 
 // Location is a place visited on a trip.
