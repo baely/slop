@@ -2,12 +2,11 @@
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 
-# Cache modules first.
-COPY go.mod go.sum* ./
-RUN go mod download
-
 # Build statically (modernc.org/sqlite is pure Go, so CGO is not required).
+# A local `go mod vendor` tree is used when present (it survives flaky module
+# proxies); otherwise modules are downloaded.
 COPY . .
+RUN if [ ! -d vendor ]; then go mod download; fi
 ENV CGO_ENABLED=0 GOOS=linux
 RUN go build -trimpath -ldflags="-s -w" -o /out/voyage ./cmd/server
 

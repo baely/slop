@@ -4,3 +4,4 @@ docker-compose.override.yaml
 *.db-shm
 *.db-wal
 voyage-bin
+vendor/
