@@ -15,6 +15,30 @@
 </div>
 {{end}}
 
+{{/* THE PLAN — what's locked in, once planning firms up */}}
+{{with .ThePlan}}
+<div class="section-title"><h2>The plan</h2>{{if .Countdown}}<span class="muted">{{.Countdown}}</span>{{end}}</div>
+<div class="card">
+  {{if .DatesLabel}}<div class="row" style="padding:4px 0"><span class="meta" style="min-width:64px">Dates</span><span class="mono">{{.DatesLabel}}</span></div>{{end}}
+  {{if .Stay}}<div class="row" style="padding:4px 0"><span class="meta" style="min-width:64px">Stay</span><strong>{{.Stay}}</strong></div>{{end}}
+  {{if .Booked}}
+  <div class="row" style="padding:4px 0;align-items:flex-start"><span class="meta" style="min-width:64px">Booked</span>
+    <ul class="opts" style="flex:1">
+      {{range .Booked}}<li><span>{{.Label}}</span>{{if metaStr .Meta "date"}}<span class="muted mono">{{metaStr .Meta "date"}}</span>{{end}}<span class="grow"></span><span class="pill pill-{{metaStr .Meta "status"}}">{{metaStr .Meta "status"}}</span></li>{{end}}
+    </ul>
+  </div>
+  {{end}}
+  {{range .Days}}
+  <div style="padding:6px 0;border-top:1px dashed var(--line)">
+    <div class="meta" style="margin-bottom:2px">Day {{.Num}} · {{.Label}}</div>
+    <ul class="opts">
+      {{range .Entries}}<li>{{if metaStr .Meta "slot"}}<span class="slot">{{metaStr .Meta "slot"}}</span>{{end}}<span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}</span></li>{{end}}
+    </ul>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
 {{/* 1 — BUDGET */}}
 <div class="section-title"><h2>Budget</h2></div>
 <div class="card">

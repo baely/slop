@@ -33,7 +33,7 @@ func (s *Store) AxesForTrip(tripID int64) ([]Axis, error) {
 }
 
 func (s *Store) optionsForAxis(axisID int64) ([]AxisOption, error) {
-	rows, err := s.db.Query(`SELECT id, axis_id, label, position, metadata FROM axis_options WHERE axis_id = ? ORDER BY position, id`, axisID)
+	rows, err := s.db.Query(`SELECT id, axis_id, label, position, status, metadata FROM axis_options WHERE axis_id = ? ORDER BY position, id`, axisID)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +43,38 @@ func (s *Store) optionsForAxis(axisID int64) ([]AxisOption, error) {
 	for rows.Next() {
 		var o AxisOption
 		var meta string
-		if err := rows.Scan(&o.ID, &o.AxisID, &o.Label, &o.Position, &meta); err != nil {
+		if err := rows.Scan(&o.ID, &o.AxisID, &o.Label, &o.Position, &o.Status, &meta); err != nil {
 			return nil, err
 		}
 		o.Meta = unmarshalMeta(meta)
 		out = append(out, o)
 	}
 	return out, rows.Err()
+}
+
+// SetAxisOptionStatus sets an option's status. Promoting one option to
+// "selected" demotes any other selected sibling back to "option" — an axis has
+// at most one locked-in winner.
+func (s *Store) SetAxisOptionStatus(id int64, status string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var axisID int64
+	if err := tx.QueryRow(`SELECT axis_id FROM axis_options WHERE id = ?`, id).Scan(&axisID); err != nil {
+		return err
+	}
+	if status == "selected" {
+		if _, err := tx.Exec(`UPDATE axis_options SET status = 'option' WHERE axis_id = ? AND status = 'selected'`, axisID); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(`UPDATE axis_options SET status = ? WHERE id = ?`, status, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // AxisByID loads a single axis (without options).

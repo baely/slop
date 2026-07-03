@@ -170,3 +170,89 @@ func TestVoterByTokenScopedToTrip(t *testing.T) {
 		t.Fatalf("expected ErrNotFound across trips, got %v", err)
 	}
 }
+
+func TestSelectAxisOptionDemotesSiblings(t *testing.T) {
+	s := newTestStore(t)
+	tripID, _ := s.CreateTrip("Trip", nil)
+	_, dates := budgetAndDates(t, s, tripID)
+
+	d1, _ := s.AddAxisOption(dates.ID, "12–19 Jul", nil, nil)
+	d2, _ := s.AddAxisOption(dates.ID, "5–12 Sep", nil, nil)
+	if err := s.SetAxisOptionStatus(d1, "selected"); err != nil {
+		t.Fatalf("select d1: %v", err)
+	}
+	if err := s.SetAxisOptionStatus(d2, "selected"); err != nil {
+		t.Fatalf("select d2: %v", err)
+	}
+
+	_, d := budgetAndDates(t, s, tripID)
+	var selected int64
+	n := 0
+	for _, o := range d.Options {
+		if o.Status == "selected" {
+			selected = o.ID
+			n++
+		}
+	}
+	if n != 1 || selected != d2 {
+		t.Fatalf("want exactly d2 selected, got %d selected (id %d)", n, selected)
+	}
+}
+
+func TestEnsureListIsIdempotentPerKind(t *testing.T) {
+	s := newTestStore(t)
+	tripID, _ := s.CreateTrip("Trip", nil)
+
+	b1, err := s.EnsureList(tripID, "booking", "Bookings")
+	if err != nil {
+		t.Fatalf("ensure 1: %v", err)
+	}
+	b2, err := s.EnsureList(tripID, "booking", "Bookings")
+	if err != nil {
+		t.Fatalf("ensure 2: %v", err)
+	}
+	if b1.ID != b2.ID {
+		t.Fatalf("ensure not idempotent: %d != %d", b1.ID, b2.ID)
+	}
+	p, err := s.EnsureList(tripID, "packing", "Packing")
+	if err != nil {
+		t.Fatalf("ensure packing: %v", err)
+	}
+	if p.ID == b1.ID {
+		t.Fatal("kinds must get distinct lists")
+	}
+	// The seeded activities list must survive alongside the new kinds.
+	acts, err := s.ActivitiesList(tripID)
+	if err != nil || acts.Kind != "activity" {
+		t.Fatalf("activities list: %v (kind %q)", err, acts.Kind)
+	}
+}
+
+func TestSetListItemMetaMergesAndDeletes(t *testing.T) {
+	s := newTestStore(t)
+	tripID, _ := s.CreateTrip("Trip", nil)
+	list, _ := s.EnsureList(tripID, "booking", "Bookings")
+	id, err := s.AddListItem(list.ID, "Flights", "", "", map[string]any{"status": "todo", "cost": "1200"}, nil)
+	if err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	if err := s.SetListItemMeta(id, map[string]any{"status": "booked", "ref": "ABC123", "cost": nil}); err != nil {
+		t.Fatalf("patch: %v", err)
+	}
+	got, _ := s.EnsureList(tripID, "booking", "Bookings")
+	if len(got.Items) != 1 {
+		t.Fatalf("want 1 item, got %d", len(got.Items))
+	}
+	m := got.Items[0].Meta
+	if m["status"] != "booked" || m["ref"] != "ABC123" {
+		t.Fatalf("unexpected meta after merge: %v", m)
+	}
+	if _, ok := m["cost"]; ok {
+		t.Fatalf("nil value should delete the key, got %v", m)
+	}
+
+	if err := s.SetListItemMeta(9999, map[string]any{"x": "y"}); err != ErrNotFound {
+		t.Fatalf("want ErrNotFound for missing item, got %v", err)
+	}
+}

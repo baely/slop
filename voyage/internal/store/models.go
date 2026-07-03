@@ -53,6 +53,7 @@ type AxisOption struct {
 	AxisID     int64
 	Label      string
 	Position   int
+	Status     string // "option", or "selected" when the organiser locks it in
 	Meta       map[string]any
 	Votes      int    // computed
 	Voted      bool   // computed

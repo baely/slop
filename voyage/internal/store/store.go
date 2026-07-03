@@ -161,6 +161,11 @@ func (s *Store) Migrate() error {
 			return fmt.Errorf("migrate created_by on %s: %w", t, err)
 		}
 	}
+	// status lets the organiser lock in a winning option per axis (the chosen
+	// dates/budget), which the Book and Travel stages build on.
+	if err := s.addColumnIfMissing("axis_options", "status", "status TEXT NOT NULL DEFAULT 'option'"); err != nil {
+		return fmt.Errorf("migrate status on axis_options: %w", err)
+	}
 	return nil
 }
 
