@@ -1,0 +1,18 @@
+# Simplest way to run: `docker compose up -d`, then browse http://localhost:8080
+#
+# The point of this page is to be reachable on your own IPv6 addresses. To make
+# that real, nginx has to bind to those addresses on the host. The easiest way is
+# host networking (Linux only), which drops the container straight onto the host's
+# network stack so it answers on every address the host holds, including your PD:
+#
+#   docker run -d --network host --name ipv6-page ipv6-page
+#
+# (host networking ignores the port mapping below and uses nginx's :80 / [::]:80).
+services:
+  ipv6-page:
+    build: .
+    image: ipv6-page
+    container_name: ipv6-page
+    restart: unless-stopped
+    ports:
+      - "8080:80"
