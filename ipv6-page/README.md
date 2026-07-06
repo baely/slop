@@ -8,11 +8,11 @@ the page answers on.
 thank you for visiting my ipv6 address. you can reach this page on the
 following addresses:
 
-  2401:2520:243c:1::82:443
-  2401:2520:243c:1::82:80
-  2401:2520:243c:1::8008:35
-  2401:2520:243c:1::1337
-  2401:2520:243c:1:6969:6969:6969:6969
+  2401:2520:243c::82:443
+  2401:2520:243c::82:80
+  2401:2520:243c::8008:35
+  2401:2520:243c::1337
+  2401:2520:243c:6969:6969:6969:6969
 ```
 
 The addresses are static text — nginx doesn't detect them. Edit `index.html` to
