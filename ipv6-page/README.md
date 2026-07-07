@@ -12,7 +12,7 @@ following addresses:
   2401:2520:243c::82:80
   2401:2520:243c::8008:35
   2401:2520:243c::1337
-  2401:2520:243c:6969:6969:6969:6969
+  2401:2520:243c:0:6969:6969:6969:6969
 ```
 
 The addresses are static text — nginx doesn't detect them. Edit `index.html` to
