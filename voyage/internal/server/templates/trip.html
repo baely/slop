@@ -5,7 +5,14 @@
 </header>
 
 <a class="back" href="/">&larr; All trips</a>
+{{if and .Hero .Hero.URL}}
+<div class="hero" style="background-image:linear-gradient(180deg,rgba(12,28,26,0) 30%,rgba(12,28,26,.66)),url('{{.Hero.URL}}')">
+  <h1>{{.Trip.Title}}</h1>
+  {{if .Hero.Credit}}<a class="credit" href="{{.Hero.CreditURL}}" target="_blank" rel="noopener">{{.Hero.Credit}}</a>{{end}}
+</div>
+{{else}}
 <h1>{{.Trip.Title}}</h1>
+{{end}}
 
 <div class="locations">
   {{range .Locations}}<span class="tag">{{.Name}}
@@ -21,6 +28,8 @@
 <nav class="modes">
   <a href="/trips/{{.Trip.ID}}?mode=ideate" class="{{if eq .Mode "ideate"}}active{{end}}">Ideate</a>
   <a href="/trips/{{.Trip.ID}}?mode=plan" class="{{if eq .Mode "plan"}}active{{end}}">Plan</a>
+  <a href="/trips/{{.Trip.ID}}?mode=book" class="{{if eq .Mode "book"}}active{{end}}">Book</a>
+  <a href="/trips/{{.Trip.ID}}?mode=travel" class="{{if eq .Mode "travel"}}active{{end}}">Travel</a>
 </nav>
 
 <div class="card">
@@ -30,6 +39,17 @@
       <span class="meta">Party of</span>
       <input name="size" type="number" min="1" value="{{.Trip.PartySize}}" style="width:62px">
       <button class="btn-sm">Update</button>
+    </form>
+    <form method="post" action="/trips/{{.Trip.ID}}/stage" class="row" style="gap:6px">
+      <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+      <span class="meta">Stage</span>
+      <select name="stage">
+        <option value="ideate" {{if eq .Trip.Stage "ideate"}}selected{{end}}>ideate</option>
+        <option value="plan" {{if eq .Trip.Stage "plan"}}selected{{end}}>plan</option>
+        <option value="book" {{if eq .Trip.Stage "book"}}selected{{end}}>book</option>
+        <option value="travel" {{if or (eq .Trip.Stage "travel") (eq .Trip.Stage "anticipate")}}selected{{end}}>travel</option>
+      </select>
+      <button class="btn-sm">Set</button>
     </form>
     <span class="grow"></span>
     <span class="meta">{{if .TripNights}}Per-night totals use <strong>{{.TripNights}} nights</strong> ({{.TripNightsLabel}}) · per-person totals use <strong>{{.Trip.PartySize}}</strong>{{else}}Add a date range to get per-night totals{{end}}</span>
@@ -140,9 +160,9 @@
 </div>
 {{end}}
 
-{{else}}
+{{else if eq .Mode "plan"}}
 {{/* ---------------- PLAN ---------------- */}}
-<p class="lead">See what your crew likes, pick the winning accommodation, and share the link.</p>
+<p class="lead">See what your crew likes, lock in the winning budget and dates, pick the accommodation, and share the link.</p>
 
 <div class="card">
   <h2>Share with travellers</h2>
@@ -158,12 +178,18 @@
 <div class="section-title"><h2>Budget</h2><span class="muted">ranked by votes</span></div>
 <div class="card">
   <ul class="opts">
-    {{range .Budgets}}<li id="axis_option-{{.Option.ID}}" style="display:block">
+    {{range .Budgets}}<li id="axis_option-{{.Option.ID}}" style="display:block" {{if eq .Option.Status "selected"}}class="locked"{{end}}>
       <div class="row">
         <span class="mono">{{.Option.Label}}</span>
         {{if .Option.TotalLabel}}<span class="muted">{{.Option.TotalLabel}}</span>{{end}}
         <span class="votes">&#9829; {{.Option.Votes}}</span>
+        {{if eq .Option.Status "selected"}}<span class="pill pill-selected">locked in</span>{{end}}
         <span class="grow"></span>
+        {{if eq .Option.Status "selected"}}
+        <form method="post" action="/options/{{.Option.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Unlock</button></form>
+        {{else}}
+        <form method="post" action="/options/{{.Option.ID}}/status" class="inline"><input type="hidden" name="status" value="selected"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Lock in</button></form>
+        {{end}}
         <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
     </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
@@ -181,12 +207,18 @@
 <div class="section-title"><h2>Dates</h2><span class="muted">ranked by votes</span></div>
 <div class="card">
   <ul class="opts">
-    {{range .Dates}}<li style="display:block">
+    {{range .Dates}}<li style="display:block" {{if eq .Status "selected"}}class="locked"{{end}}>
       <div class="row">
         <span class="mono">{{.Label}}</span>
         {{if .Nights}}<span class="muted">· {{.Nights}} nights</span>{{end}}
         <span class="votes">&#9829; {{.Votes}}</span>
+        {{if eq .Status "selected"}}<span class="pill pill-selected">locked in</span>{{end}}
         <span class="grow"></span>
+        {{if eq .Status "selected"}}
+        <form method="post" action="/options/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Unlock</button></form>
+        {{else}}
+        <form method="post" action="/options/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="selected"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Lock in</button></form>
+        {{end}}
         <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
       </div>
     </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
@@ -255,6 +287,186 @@
     <input name="label" placeholder="Activity" required>
     <input name="notes" placeholder="notes">
     <input name="link" placeholder="link">
+    <button class="btn-primary btn-sm">Add</button>
+  </form>
+</div>
+{{end}}
+
+{{else if eq .Mode "book"}}
+{{/* ---------------- BOOK ---------------- */}}
+<p class="lead">Turn the winning plan into confirmed bookings — flights, the stay, transfers, activities.</p>
+
+{{with .Book}}
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="totals mono">{{.BookedLabel}} booked{{if $.Book.BudgetLabel}} · {{.BudgetLabel}} budget{{end}}{{if .PlannedLabel}} · {{.PlannedLabel}} planned{{end}}</div>
+      <div class="muted">{{if .BudgetLabel}}booked and paid bookings, against the locked-in budget{{else}}lock in a budget on the Plan tab to track spend against it{{end}}</div>
+    </div>
+  </div>
+  {{if .BudgetLabel}}<div class="bar" style="margin-top:10px"><span style="width:{{.BudgetPct}}%"></span></div>{{end}}
+</div>
+
+{{if .ImportItem}}
+<div class="card row">
+  <span>Bring the chosen stay across: <strong>{{.ImportItem.Label}}</strong>{{if .ImportLabel}} <span class="muted">≈ {{.ImportLabel}}</span>{{end}}</span>
+  <span class="grow"></span>
+  <form method="post" action="/trips/{{$.Trip.ID}}/bookings/import" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-primary btn-sm">Add to bookings</button></form>
+</div>
+{{end}}
+
+{{range .Groups}}
+<div class="card">
+  <div class="ticket"><span class="stamp">{{.Label}}</span></div>
+  <ul class="opts">
+    {{range .Items}}<li style="display:block">
+      <div class="row">
+        <strong>{{.Label}}</strong>
+        {{if metaStr .Meta "cost"}}<span class="muted mono">{{cur (metaStr .Meta "currency")}}{{metaStr .Meta "cost"}}</span>{{end}}
+        {{if metaStr .Meta "date"}}<span class="muted mono">{{metaStr .Meta "date"}}</span>{{end}}
+        {{if metaStr .Meta "ref"}}<span class="muted mono">ref {{metaStr .Meta "ref"}}</span>{{end}}
+        {{if .Notes}}<span class="muted">— {{.Notes}}</span>{{end}}
+        {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
+        <span class="grow"></span>
+        <span class="pill pill-{{metaStr .Meta "status"}}">{{if eq (metaStr .Meta "status") "todo"}}to book{{else}}{{metaStr .Meta "status"}}{{end}}</span>
+      </div>
+      <div class="statusbtns" style="margin-top:6px">
+        {{if ne (metaStr .Meta "status") "todo"}}<form method="post" action="/bookings/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="todo"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">To book</button></form>{{end}}
+        {{if ne (metaStr .Meta "status") "booked"}}<form method="post" action="/bookings/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="booked"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Booked</button></form>{{end}}
+        {{if ne (metaStr .Meta "status") "paid"}}<form method="post" action="/bookings/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="paid"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Paid</button></form>{{end}}
+        <form method="post" action="/bookings/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      </div>
+    </li>{{end}}
+  </ul>
+</div>
+{{end}}
+{{if not .HasItems}}<div class="empty">Nothing to book yet — add the first one below.</div>{{end}}
+{{end}}
+
+<div class="card">
+  <h2>Add a booking</h2>
+  <form method="post" action="/trips/{{.Trip.ID}}/bookings" class="addform">
+    <input type="hidden" name="redirect" value="{{.CurrentURL}}">
+    <input name="label" placeholder="e.g. NAN return flights" required>
+    <select name="category">
+      <option value="flight">flight</option>
+      <option value="stay">stay</option>
+      <option value="transfer">transfer</option>
+      <option value="activity">activity</option>
+      <option value="other">other</option>
+    </select>
+    <input name="cost" placeholder="cost" size="7">
+    <input name="currency" value="{{defaultCurrency}}" size="4">
+    <input type="date" name="date">
+    <input name="ref" placeholder="confirmation #" size="12">
+    <input name="link" placeholder="link">
+    <input name="notes" placeholder="notes">
+    <button class="btn-primary btn-sm">Add booking</button>
+  </form>
+</div>
+
+{{else}}
+{{/* ---------------- TRAVEL: countdown, itinerary, packing ---------------- */}}
+{{with .Travel}}
+{{if .HasDates}}
+<div class="card countdown-card{{if and $.Hero $.Hero.URL}} hero-bg{{end}}"{{if and $.Hero $.Hero.URL}} style="background-image:linear-gradient(rgba(12,28,26,.5),rgba(12,28,26,.6)),url('{{$.Hero.URL}}')"{{end}}>
+  <div class="countdown">{{.Countdown}}</div>
+  <div class="meta">{{$.Trip.Title}} · {{.DatesLabel}}</div>
+</div>
+{{else}}
+<div class="card">
+  <p class="muted">Lock in a date range on the <a href="/trips/{{$.Trip.ID}}?mode=plan">Plan</a> tab and your days will be laid out here.</p>
+</div>
+{{end}}
+
+{{if and .HasDates .Wishlist}}
+<div class="card">
+  <div class="ticket"><span class="stamp">Still to schedule</span></div>
+  <p class="muted">The crew's wishlist, best-ranked first. Drop each one onto a day.</p>
+  <ul class="opts">
+    {{range .Wishlist}}<li>
+      <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/trips/{{$.Trip.ID}}/itinerary" class="inline row" style="gap:5px">
+        <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+        <input type="hidden" name="activity" value="{{.ID}}">
+        <select name="day">{{range $.Travel.Days}}<option value="{{.Date}}">Day {{.Num}} · {{.Label}}</option>{{end}}</select>
+        <select name="slot"><option value="">any time</option><option value="morning">morning</option><option value="afternoon">afternoon</option><option value="evening">evening</option></select>
+        <button class="btn-sm">Schedule</button>
+      </form>
+    </li>{{end}}
+  </ul>
+</div>
+{{end}}
+
+{{range .Days}}
+<div class="card day">
+  <div class="ticket"><span class="stamp">Day {{.Num}} · {{.Label}}</span></div>
+  <ul class="opts">
+    {{range .Entries}}<li>
+      {{if metaStr .Meta "slot"}}<span class="slot">{{metaStr .Meta "slot"}}</span>{{end}}
+      <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}{{if .Link}} <a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/itinerary/{{.ID}}/day" class="inline row" style="gap:5px">
+        <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+        <select name="day">{{$cur := metaStr .Meta "day"}}{{range $.Travel.Days}}<option value="{{.Date}}" {{if eq .Date $cur}}selected{{end}}>Day {{.Num}}</option>{{end}}</select>
+        <button class="btn-ghost btn-sm">Move</button>
+      </form>
+      <form method="post" action="/itinerary/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{else}}<li class="muted">Nothing planned yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/trips/{{$.Trip.ID}}/itinerary" class="addform" style="margin-top:8px">
+    <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+    <input type="hidden" name="day" value="{{.Date}}">
+    <input name="label" placeholder="Add to this day" required>
+    <select name="slot"><option value="">any time</option><option value="morning">morning</option><option value="afternoon">afternoon</option><option value="evening">evening</option></select>
+    <input name="notes" placeholder="notes">
+    <button class="btn-sm">Add</button>
+  </form>
+</div>
+{{end}}
+
+{{if .Unscheduled}}
+<div class="card">
+  <div class="ticket"><span class="stamp">Unscheduled</span></div>
+  <ul class="opts">
+    {{range .Unscheduled}}<li>
+      <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}</span>
+      <span class="grow"></span>
+      {{if $.Travel.Days}}
+      <form method="post" action="/itinerary/{{.ID}}/day" class="inline row" style="gap:5px">
+        <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+        <select name="day">{{range $.Travel.Days}}<option value="{{.Date}}">Day {{.Num}} · {{.Label}}</option>{{end}}</select>
+        <button class="btn-sm">Place</button>
+      </form>
+      {{end}}
+      <form method="post" action="/itinerary/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{end}}
+  </ul>
+</div>
+{{end}}
+
+<div class="card">
+  <div class="ticket"><span class="stamp">Packing</span></div>
+  {{if .Packing.Items}}<p class="muted">{{.PackedCount}} of {{len .Packing.Items}} packed</p>{{end}}
+  <ul class="opts">
+    {{range .Packing.Items}}<li>
+      <form method="post" action="/packing/{{.ID}}/toggle" class="inline">
+        <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+        {{if eq (metaStr .Meta "done") "1"}}
+        <input type="hidden" name="done" value="0"><button class="checkbox on" title="Mark unpacked">&#10003;</button>
+        {{else}}
+        <input type="hidden" name="done" value="1"><button class="checkbox" title="Mark packed"></button>
+        {{end}}
+      </form>
+      <span {{if eq (metaStr .Meta "done") "1"}}class="packed"{{end}}>{{.Label}}</span>
+      <span class="grow"></span>
+      <form method="post" action="/packing/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+    </li>{{else}}<li class="muted">Nothing on the packing list yet.</li>{{end}}
+  </ul>
+  <form method="post" action="/trips/{{$.Trip.ID}}/packing" class="addform" style="margin-top:8px">
+    <input type="hidden" name="redirect" value="{{$.CurrentURL}}">
+    <input name="label" placeholder="Reef-safe sunscreen" required>
     <button class="btn-primary btn-sm">Add</button>
   </form>
 </div>

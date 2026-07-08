@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/baileybutler/voyage/internal/images"
 	"github.com/baileybutler/voyage/internal/store"
 )
 
@@ -20,20 +21,22 @@ var templateFS embed.FS
 
 // Options configures the server.
 type Options struct {
-	Store      *store.Store
-	Title      string
-	AdminToken string // when empty, owner auth is disabled (dev only)
-	BaseURL    string // e.g. https://voyage.baileys.app, for absolute share links
-	Currency   string // default currency code prefilled in forms (e.g. AUD)
-	TrustProxy bool
+	Store       *store.Store
+	Title       string
+	AdminToken  string // when empty, owner auth is disabled (dev only)
+	BaseURL     string // e.g. https://voyage.baileys.app, for absolute share links
+	Currency    string // default currency code prefilled in forms (e.g. AUD)
+	TrustProxy  bool
+	UnsplashKey string // optional Unsplash API key; Wikimedia is used without one
 }
 
 // Server is the HTTP handler for Voyage.
 type Server struct {
-	opts  Options
-	store *store.Store
-	mux   *http.ServeMux
-	tpl   *template.Template
+	opts   Options
+	store  *store.Store
+	mux    *http.ServeMux
+	tpl    *template.Template
+	images *images.Resolver
 }
 
 // New builds a Server with routes and templates ready to serve.
@@ -45,10 +48,11 @@ func New(opts Options) *Server {
 		opts.Currency = "AUD"
 	}
 	s := &Server{
-		opts:  opts,
-		store: opts.Store,
-		mux:   http.NewServeMux(),
-		tpl:   template.Must(template.New("").Funcs(funcMap(opts.Currency)).ParseFS(templateFS, "templates/*.html")),
+		opts:   opts,
+		store:  opts.Store,
+		mux:    http.NewServeMux(),
+		tpl:    template.Must(template.New("").Funcs(funcMap(opts.Currency)).ParseFS(templateFS, "templates/*.html")),
+		images: images.New(opts.Store, opts.UnsplashKey),
 	}
 	s.routes()
 	return s
@@ -81,6 +85,21 @@ func (s *Server) routes() {
 	s.mux.Handle("POST /activities/{id}/move", s.auth(s.handleMoveActivity))
 	s.mux.Handle("POST /trips/{id}/party", s.auth(s.handleSetParty))
 	s.mux.Handle("POST /trips/{id}/share/rotate", s.auth(s.handleRotateShare))
+	s.mux.Handle("POST /trips/{id}/stage", s.auth(s.handleSetStage))
+	s.mux.Handle("POST /options/{id}/status", s.auth(s.handleOptionStatus))
+
+	// Owner: Book & Travel stages. Bookings, itinerary entries and packing items
+	// all live on the lists spine, so deletes share one handler.
+	s.mux.Handle("POST /trips/{id}/bookings", s.auth(s.handleAddBooking))
+	s.mux.Handle("POST /trips/{id}/bookings/import", s.auth(s.handleImportStay))
+	s.mux.Handle("POST /bookings/{id}/status", s.auth(s.handleBookingStatus))
+	s.mux.Handle("POST /bookings/{id}/delete", s.auth(s.handleDeleteListItem))
+	s.mux.Handle("POST /trips/{id}/itinerary", s.auth(s.handleAddItinerary))
+	s.mux.Handle("POST /itinerary/{id}/day", s.auth(s.handleItineraryDay))
+	s.mux.Handle("POST /itinerary/{id}/delete", s.auth(s.handleDeleteListItem))
+	s.mux.Handle("POST /trips/{id}/packing", s.auth(s.handleAddPacking))
+	s.mux.Handle("POST /packing/{id}/toggle", s.auth(s.handlePackingToggle))
+	s.mux.Handle("POST /packing/{id}/delete", s.auth(s.handleDeleteListItem))
 
 	// Traveller (share token, no login).
 	s.mux.HandleFunc("GET /t/{token}", s.handleShare)
@@ -187,6 +206,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	for i := range trips {
+		trips[i].Img = s.images.Resolve(trips[i].FirstLocation, images.StripYears(trips[i].Title))
+	}
 	s.render(w, "dashboard", dashboardPage{Title: s.opts.Title, Trips: trips})
 }
 
@@ -243,6 +265,39 @@ type tripPage struct {
 	CurrentURL      string
 	TripNights      int
 	TripNightsLabel string
+	LockedBudget    *store.AxisOption
+	LockedDates     *store.AxisOption
+	Book            *bookData    // populated in Book mode
+	Travel          *travelData  // populated in Travel mode
+	Hero            *store.Image // location hero photo (nil when none resolves)
+}
+
+// heroFor resolves a trip's hero photo: its first locations, then the title
+// (with any year stripped, so "Fiji 2026" finds Fiji).
+func (s *Server) heroFor(locations []store.Location, title string) *store.Image {
+	queries := make([]string, 0, 3)
+	for i := 0; i < len(locations) && i < 2; i++ {
+		queries = append(queries, locations[i].Name)
+	}
+	queries = append(queries, images.StripYears(title))
+	return s.images.Resolve(queries...)
+}
+
+// heroForTrip is heroFor for handlers that haven't loaded locations yet.
+func (s *Server) heroForTrip(trip *store.Trip) *store.Image {
+	locations, _ := s.store.LocationsForTrip(trip.ID)
+	return s.heroFor(locations, trip.Title)
+}
+
+// stageMode maps a trip's lifecycle stage to the tab it opens on.
+func stageMode(stage string) string {
+	switch stage {
+	case "plan", "book", "travel":
+		return stage
+	case "anticipate":
+		return "travel"
+	}
+	return "ideate"
 }
 
 func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
@@ -258,8 +313,10 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mode := r.URL.Query().Get("mode")
-	if mode != "plan" {
-		mode = "ideate"
+	switch mode {
+	case "ideate", "plan", "book", "travel":
+	default:
+		mode = stageMode(trip.Stage)
 	}
 
 	locations, _ := s.store.LocationsForTrip(id)
@@ -282,11 +339,11 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 	nights, nightsLabel := referenceNights(dateOpts)
 	budgets := s.budgetGroups(budget, combos, counts, nil, trip.PartySize, nights)
 
-	// In Plan, activities show the group's weighted ranking (summed traveller
-	// points) with each activity's score attached. In Ideate they stay in the
-	// organiser's manual order so the up/down arrows make sense.
+	// In Plan and beyond, activities show the group's weighted ranking (summed
+	// traveller points) with each activity's score attached. In Ideate they stay
+	// in the organiser's manual order so the up/down arrows make sense.
 	if activities != nil {
-		if mode == "plan" {
+		if mode != "ideate" {
 			activities.Items = activityOrder(activities.Items, nil, counts)
 		}
 		for i := range activities.Items {
@@ -294,7 +351,7 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.render(w, "trip", tripPage{
+	page := tripPage{
 		Title:           trip.Title + " · " + s.opts.Title,
 		Trip:            trip,
 		Mode:            mode,
@@ -308,7 +365,37 @@ func (s *Server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		CurrentURL:      r.URL.String(),
 		TripNights:      nights,
 		TripNightsLabel: nightsLabel,
-	})
+		LockedBudget:    lockedOption(budget.Options),
+		LockedDates:     lockedOption(dateOpts),
+		Hero:            s.heroFor(locations, trip.Title),
+	}
+
+	switch mode {
+	case "book":
+		list, _ := s.store.EnsureList(id, "booking", "Bookings")
+		page.Book = buildBookData(trip, list, page.LockedBudget, combos, nights)
+	case "travel":
+		itin, _ := s.store.EnsureList(id, "itinerary", "Itinerary")
+		packing, _ := s.store.EnsureList(id, "packing", "Packing")
+		var ranked []store.ListItem
+		if activities != nil {
+			ranked = activities.Items
+		}
+		page.Travel = buildTravelData(page.LockedDates, itin, packing, ranked, time.Now())
+	}
+
+	s.render(w, "trip", page)
+}
+
+// lockedOption returns the axis option the organiser has locked in, if any.
+func lockedOption(opts []store.AxisOption) *store.AxisOption {
+	for i := range opts {
+		if opts[i].Status == "selected" {
+			o := opts[i]
+			return &o
+		}
+	}
+	return nil
 }
 
 // budgetGroups pairs each budget option with the hotels grouped under it (via a
@@ -498,7 +585,7 @@ func (s *Server) handleAddActivity(w http.ResponseWriter, r *http.Request) {
 	label := strings.TrimSpace(r.FormValue("label"))
 	if label != "" {
 		if list, err := s.store.ActivitiesList(tripID); err == nil {
-			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), nil)
+			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), nil, nil)
 		}
 	}
 	redirectBack(w, r, fmt.Sprintf("/trips/%d?mode=ideate", tripID))
@@ -559,6 +646,8 @@ func currencySymbol(code string) string {
 		return "¥"
 	case "USD", "AUD", "CAD", "NZD", "SGD", "HKD":
 		return "$"
+	case "FJD":
+		return "FJ$"
 	default:
 		return code
 	}
@@ -696,8 +785,14 @@ func accomTotalLabel(meta map[string]any, nights int) string {
 }
 
 // referenceNights picks the nights figure used for accommodation totals: the
-// most-voted date range, breaking ties by the longest. Returns 0 if none.
+// locked-in date range when there is one, else the most-voted, breaking ties by
+// the longest. Returns 0 if none.
 func referenceNights(dates []store.AxisOption) (int, string) {
+	for _, d := range dates {
+		if d.Status == "selected" && d.Nights > 0 {
+			return d.Nights, d.Label
+		}
+	}
 	best := -1
 	var nights int
 	var label string

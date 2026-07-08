@@ -53,19 +53,22 @@ func (s *Store) listItems(listID int64) ([]ListItem, error) {
 	return out, rows.Err()
 }
 
-// ActivitiesList returns the trip's seeded activity list (creating it if a legacy
-// trip somehow lacks one).
-func (s *Store) ActivitiesList(tripID int64) (*List, error) {
+// EnsureList returns the trip's list of the given kind, creating it (with the
+// given display name) on first use. Every list kind — activities, bookings,
+// itinerary, packing — is seeded lazily through here.
+func (s *Store) EnsureList(tripID int64, kind, name string) (*List, error) {
 	var l List
-	err := s.db.QueryRow(`SELECT id, trip_id, name, kind, position FROM lists WHERE trip_id = ? AND kind = 'activity' ORDER BY position, id LIMIT 1`, tripID).
+	err := s.db.QueryRow(`SELECT id, trip_id, name, kind, position FROM lists WHERE trip_id = ? AND kind = ? ORDER BY position, id LIMIT 1`, tripID, kind).
 		Scan(&l.ID, &l.TripID, &l.Name, &l.Kind, &l.Position)
 	if err == sql.ErrNoRows {
-		res, err := s.db.Exec(`INSERT INTO lists (trip_id, name, kind, position) VALUES (?, 'Activities', 'activity', 0)`, tripID)
+		var pos int
+		_ = s.db.QueryRow(`SELECT COALESCE(MAX(position)+1, 0) FROM lists WHERE trip_id = ?`, tripID).Scan(&pos)
+		res, err := s.db.Exec(`INSERT INTO lists (trip_id, name, kind, position) VALUES (?, ?, ?, ?)`, tripID, name, kind, pos)
 		if err != nil {
 			return nil, err
 		}
 		id, _ := res.LastInsertId()
-		return &List{ID: id, TripID: tripID, Name: "Activities", Kind: "activity"}, nil
+		return &List{ID: id, TripID: tripID, Name: name, Kind: kind, Position: pos}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -78,18 +81,48 @@ func (s *Store) ActivitiesList(tripID int64) (*List, error) {
 	return &l, nil
 }
 
-// AddListItem appends an item to a list. createdBy is the suggesting voter (nil
-// for the organiser).
-func (s *Store) AddListItem(listID int64, label, notes, link string, createdBy *int64) (int64, error) {
+// ActivitiesList returns the trip's seeded activity list (creating it if a legacy
+// trip somehow lacks one).
+func (s *Store) ActivitiesList(tripID int64) (*List, error) {
+	return s.EnsureList(tripID, "activity", "Activities")
+}
+
+// AddListItem appends an item to a list. meta carries kind-specific fields
+// (booking status/cost, itinerary day/slot, …). createdBy is the suggesting
+// voter (nil for the organiser).
+func (s *Store) AddListItem(listID int64, label, notes, link string, meta map[string]any, createdBy *int64) (int64, error) {
 	var pos int
 	_ = s.db.QueryRow(`SELECT COALESCE(MAX(position)+1, 0) FROM list_items WHERE list_id = ?`, listID).Scan(&pos)
 	res, err := s.db.Exec(
-		`INSERT INTO list_items (list_id, label, position, notes, link, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
-		listID, label, pos, notes, link, nullableID(createdBy))
+		`INSERT INTO list_items (list_id, label, position, notes, link, metadata, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		listID, label, pos, notes, link, marshalMeta(meta), nullableID(createdBy))
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
+}
+
+// SetListItemMeta merges patch into an item's metadata. A nil value in patch
+// deletes that key.
+func (s *Store) SetListItemMeta(id int64, patch map[string]any) error {
+	var cur string
+	err := s.db.QueryRow(`SELECT metadata FROM list_items WHERE id = ?`, id).Scan(&cur)
+	if err == sql.ErrNoRows {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	meta := unmarshalMeta(cur)
+	for k, v := range patch {
+		if v == nil {
+			delete(meta, k)
+			continue
+		}
+		meta[k] = v
+	}
+	_, err = s.db.Exec(`UPDATE list_items SET metadata = ? WHERE id = ?`, marshalMeta(meta), id)
+	return err
 }
 
 // DeleteListItem removes an item.

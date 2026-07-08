@@ -58,7 +58,9 @@ func (s *Store) ListTrips() ([]TripSummary, error) {
 			(SELECT COUNT(*) FROM combos c WHERE c.trip_id = t.id
 				AND EXISTS (SELECT 1 FROM combo_items ci WHERE ci.combo_id = c.id)) AS scenarios,
 			(SELECT COUNT(*) FROM list_items li
-				JOIN lists l ON l.id = li.list_id WHERE l.trip_id = t.id) AS activities
+				JOIN lists l ON l.id = li.list_id WHERE l.trip_id = t.id) AS activities,
+			COALESCE((SELECT name FROM locations lo WHERE lo.trip_id = t.id
+				ORDER BY lo.position, lo.id LIMIT 1), '') AS first_location
 		FROM trips t
 		ORDER BY t.created_at DESC, t.id DESC`)
 	if err != nil {
@@ -69,7 +71,7 @@ func (s *Store) ListTrips() ([]TripSummary, error) {
 	var out []TripSummary
 	for rows.Next() {
 		var t TripSummary
-		if err := rows.Scan(&t.ID, &t.Title, &t.Stage, &t.CreatedAt, &t.Scenarios, &t.Activities); err != nil {
+		if err := rows.Scan(&t.ID, &t.Title, &t.Stage, &t.CreatedAt, &t.Scenarios, &t.Activities, &t.FirstLocation); err != nil {
 			return nil, err
 		}
 		out = append(out, t)

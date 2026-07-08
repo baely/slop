@@ -11,11 +11,13 @@
 {{if .Trips}}
 <div class="stack" style="margin-top:16px">
 {{range .Trips}}
-  <div class="card row" style="justify-content:space-between">
+  <div class="card row">
+    {{if and .Img .Img.URL}}<a href="/trips/{{.ID}}"><img class="thumb" src="{{.Img.URL}}" alt="" loading="lazy"></a>{{end}}
     <div>
-      <a href="/trips/{{.ID}}?mode=ideate" style="font-weight:500;text-decoration:none;font-size:16px">{{.Title}}</a>
+      <a href="/trips/{{.ID}}" style="font-weight:500;text-decoration:none;font-size:16px">{{.Title}}</a>
       <div class="meta">{{.Scenarios}} scenario(s) · {{.Activities}} activit{{if eq .Activities 1}}y{{else}}ies{{end}} · <span class="pill">{{.Stage}}</span></div>
     </div>
+    <span class="grow"></span>
     <form method="post" action="/trips/{{.ID}}/delete" onsubmit="return confirm('Delete this trip and everything in it?')">
       <button class="btn-danger btn-sm">Delete</button>
     </form>

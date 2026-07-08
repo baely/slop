@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/baileybutler/voyage/internal/store"
 )
@@ -56,8 +57,10 @@ type sharePage struct {
 	Dates            []store.AxisOption
 	Activities       *store.List
 	Token            string
-	CanSuggestBudget bool // current traveller hasn't used their 1 budget suggestion
-	CanSuggestDates  bool // ... their 1 dates suggestion
+	CanSuggestBudget bool         // current traveller hasn't used their 1 budget suggestion
+	CanSuggestDates  bool         // ... their 1 dates suggestion
+	ThePlan          *planSummary // what's locked in/booked, once planning firms up
+	Hero             *store.Image // location hero photo (nil when none resolves)
 }
 
 func (s *Server) loadVoter(r *http.Request, tripID int64) *store.Voter {
@@ -144,6 +147,20 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Once decisions are locked in or bookings made, travellers see the plan
+	// itself, not just the voting. Loaded read-only — a share view must not
+	// create lists.
+	lists, _ := s.store.ListsForTrip(trip.ID)
+	var itin, bookings *store.List
+	for i := range lists {
+		switch lists[i].Kind {
+		case "itinerary":
+			itin = &lists[i]
+		case "booking":
+			bookings = &lists[i]
+		}
+	}
+
 	s.render(w, "share", sharePage{
 		Title:            trip.Title,
 		Trip:             trip,
@@ -154,6 +171,8 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		Token:            token,
 		CanSuggestBudget: canBudget,
 		CanSuggestDates:  canDates,
+		ThePlan:          buildPlanSummary(dateOpts, combos, itin, bookings, time.Now()),
+		Hero:             s.heroForTrip(trip),
 	})
 }
 
@@ -362,7 +381,7 @@ func (s *Server) handleSuggestActivity(w http.ResponseWriter, r *http.Request) {
 	label := strings.TrimSpace(r.FormValue("label"))
 	if label != "" {
 		if list, err := s.store.ActivitiesList(trip.ID); err == nil {
-			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), &voter.ID)
+			_, _ = s.store.AddListItem(list.ID, label, strings.TrimSpace(r.FormValue("notes")), strings.TrimSpace(r.FormValue("link")), nil, &voter.ID)
 		}
 	}
 	redirectBack(w, r, "/t/"+token)

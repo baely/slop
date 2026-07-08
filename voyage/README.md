@@ -3,27 +3,34 @@
 A holiday planning app for weighing up trip options and letting fellow
 travellers vote. Single Go binary, SQLite-backed, server-rendered HTML.
 
-This first iteration covers the **Ideate** and **Plan** stages of the planning
-lifecycle (Ideate → Plan → Book → Anticipate → Travel).
+It covers the full planning lifecycle: **Ideate → Plan → Book → Travel**.
 
 ## What it does
 
-A **trip** has a title and one or more **locations**, and is planned through two
-modes:
+A **trip** has a title and one or more **locations**, and is planned through
+four modes (the trip's **stage** picks its default tab):
 
 - **Ideate** — brainstorm freely. Add **budget** options, and under each budget
   the **hotel** options you'd consider. List candidate **date ranges**, and build
   an **activity wishlist**.
-- **Plan** — narrow down. Review what the group has voted for, mark a
-  **preferred / selected** stay per budget, share the link, and add/rank options
-  without leaving the page.
+- **Plan** — narrow down. Review what the group has voted for, **lock in** the
+  winning budget and date range, mark a **preferred / selected** stay per
+  budget, share the link, and add/rank options without leaving the page.
+- **Book** — turn the plan into confirmed bookings (flights, stay, transfers,
+  activities), each moving **to book → booked → paid** with cost, confirmation
+  ref, date and link. The chosen stay imports as a booking in one click, and a
+  running total tracks booked spend against the locked budget.
+- **Travel** — a departure **countdown**, a **day-by-day itinerary** laid out
+  from the locked dates (morning / afternoon / evening slots) that you fill
+  straight from the group's ranked wishlist or freeform, and a **packing
+  checklist**.
 
 ### Cost totals
 
 Set the trip's **party size** and the app turns the shorthand figures into
 estimated totals: a per‑person budget becomes a group total (× people), and a
-per‑night stay becomes a stay total (× nights, derived from the most‑voted date
-range). Nights are shown on each date range.
+per‑night stay becomes a stay total (× nights, derived from the locked‑in date
+range, falling back to the most‑voted). Nights are shown on each date range.
 
 ### Share, vote & rank
 
@@ -38,6 +45,26 @@ sign-in), enter a name, and weigh in:
 
 (Discussion happens in person — there's intentionally no free-text commenting.)
 
+Once decisions are locked in or bookings made, the share page opens with **the
+plan** itself — dates and countdown, the chosen stay, confirmed bookings, and
+the day-by-day itinerary — above the voting sections.
+
+### Hero photos
+
+Trips get a **location hero photo** — on the trip page, the share page, the
+dashboard cards, and behind the Travel countdown. The photo is looked up from
+the trip's first location (falling back to the title with any year stripped,
+so "Fiji 2026" finds Fiji):
+
+- **Wikimedia** (default) — keyless, uses each place's Wikipedia lead image,
+  credited with a link to the article.
+- **Unsplash** — set `UNSPLASH_ACCESS_KEY` (an [Unsplash API](https://unsplash.com/developers)
+  access key) to use Unsplash search instead, credited "photographer · Unsplash".
+
+Lookups are cached in the `images` table, so each place is fetched once
+(misses retry daily). If nothing resolves, pages render photo-free exactly as
+before.
+
 ## Designed to generalise
 
 The data model is deliberately generic so future features slot in without schema
@@ -47,11 +74,13 @@ churn:
   on two axes; hotels are `combo_item`s grouped under a budget-only combo. Combos
   are N-axis tuples and items carry a `category`, so grouping by more dimensions
   or adding flights/transport/restaurants is a small step.
-- **Lists → list items.** Activities is one `activity` list; more lists
-  (restaurants, packing) reuse the same tables.
+- **Lists → list items.** Activities, bookings, the itinerary and packing are
+  all lists of one `kind` whose items carry kind-specific `metadata` (booking
+  status/cost, itinerary day/slot, packed flag) — no new tables were needed to
+  build the Book and Travel stages.
 - **Votes & comments** key off a generic `(target_type, target_id)` pair
   (`axis_option`, `combo_item`, `list_item`), so anything can become votable.
-- The trip `stage` column already spans all five lifecycle stages.
+- The trip `stage` column spans the lifecycle and picks the default tab.
 
 ## Run locally
 
@@ -76,6 +105,7 @@ All via environment variables (see `.env.example`):
 | `ADMIN_TOKEN` | _(empty = open, dev only)_     | Planner access token (required in production)  |
 | `BASE_URL`    | _(empty = derive from request)_| Base for absolute share links                  |
 | `TRUST_PROXY` | `0`                            | Trust `X-Forwarded-Proto` behind a proxy       |
+| `UNSPLASH_ACCESS_KEY` | _(empty = Wikimedia)_  | Unsplash API key for hero photos               |
 
 ## Project layout
 
