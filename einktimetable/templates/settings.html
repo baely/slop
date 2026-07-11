@@ -3,120 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-ink Display Settings</title>
+    <title>einktimetable — settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* ---------- tokens (house style v1) ---------- */
+        :root {
+            --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+            --accent: #0891b2;
+            --accent-deep: #0e7490;
+            --accent-ink: #ffffff;
+
+            --r-ctl: 3px;
+            --r-card: 4px;
+            --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+            /* light */
+            --bg: #fafafa;
+            --surface: #f1f1f3;
+            --surface-2: #e9e9ed;
+            --text: #131316;
+            --text-2: #55555e;
+            --muted: #9b9ba6;
+            --line: #e4e4e9;
+            --accent-text: #0e7490;
+            --accent-soft: #e2f0f4;
+
+            color-scheme: light dark;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0b0b0d;
+                --surface: #17171a;
+                --surface-2: #212126;
+                --text: #f2f2f4;
+                --text-2: #a3a3ad;
+                --muted: #5b5b66;
+                --line: #26262c;
+                --accent-text: #3aa8c4;
+                --accent-soft: #0c2229;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #0b0b0d;
+            --surface: #17171a;
+            --surface-2: #212126;
+            --text: #f2f2f4;
+            --text-2: #a3a3ad;
+            --muted: #5b5b66;
+            --line: #26262c;
+            --accent-text: #3aa8c4;
+            --accent-soft: #0c2229;
+        }
+
+        /* ---------- base ---------- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: var(--font-body);
+            font-size: 14.5px;
+            line-height: 1.55;
+            color: var(--text);
+            background: var(--bg);
         }
-        .container {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .setting-group {
-            margin-bottom: 30px;
-        }
-        .setting-label {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
-            display: block;
-        }
-        .toggle-container {
+
+        /* ---------- top nav (matches index) ---------- */
+        .nav {
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--accent-soft);
         }
+        .nav .wordmark {
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            font-size: 18px;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .nav .spec {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-2);
+        }
+
+        .wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+        .page-head { margin-bottom: 24px; }
+        h1 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            font-size: clamp(26px, 5vw, 36px);
+        }
+        .page-head p { color: var(--text-2); margin-top: 6px; }
+
+        .setting-group { margin-bottom: 24px; }
+        .setting-label {
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            font-size: 15px;
+            margin-bottom: 12px;
+            display: block;
+        }
+        .toggle-container { display: flex; align-items: center; gap: 12px; }
+        .toggle-labels { font-size: 14px; color: var(--text-2); }
+
+        /* flat toggle: square 3px track, no pill, instant state change */
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 52px;
+            height: 28px;
             cursor: pointer;
+            flex: none;
         }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
+            inset: 0;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
+            background-color: var(--surface-2);
+            border-radius: var(--r-ctl);
         }
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
+            height: 20px;
+            width: 20px;
             left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+            top: 4px;
+            background-color: var(--muted);
+            border-radius: var(--r-ctl);
         }
         input:checked + .slider {
-            background-color: #2196F3;
+            background-color: var(--accent);
+            background-image: var(--sheen);
         }
         input:checked + .slider:before {
-            transform: translateX(26px);
+            transform: translateX(24px);
+            background-color: var(--accent-ink);
         }
-        .toggle-labels {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-        }
+        input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+
         .current-status {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 4px;
-            padding: 15px;
+            background: var(--surface);
+            border-radius: var(--r-card);
+            padding: 16px;
             margin-top: 20px;
         }
         .current-status h3 {
-            margin-top: 0;
-            color: #1976d2;
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            font-size: 15px;
+            margin-bottom: 8px;
         }
-        .preview-links {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .preview-links a {
-            display: inline-block;
-            margin: 5px 10px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
+        .current-status p { color: var(--text-2); font-size: 14px; }
+        .current-status p + p { margin-top: 6px; }
+        .current-status strong { color: var(--text); font-weight: 600; }
+        #currentMode { font-family: var(--font-mono); font-size: 0.93em; color: var(--text); }
+
+        .preview-links { display: flex; gap: 8px; margin-top: 20px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            background-color: var(--surface-2);
+            border: none;
+            border-radius: var(--r-ctl);
+            padding: 9px 16px;
+            min-height: 38px;
+            cursor: pointer;
             text-decoration: none;
-            border-radius: 4px;
         }
-        .preview-links a:hover {
-            background-color: #0056b3;
+        .btn:hover { background-color: var(--line); }
+        .btn.primary {
+            color: var(--accent-ink);
+            background-color: var(--accent);
+            background-image: var(--sheen);
         }
+        .btn.primary:hover { background-color: var(--accent-deep); }
+        @media (pointer: coarse) { .btn { min-height: 44px; } }
+
+        a { color: var(--accent-text); }
+        ::selection { background: var(--accent); color: var(--accent-ink); }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .b-glyph {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 90;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 13px;
+            line-height: 1;
+            color: var(--text-2);
+            background: var(--surface);
+            border-radius: var(--r-ctl);
+            padding: 6px 8px;
+            text-decoration: none;
+        }
+        .b-glyph:hover { color: var(--accent-text); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>E-ink Display Settings</h1>
-        
+    <nav class="nav">
+        <a class="wordmark" href="/">einktimetable</a>
+        <span class="spec">400 × 300 · 1-bit · MONO_HLSB</span>
+    </nav>
+
+    <main class="wrap">
+        <header class="page-head">
+            <h1>Settings</h1>
+            <p>Choose what the e-ink device renders on its next refresh.</p>
+        </header>
+
         <div class="setting-group">
             <label class="setting-label">Display Mode</label>
             <div class="toggle-container">
@@ -132,31 +249,32 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="current-status">
             <h3>Current Status</h3>
-            <p><strong>Display Mode:</strong> 
+            <p><strong>Display Mode:</strong>
                 <span id="currentMode">
                     {% if current_mode == 'wifi' %}WiFi QR Code{% else %}Tram Timetable{% endif %}
                 </span>
             </p>
-            <p><strong>E-ink Device:</strong> Will display the selected mode on next refresh (every 20 seconds)</p>
+            <p><strong>E-ink Device:</strong> Renders the selected mode on next refresh (every 20 seconds).</p>
         </div>
-        
+
         <div class="preview-links">
-            <a href="/display" target="_blank">Preview Current Display</a>
-            <a href="/" target="_blank">HTML Editor</a>
+            <a class="btn primary" href="/display" target="_blank">Preview Current Display</a>
+            <a class="btn" href="/" target="_blank">HTML Editor</a>
         </div>
-    </div>
+    </main>
+    <a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 
     <script>
         const toggle = document.getElementById('displayToggle');
         const currentModeSpan = document.getElementById('currentMode');
-        
+
         toggle.addEventListener('change', async function() {
             const mode = this.checked ? 'wifi' : 'tram';
             console.log('Toggle changed to:', mode);
-            
+
             try {
                 console.log('Sending request to /api/set-display-mode');
                 const response = await fetch('/api/set-display-mode', {
@@ -166,11 +284,11 @@
                     },
                     body: JSON.stringify({ mode: mode })
                 });
-                
+
                 console.log('Response status:', response.status);
                 const result = await response.json();
                 console.log('Response data:', result);
-                
+
                 if (result.success) {
                     currentModeSpan.textContent = mode === 'wifi' ? 'WiFi QR Code' : 'Tram Timetable';
                     console.log('Successfully updated to:', mode);
