@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>house style — specimen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="house.css">
+<style>
+  .page { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 24px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border-radius: var(--r-card); padding: 14px 16px; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 56px; }
+  .bars span { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; }
+  .theme-flip { margin-left: auto; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="wordmark" href="#">specimen</a>
+  <span class="row">
+    <a href="#" aria-current="page">Overview</a>
+    <a href="#">History</a>
+    <a href="#">Settings</a>
+    <button class="btn theme-flip" id="flip">Toggle Theme</button>
+  </span>
+</nav>
+<main class="page">
+  <div>
+    <h1>One look, every app.</h1>
+    <p style="color:var(--text-2); margin-top:6px;">The house language: flat pure neutrals, loud teal, tight Bricolage headlines, mono data. <a href="#">How It Works</a></p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="stat-label">Apps Restyled</span><span class="stat-value">18</span><span class="stat-context">updated 4 minutes ago</span></div>
+    <div class="stat"><span class="stat-label">Tokens</span><span class="stat-value mono" style="font-family:var(--font-mono); font-size:26px;">14</span><span class="stat-context">2 modes</span></div>
+    <div class="stat"><span class="stat-label">Motion</span><span class="stat-value">0ms</span><span class="stat-context">none, ever</span></div>
+  </div>
+
+  <div class="bars" role="img" aria-label="Deploys per week">
+    <span style="height:40%"></span><span style="height:65%"></span><span style="height:30%"></span><span style="height:85%"></span><span style="height:55%"></span><span style="height:100%"></span><span style="height:70%"></span>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+      <span class="card-title">Recent Activity</span>
+      <span class="chip">On Track</span>
+    </div>
+    <table>
+      <tr><th>App</th><th>Change</th><th class="num">When</th></tr>
+      <tr><td>covers</td><td>Restyled</td><td class="num">4 min ago</td></tr>
+      <tr class="selected"><td>darkroom</td><td>Restyled</td><td class="num">12 min ago</td></tr>
+      <tr><td>ranker</td><td>Queued</td><td class="num">—</td></tr>
+    </table>
+    <div class="row" style="margin-top:14px;">
+      <input class="input" type="text" placeholder="Add A Note" style="flex:1;">
+      <button class="btn primary">Save</button>
+      <button class="btn">Skip</button>
+    </div>
+  </div>
+
+  <p class="empty">0 rows. Nothing else logged yet.</p>
+</main>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+<script>
+  document.getElementById('flip').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.dataset.theme ? r.dataset.theme === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  });
+</script>
+</body>
+</html>
