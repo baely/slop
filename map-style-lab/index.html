@@ -7,198 +7,234 @@
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  /* ---------- house tokens ---------- */
   :root{
-    --bg:#0b0d0f;
-    --panel:#14181c;
-    --panel-2:#1b2026;
-    --line:#ffffff14;
-    --line-strong:#ffffff2a;
-    --ink:#e9e7e1;
-    --ink-dim:#9aa0a6;
-    --ink-faint:#646a70;
-    --accent:#e8a33d;
-    --accent-dim:#7a5a22;
-    --good:#7fd17f;
-    --mono:"IBM Plex Mono", ui-monospace, monospace;
-    --sans:"IBM Plex Sans", system-ui, sans-serif;
+    --font-display:'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body:'Inter', system-ui, sans-serif;
+    --font-mono:'JetBrains Mono', ui-monospace, monospace;
+
+    --accent:#0891b2;
+    --accent-deep:#0e7490;
+    --accent-ink:#ffffff;
+
+    --r-ctl:3px;
+    --r-card:4px;
+    --sheen:linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+    /* light */
+    --bg:#fafafa;
+    --surface:#f1f1f3;
+    --surface-2:#e9e9ed;
+    --text:#131316;
+    --text-2:#55555e;
+    --muted:#9b9ba6;
+    --line:#e4e4e9;
+    --accent-text:#0e7490;
+    --accent-soft:#e2f0f4;
+
+    color-scheme:light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0b0d;
+      --surface:#17171a;
+      --surface-2:#212126;
+      --text:#f2f2f4;
+      --text-2:#a3a3ad;
+      --muted:#5b5b66;
+      --line:#26262c;
+      --accent-text:#3aa8c4;
+      --accent-soft:#0c2229;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0b0d;
+    --surface:#17171a;
+    --surface-2:#212126;
+    --text:#f2f2f4;
+    --text-2:#a3a3ad;
+    --muted:#5b5b66;
+    --line:#26262c;
+    --accent-text:#3aa8c4;
+    --accent-soft:#0c2229;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0;background:var(--bg);color:var(--ink);
-    font-family:var(--sans);overflow:hidden;
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:var(--font-body);font-size:14px;line-height:1.5;overflow:hidden;
     display:flex;flex-direction:column;height:100vh;
   }
   button,input,select{font-family:inherit;color:inherit}
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   /* ---- top bar ---- */
   header{
     display:flex;align-items:center;gap:18px;flex:0 0 auto;
-    padding:10px 16px;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#14181c,#0e1114);
+    padding:10px 16px;background:var(--accent-soft);
   }
-  .wordmark{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);white-space:nowrap}
-  .wordmark b{color:var(--accent);font-weight:600}
+  .wordmark{font-family:var(--font-display);font-weight:800;letter-spacing:-0.03em;font-size:18px;color:var(--text);white-space:nowrap}
   .bar-group{display:flex;align-items:center;gap:8px}
   .spacer{flex:1}
 
   .btn{
-    background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);
-    padding:7px 12px;border-radius:7px;font-size:13px;cursor:pointer;
-    display:inline-flex;align-items:center;gap:7px;transition:.12s;white-space:nowrap;
+    background:var(--surface);border:none;color:var(--text);
+    padding:8px 14px;border-radius:var(--r-ctl);font-size:13px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;min-height:36px;
   }
-  .btn:hover{border-color:var(--accent-dim);background:#20262d}
-  .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);font-weight:600}
-  .btn.primary:hover{filter:brightness(1.08)}
-  .btn.ghost{background:transparent}
-  .btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-  .btn.rec{color:#e6938f}
-  .btn.rec[aria-pressed="true"]{background:#d2433f;border-color:#d2433f;color:#fff;animation:recpulse 1.4s ease-in-out infinite}
-  @keyframes recpulse{50%{box-shadow:0 0 0 4px #d2433f33}}
+  .btn:hover{background:var(--surface-2)}
+  .btn.primary{background:var(--accent);background-image:var(--sheen);color:var(--accent-ink)}
+  .btn.primary:hover{background-color:var(--accent-deep)}
+  .btn[aria-pressed="true"]{background:var(--accent);background-image:var(--sheen);color:var(--accent-ink)}
+  .btn.rec[aria-pressed="true"]{background:#b91c1c;background-image:var(--sheen);color:#fff}
+  @media (pointer: coarse){ .btn{ min-height:44px; } }
 
-  .field{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-dim)}
+  .field{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2)}
   .field input[type=range]{accent-color:var(--accent);width:96px}
-  .field .val{font-family:var(--mono);color:var(--ink);min-width:34px;text-align:right;font-size:12px}
-  .field select{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);border-radius:6px;padding:5px 6px;font-size:12px;font-family:var(--mono);cursor:pointer}
-  .field input.cust{width:60px;background:var(--bg);border:1px solid var(--line-strong);color:var(--ink);border-radius:6px;padding:5px 6px;font-size:12px;font-family:var(--mono)}
-  .field input.cust:focus{outline:none;border-color:var(--accent-dim)}
+  .field .val{font-family:var(--font-mono);color:var(--text);min-width:34px;text-align:right;font-size:12px}
+  .field select{background:var(--surface);border:none;color:var(--text);border-radius:var(--r-ctl);padding:6px 8px;font-size:12px;font-family:var(--font-mono);cursor:pointer;min-height:32px}
+  .field input.cust{width:60px;background:var(--surface);border:none;color:var(--text);border-radius:var(--r-ctl);padding:6px 8px;font-size:12px;font-family:var(--font-mono)}
 
   /* ---- layout ---- */
   main{flex:1 1 auto;display:flex;min-height:0}
   aside{
-    width:312px;flex:0 0 auto;border-right:1px solid var(--line);
-    background:var(--panel);display:flex;flex-direction:column;min-height:0;
-    transition:margin-left .2s ease;
+    width:312px;flex:0 0 auto;
+    background:var(--surface);display:flex;flex-direction:column;min-height:0;
   }
   aside.collapsed{margin-left:-312px}
   .aside-scroll{overflow-y:auto;padding:14px;flex:1}
   .section{margin-bottom:22px}
   .section h2{
-    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--ink-faint);margin:0 0 10px;font-weight:500;
+    font-family:var(--font-display);font-size:14px;font-weight:800;letter-spacing:-0.02em;
+    color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:8px;
   }
 
   /* waypoints */
   .wp{
-    display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);
-    border-radius:7px;margin-bottom:6px;background:var(--panel-2);font-size:13px;
+    display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:grab;
+    border-radius:var(--r-card);margin-bottom:6px;background:var(--surface-2);font-size:13px;
   }
-  .wp .idx{font-family:var(--mono);color:var(--accent);font-size:11px;width:18px;flex:0 0 auto}
+  .wp .idx{font-family:var(--font-mono);color:var(--accent-text);font-size:11px;width:18px;flex:0 0 auto}
   .wp .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .wp .co{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
-  .wp .x{cursor:pointer;color:var(--ink-faint);padding:2px 4px;border-radius:4px}
-  .wp .x:hover{color:#ff8a8a;background:#ffffff10}
+  .wp .co{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+  .wp .x{cursor:pointer;color:var(--text-2);font-size:11px;font-weight:600;padding:2px 6px;border-radius:var(--r-ctl)}
+  .wp .x:hover{color:#fff;background:#b91c1c}
   .wp.dragging{opacity:.4}
-  .wp .grip{cursor:grab;color:var(--ink-faint);font-size:13px}
 
   .add-row{display:flex;gap:6px;margin-top:8px}
   .add-row input{
-    flex:1;min-width:0;background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;
-    padding:8px 10px;font-size:13px;
+    flex:1;min-width:0;background:var(--surface-2);border:none;border-radius:var(--r-ctl);
+    padding:9px 10px;font-size:13px;color:var(--text);
   }
-  .add-row input:focus{outline:none;border-color:var(--accent-dim)}
 
   /* style picker */
   .style-item{
-    display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;cursor:pointer;
-    font-size:13px;border:1px solid transparent;
+    display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--r-card);cursor:pointer;
+    font-size:13px;
   }
-  .style-item:hover{background:var(--panel-2)}
+  .style-item:hover{background:var(--surface-2)}
   .style-item input{accent-color:var(--accent);margin:0}
   .style-item .meta{flex:1;min-width:0}
-  .style-item .lbl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .style-item .prov{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .style-item .lbl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .style-item .prov{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
   .style-item.locked{opacity:.45}
-  .tag{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--line-strong);color:var(--ink-faint)}
-  .tag.key{color:var(--accent);border-color:var(--accent-dim)}
+  .tag{font-family:var(--font-mono);font-size:9px;font-weight:500;padding:2px 6px;border-radius:var(--r-ctl);color:var(--text-2);background:var(--surface-2)}
+  .tag.key{color:var(--accent-text);background:var(--accent-soft)}
 
   .keyfield{margin-bottom:10px}
-  .keyfield label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:4px}
-  .keyfield label a{color:var(--accent);text-decoration:none;font-size:11px;float:right}
+  .keyfield label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:4px}
+  .keyfield label a{color:var(--accent-text);text-decoration:none;font-size:11px;font-weight:600;float:right}
   .keyfield label a:hover{text-decoration:underline}
-  .keyfield input{width:100%;background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;font-size:12px;font-family:var(--mono)}
-  .keyfield input:focus{outline:none;border-color:var(--accent-dim)}
+  .keyfield input{width:100%;background:var(--surface-2);border:none;border-radius:var(--r-ctl);padding:9px 10px;font-size:12px;font-family:var(--font-mono);color:var(--text)}
 
-  .hint{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:8px}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px}
 
   /* ---- stage ---- */
-  .stage{flex:1 1 auto;position:relative;min-width:0;background:#000}
+  .stage{flex:1 1 auto;position:relative;min-width:0;background:var(--bg)}
   #grid{position:absolute;inset:0;display:grid;gap:1px;background:var(--line)}
   #grid.framed{inset:auto;left:50%;top:50%;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;background:transparent;transform-origin:center center}
-  #grid.framed .cell{flex:0 0 auto;outline:1px solid var(--line-strong);outline-offset:-1px}
-  .cell{position:relative;overflow:hidden;background:#0c0c0c}
+  #grid.framed .cell{flex:0 0 auto;outline:1px solid var(--line);outline-offset:-1px}
+  .cell{position:relative;overflow:hidden;background:var(--surface-2)}
   .cell .map{position:absolute;inset:0}
   .cell .cap{
     position:absolute;top:8px;left:8px;z-index:2;display:flex;align-items:center;gap:8px;
-    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
-    background:#0b0d0fcc;backdrop-filter:blur(6px);padding:5px 9px;border-radius:6px;
-    border:1px solid var(--line);pointer-events:none;
+    font-family:var(--font-mono);font-size:11px;
+    background:var(--surface);color:var(--text);padding:5px 9px;border-radius:var(--r-ctl);
+    pointer-events:none;
   }
   .cell .cap .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
-  .cell .cap .prov{color:var(--ink-faint)}
+  .cell .cap .prov{color:var(--muted)}
   .cell .tools{
-    position:absolute;top:7px;right:8px;z-index:3;display:flex;gap:5px;opacity:0;transition:.15s;
+    position:absolute;top:7px;right:8px;z-index:3;display:flex;gap:5px;opacity:0;
   }
   .cell:hover .tools{opacity:1}
   .cell .tools button{
-    background:#0b0d0fcc;border:1px solid var(--line);color:var(--ink-dim);
-    width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:12px;display:grid;place-items:center;
-    backdrop-filter:blur(6px);
+    background:var(--surface);border:none;color:var(--text-2);
+    height:26px;padding:0 8px;border-radius:var(--r-ctl);cursor:pointer;font-size:11px;font-weight:600;
+    font-family:var(--font-body);display:inline-flex;align-items:center;
   }
-  .cell .tools button:hover{color:var(--ink);border-color:var(--accent-dim)}
-  .cell.recording{outline:2px solid #ff5d5d;outline-offset:-2px}
+  .cell .tools button:hover{color:var(--text);background:var(--surface-2)}
+  .cell.recording{outline:2px solid #b91c1c;outline-offset:-2px}
   .cell .recdot{
-    position:absolute;bottom:8px;right:8px;z-index:3;font-family:var(--mono);font-size:10px;color:#ff7b7b;
-    display:none;align-items:center;gap:5px;background:#0b0d0fcc;padding:3px 7px;border-radius:5px;
+    position:absolute;bottom:8px;right:8px;z-index:3;font-family:var(--font-mono);font-size:10px;color:#fff;
+    display:none;align-items:center;gap:5px;background:#b91c1c;padding:3px 7px;border-radius:var(--r-ctl);
   }
   .cell.recording .recdot{display:flex}
-  .cell .recdot .b{width:7px;height:7px;border-radius:50%;background:#ff5d5d;animation:blink 1s steps(2) infinite}
-  @keyframes blink{50%{opacity:.2}}
+  .cell .recdot .b{width:7px;height:7px;border-radius:50%;background:#fff}
 
   /* now-flying overlay */
   #now{
     position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;
     display:none;align-items:center;gap:14px;
-    background:#0b0d0fe6;border:1px solid var(--line-strong);border-radius:10px;
-    padding:10px 18px;backdrop-filter:blur(10px);box-shadow:0 8px 40px #0009;
+    background:var(--surface);border-radius:var(--r-card);
+    padding:10px 18px;
   }
   #now.show{display:flex}
-  #now .leg{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.1em}
-  #now .to{font-size:16px;font-weight:600}
-  #now .co{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
-  .progress{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0;transition:width .2s linear;z-index:21}
+  #now .leg{font-family:var(--font-mono);font-size:10px;color:var(--accent-text)}
+  #now .to{font-family:var(--font-display);font-size:16px;font-weight:800;letter-spacing:-0.02em;color:var(--text)}
+  #now .co{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+  .progress{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0;z-index:21}
 
-  .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-faint);font-family:var(--mono);font-size:13px}
+  .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-family:var(--font-mono);font-size:13px}
+
+  /* signature */
+  .b-glyph{
+    position:fixed;bottom:10px;left:10px;z-index:90;
+    font-family:var(--font-display);font-weight:800;font-size:13px;line-height:1;
+    color:var(--text-2);background:var(--surface);border-radius:var(--r-ctl);padding:6px 8px;text-decoration:none;
+  }
+  .b-glyph:hover{color:var(--accent-text)}
 
   /* scrollbar */
   .aside-scroll::-webkit-scrollbar{width:9px}
-  .aside-scroll::-webkit-scrollbar-thumb{background:#ffffff18;border-radius:6px;border:2px solid var(--panel)}
+  .aside-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--surface)}
   .maplibregl-ctrl-attrib{font-size:9px !important}
 </style>
 </head>
 <body>
 <header>
-  <button class="btn ghost" id="toggleAside" title="Toggle panel">☰</button>
-  <span class="wordmark"><b>flyover</b>·lab</span>
+  <button class="btn" id="toggleAside" title="Toggle Panel">Panel</button>
+  <span class="wordmark">flyover lab</span>
   <div class="bar-group">
-    <button class="btn primary" id="play">▶ Fly route</button>
-    <button class="btn" id="stop">■ Stop</button>
-    <button class="btn" id="reset" title="Frame the whole route">⤢ Fit</button>
-    <button class="btn rec" id="recAll" title="Record the flight as a video for every selected panel, at the frame resolution">⏺ Record</button>
+    <button class="btn primary" id="play">Fly Route</button>
+    <button class="btn" id="stop">Stop</button>
+    <button class="btn" id="reset" title="Frame the whole route">Fit</button>
+    <button class="btn rec" id="recAll" title="Record the flight as a video for every selected panel, at the frame resolution">Record</button>
   </div>
   <div class="bar-group">
-    <label class="field">pitch <input type="range" id="pitch" min="0" max="80" value="62"><span class="val" id="pitchV">62°</span></label>
-    <label class="field">zoom <input type="range" id="zoom" min="3" max="14" step="0.5" value="9.5"><span class="val" id="zoomV">9.5</span></label>
-    <label class="field">leg <input type="range" id="legdur" min="2" max="12" step="0.5" value="5"><span class="val" id="legdurV">5.0s</span></label>
-    <label class="field">frame
+    <label class="field">Pitch <input type="range" id="pitch" min="0" max="80" value="62"><span class="val" id="pitchV">62°</span></label>
+    <label class="field">Zoom <input type="range" id="zoom" min="3" max="14" step="0.5" value="9.5"><span class="val" id="zoomV">9.5</span></label>
+    <label class="field">Leg <input type="range" id="legdur" min="2" max="12" step="0.5" value="5"><span class="val" id="legdurV">5.0s</span></label>
+    <label class="field">Frame
       <select id="frame" title="Output dimensions per panel (also the recording resolution)">
         <option value="fit">Fit</option>
         <option value="1920x1080">1920×1080</option>
         <option value="1280x720">1280×720</option>
-        <option value="1080x1920">1080×1920 ↕</option>
-        <option value="1080x1080">1080×1080 □</option>
+        <option value="1080x1920">1080×1920 Portrait</option>
+        <option value="1080x1080">1080×1080 Square</option>
         <option value="custom">Custom…</option>
       </select>
       <input id="frameW" class="cust" type="number" min="120" step="20" value="1920">
@@ -208,11 +244,11 @@
   </div>
   <div class="spacer"></div>
   <div class="bar-group">
-    <button class="btn" id="lock" aria-pressed="true" title="Pan/zoom all maps together">⛓ Sync</button>
-    <button class="btn" id="terrain" aria-pressed="true" title="3D terrain (AWS DEM)">⛰ 3D</button>
-    <button class="btn" id="north" aria-pressed="false" title="Lock bearing to north (no heading rotation)">⇧ North</button>
-    <button class="btn" id="orbit" aria-pressed="true" title="Slow orbit on arrival">↻ Orbit</button>
-    <button class="btn" id="loopBtn" aria-pressed="false" title="Loop the route">∞ Loop</button>
+    <button class="btn" id="lock" aria-pressed="true" title="Pan/zoom all maps together">Sync</button>
+    <button class="btn" id="terrain" aria-pressed="true" title="3D terrain (AWS DEM)">3D</button>
+    <button class="btn" id="north" aria-pressed="false" title="Lock bearing to north (no heading rotation)">North</button>
+    <button class="btn" id="orbit" aria-pressed="true" title="Slow orbit on arrival">Orbit</button>
+    <button class="btn" id="loopBtn" aria-pressed="false" title="Loop the route">Loop</button>
   </div>
 </header>
 
@@ -224,24 +260,24 @@
         <div id="wpList"></div>
         <div class="add-row">
           <input id="wpSearch" placeholder="Add place (e.g. Reykjavík)" />
-          <button class="btn" id="wpAdd">+</button>
+          <button class="btn" id="wpAdd">Add</button>
         </div>
-        <div class="hint">Search uses OpenStreetMap Nominatim. Drag ⠿ to reorder. The camera faces the direction of travel on each leg.</div>
+        <div class="hint">Search uses OpenStreetMap Nominatim. Drag a row to reorder. The camera faces the direction of travel on each leg.</div>
       </div>
 
       <div class="section">
-        <h2>Map styles · compare</h2>
+        <h2>Map Styles</h2>
         <div id="styleList"></div>
       </div>
 
       <div class="section">
-        <h2>API keys <span class="tag">stored locally</span></h2>
+        <h2>API Keys <span class="tag">Stored Locally</span></h2>
         <div class="keyfield">
-          <label>MapTiler key <a href="https://cloud.maptiler.com/account/keys/" target="_blank">get one ↗</a></label>
+          <label>MapTiler Key <a href="https://cloud.maptiler.com/account/keys/" target="_blank">Get One</a></label>
           <input id="keyMaptiler" placeholder="MapTiler API key" autocomplete="off" />
         </div>
         <div class="keyfield">
-          <label>Mapbox token <a href="https://account.mapbox.com/access-tokens/" target="_blank">get one ↗</a></label>
+          <label>Mapbox Token <a href="https://account.mapbox.com/access-tokens/" target="_blank">Get One</a></label>
           <input id="keyMapbox" placeholder="pk.eyJ…" autocomplete="off" />
         </div>
         <div class="hint">Keyless providers (OpenFreeMap, CARTO, Esri, MapLibre demo) work out of the box. Enter keys to unlock MapTiler &amp; Mapbox styles.</div>
@@ -253,13 +289,15 @@
     <div id="grid"></div>
     <div class="empty" id="empty">Select one or more map styles →</div>
     <div id="now">
-      <span class="leg" id="nowLeg">LEG 1 / 5</span>
+      <span class="leg" id="nowLeg">Leg 1 / 5</span>
       <span class="to" id="nowTo">—</span>
       <span class="co" id="nowCo"></span>
     </div>
     <div class="progress" id="progress"></div>
   </div>
 </main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
@@ -385,9 +423,9 @@ function createCell(def){
     <div class="map"></div>
     <div class="cap"><span class="dot"></span><span>${def.label}</span><span class="prov">${def.provider}</span></div>
     <div class="tools">
-      <button data-act="shot" title="Screenshot PNG">⤓</button>
-      <button data-act="rec" title="Record WebM">●</button>
-      <button data-act="solo" title="Show only this">◳</button>
+      <button data-act="shot" title="Screenshot PNG">PNG</button>
+      <button data-act="rec" title="Record WebM">Rec</button>
+      <button data-act="solo" title="Show only this">Solo</button>
     </div>
     <div class="recdot"><span class="b"></span>REC</div>`;
   $('#grid').appendChild(cell);
@@ -533,7 +571,7 @@ async function playRoute(){
       const brng = opts.north ? 0
         : ((i===0 && waypoints.length>1) ? bearingBetween(wp, waypoints[1]) : bearingBetween(prev, wp));
       // update overlay
-      $('#nowLeg').textContent = `LEG ${i+1} / ${total}`;
+      $('#nowLeg').textContent = `Leg ${i+1} / ${total}`;
       $('#nowTo').textContent = wp.name;
       $('#nowCo').textContent = `${wp.lat.toFixed(3)}, ${wp.lng.toFixed(3)}`;
 
@@ -550,7 +588,7 @@ async function playRoute(){
     }
   } while(opts.loop && token===playToken);
 
-  if(token===playToken){ playing=false; $('#now').classList.remove('show'); $('#progress').style.width='0'; $('#play').textContent='▶ Fly route'; }
+  if(token===playToken){ playing=false; $('#now').classList.remove('show'); $('#progress').style.width='0'; $('#play').textContent='Fly Route'; }
 }
 
 function animateProgress(durationMs, token){
@@ -571,7 +609,7 @@ function stopRoute(){
   cells.forEach(c=>c.map.stop());
   $('#now').classList.remove('show');
   $('#progress').style.width='0';
-  $('#play').textContent='▶ Fly route';
+  $('#play').textContent='Fly Route';
 }
 
 function fitRoute(){
@@ -635,7 +673,7 @@ async function recordAll(){
   if(playing) stopRoute();
 
   const btn=$('#recAll');
-  btn.setAttribute('aria-pressed','true'); btn.textContent='⏺ Preparing…';
+  btn.setAttribute('aria-pressed','true'); btn.textContent='Preparing…';
 
   // consistent opening frame, then let tiles settle a moment
   jumpFitAll();
@@ -661,7 +699,7 @@ async function recordAll(){
     recs.push(r);
   });
   recSession={recorders:recs};
-  btn.textContent='⏺ Recording…';
+  btn.textContent='Recording…';
 
   const prevLoop=opts.loop; opts.loop=false;   // single pass while recording
   await playRoute();                            // resolves when the route finishes or is stopped
@@ -671,11 +709,11 @@ async function recordAll(){
 }
 
 function stopRecordAll(){
-  if(!recSession){ $('#recAll').setAttribute('aria-pressed',''); $('#recAll').textContent='⏺ Record'; return; }
+  if(!recSession){ $('#recAll').setAttribute('aria-pressed',''); $('#recAll').textContent='Record'; return; }
   const session=recSession; recSession=null;
   session.recorders.forEach(r=>{ try{ if(r.state!=='inactive') r.stop(); }catch(e){} });
   $('#recAll').setAttribute('aria-pressed','');
-  $('#recAll').textContent='⏺ Record';
+  $('#recAll').textContent='Record';
 }
 
 /* ---------------- sidebar rendering ---------------- */
@@ -684,10 +722,10 @@ function renderWaypoints(){
   waypoints.forEach((w,i)=>{
     const el=document.createElement('div');
     el.className='wp'; el.draggable=true; el.dataset.i=i;
-    el.innerHTML=`<span class="grip">⠿</span><span class="idx">${i+1}</span>
+    el.innerHTML=`<span class="idx">${i+1}</span>
       <span class="nm" title="${w.name}">${w.name}</span>
       <span class="co">${w.lat.toFixed(1)},${w.lng.toFixed(1)}</span>
-      <span class="x" title="Remove">✕</span>`;
+      <span class="x" title="Remove">Remove</span>`;
     el.querySelector('.x').onclick=()=>{ waypoints.splice(i,1); persistRoute(); renderWaypoints(); };
     el.addEventListener('dragstart',e=>{ el.classList.add('dragging'); e.dataTransfer.setData('text/plain',i); });
     el.addEventListener('dragend',()=>el.classList.remove('dragging'));
@@ -717,7 +755,7 @@ async function addPlace(q){
       $('#wpSearch').value='';
     } else { $('#wpSearch').value=''; $('#wpSearch').placeholder='Not found — try again'; }
   }catch(e){ alert('Geocoding failed: '+e.message); }
-  $('#wpAdd').textContent='+';
+  $('#wpAdd').textContent='Add';
 }
 
 function renderStyleList(){
@@ -762,7 +800,7 @@ bindRange('pitch','pitch', v=>v+'°');
 bindRange('zoom','zoom', v=>(+v).toFixed(1));
 bindRange('legdur','legdur', v=>(+v).toFixed(1)+'s');
 
-$('#play').onclick=()=>{ if(playing){ stopRoute(); } else { $('#play').textContent='⏸ Stop'; playRoute(); } };
+$('#play').onclick=()=>{ if(playing){ stopRoute(); } else { $('#play').textContent='Stop'; playRoute(); } };
 $('#stop').onclick=()=>{ if($('#recAll').getAttribute('aria-pressed')==='true') $('#recAll').setAttribute('aria-pressed',''); stopRoute(); };
 $('#reset').onclick=fitRoute;
 $('#recAll').onclick=()=>{
