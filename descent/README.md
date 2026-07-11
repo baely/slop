@@ -18,14 +18,25 @@ itself darkens as you go.
 - **Discoveries.** 36 lifeforms — from moon jellyfish to the deepest fish
   ever recorded, and four things below the Challenger Deep floor that are not
   in any field guide. Each is logged with real(ish) natural-history flavour
-  text in the **specimen log**, which persists forever.
+  text in the **specimen log**, which persists forever. Creatures have a
+  chance to appear as **rare variants** worth 6× the research.
+- **Sonar contacts.** Blips surface every so often; investigate before they
+  fade for creature swarms, data caches, rare sightings, debris fields — or
+  nothing but a thermocline echo.
+- **Wreck salvage.** Nine wrecks rest at (roughly) their historical depths —
+  a ghost net, Beebe's bathysphere, the Titanic at 3,803 m, USS Johnston at
+  6,456 m, the Trieste's ballast shot near the floor, and something with a
+  door below it. Passing one reveals it; salvaging costs research and grants
+  a permanent relic effect kept through every resurface.
 - **Upgrades:** ballast trim (descent speed), floodlights (passive research),
-  sonar array (ping/photo strength, attracts creatures), camera drones
-  (auto-photography), pressure hull (depth rating).
+  sonar array (ping/photo strength, attracts creatures), hydrophones (contact
+  frequency), camera drones (auto-photography), pressure hull (depth rating).
 - **Resurface (prestige).** Past 1,000 m you can end the expedition for
-  **expedition grants (✦)** — a permanent multiplier on all research and
-  descent speed. Depth, research and upgrades reset; the log and grants
-  don't.
+  **expedition grants (✦)**, spent in the **dry dock** on permanent refits:
+  research funding, veteran pilots, a staff biologist, rare-sighting sensors,
+  a reinforced keel (start at higher hull tiers) and standing refits.
+- **Expedition records.** Seventeen milestones — depth firsts, photography
+  counts, full-zone surveys — each a small permanent bonus.
 - **Offline progress.** The vessel keeps descending while the tab is closed
   (up to 8 h); you get a surfacing report when you return.
 

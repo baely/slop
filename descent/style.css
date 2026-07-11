@@ -86,6 +86,44 @@ html, body {
   100% { filter: drop-shadow(0 0 24px currentColor) brightness(0.4); opacity: 0; scale: 1.12; }
 }
 
+/* rare variants burn hotter */
+.creature.rare svg { filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 26px currentColor); }
+.creature.rare path, .creature.rare circle { stroke-width: 2.1; }
+
+/* sonar contact blip */
+.contact { position: absolute; width: 0; height: 0; cursor: pointer; z-index: 6; }
+.contact .c-dot {
+  position: absolute;
+  width: 9px; height: 9px; margin: -4.5px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px var(--amber);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.contact .c-ring {
+  position: absolute;
+  width: 64px; height: 64px; margin: -32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 178, 107, 0.55);
+  animation: contactring 2s linear infinite;
+}
+.contact .c-tag {
+  position: absolute;
+  top: 12px; left: 12px;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--amber);
+  white-space: nowrap;
+  opacity: 0.85;
+}
+@keyframes contactring {
+  from { transform: scale(0.25); opacity: 0.9; }
+  to   { transform: scale(1.35); opacity: 0; }
+}
+.contact.gone { animation: contactgone 0.7s forwards; }
+@keyframes contactgone { to { opacity: 0; } }
+
 /* photograph value that floats up */
 .float-val {
   position: absolute;
@@ -378,6 +416,85 @@ html, body {
 .log-cell .c-lore { margin-top: 7px; font: italic 300 12px/1.5 var(--serif); color: var(--ink-dim); }
 .log-cell.unknown { opacity: 0.5; }
 .log-cell.unknown svg { filter: brightness(0.3) saturate(0); }
+
+/* log tabs */
+.m-tabs { display: flex; gap: 8px; margin-top: 16px; }
+.m-tab {
+  padding: 7px 16px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--ink-dim);
+  font: 400 11px var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.m-tab:hover { color: var(--ink); }
+.m-tab.active { border-color: var(--glow); color: var(--glow); }
+
+/* wreck / dock rows */
+.wreck, .dock-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+.wreck:first-of-type, .dock-item:first-of-type { margin-top: 22px; }
+.wreck .w-main, .dock-item .w-main { flex: 1; }
+.wreck .c-lore, .dock-item .c-lore { margin-top: 6px; }
+.wreck.unknown { opacity: 0.45; }
+.wreck.got { border-color: rgba(95, 242, 214, 0.25); }
+.w-buy {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  background: none;
+  border: 1px solid var(--amber);
+  border-radius: 7px;
+  color: var(--amber);
+  font: 500 11.5px var(--mono);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.w-buy:hover:not(:disabled) { background: rgba(255, 178, 107, 0.08); }
+.w-buy:disabled { border-color: var(--line); color: var(--ink-dim); cursor: default; }
+.w-got {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glow);
+}
+.dk-lvl { font-style: normal; color: var(--ink-dim); margin-left: 0.7em; font-size: 10px; }
+.dock-balance {
+  margin-top: 22px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+.dock-balance span { font-size: 11px; font-weight: 400; color: var(--ink-dim); letter-spacing: 0.14em; text-transform: uppercase; margin-left: 10px; }
+
+/* expedition records */
+.miles { margin-top: 20px; display: flex; flex-direction: column; }
+.mile {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  align-items: baseline;
+}
+.mile .mi-name { letter-spacing: 0.1em; text-transform: uppercase; }
+.mile .mi-desc { color: var(--ink-dim); }
+.mile .mi-eff { color: var(--glow); font-size: 10.5px; }
+.mile.unknown { opacity: 0.45; }
+.mile.unknown .mi-eff { color: var(--ink-dim); }
 
 .m-stats {
   margin-top: 28px;

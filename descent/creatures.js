@@ -110,3 +110,58 @@ const CREATURES = [
   { id: 'itself',     name: 'The Descent Itself', depth: 30000, value: 120000, shape: 'weird', size: 72,
     lore: 'The instruments disagree about everything except one reading: you are still descending. Surface. Tell someone.' },
 ];
+
+// Wrecks rest at (roughly) historical depths. Detected when the sub passes
+// them; salvaged later for research; each grants a permanent relic effect.
+const WRECKS = [
+  { id: 'ghostnet',    name: 'Ghost Net',        depth: 120,   cost: 60,      eff: { photo: 0.10 },  effText: 'photographs +10%',
+    lore: 'Ghost gear — a drift net that has kept fishing, crewless, for years. You cut it loose.' },
+  { id: 'cable',       name: 'Telegraph Cable',  depth: 480,   cost: 350,     eff: { ping: 0.15 },   effText: 'sonar pings +15%',
+    lore: 'Once, every word between two continents hummed through this. Now it rests, furred with anemones.' },
+  { id: 'bathysphere', name: 'The Bathysphere',  depth: 923,   cost: 1200,    eff: { grantBonus: 1 }, effText: '+1 grant every resurface',
+    lore: 'A steel ball on a cable. In 1934 two men folded themselves inside and became the first to see the midnight water. It is smaller than you imagined.' },
+  { id: 'submarine',   name: 'Lost Submarine',   depth: 1600,  cost: 4000,    eff: { research: 0.10 }, effText: 'all research +10%',
+    lore: 'Fifty years listed as overdue. The hatches are shut. You log the position and leave the rest be.' },
+  { id: 'titanic',     name: 'RMS Titanic',      depth: 3803,  cost: 18000,   eff: { research: 0.15 }, effText: 'all research +15%',
+    lore: 'You knew it was here. Everyone knows. It is still a shock — the bow upright, patient, growing rust like coral.' },
+  { id: 'flightrec',   name: 'Flight Recorder',  depth: 3980,  cost: 30000,   eff: { drone: 0.25 },  effText: 'drones 25% faster',
+    lore: 'Two years of searching for a box the size of a loaf of bread. The ocean returns nothing until it is asked properly.' },
+  { id: 'johnston',    name: 'USS Johnston',     depth: 6456,  cost: 120000,  eff: { descent: 0.15 }, effText: 'descent +15%',
+    lore: 'She charged a fleet so others could run, and sank still firing. The deepest warship ever surveyed, guns trained on nothing.' },
+  { id: 'trieste',     name: 'Trieste Ballast',  depth: 10890, cost: 600000,  eff: { ping: 0.25, research: 0.05 }, effText: 'pings +25% · research +5%',
+    lore: 'Nine tonnes of iron shot, released in 1960 so two men could float home from the deepest place on Earth. A bronze snowdrift, undisturbed.' },
+  { id: 'door',        name: 'The Door',         depth: 14000, cost: 3500000, eff: { research: 0.20 }, effText: 'all research +20%',
+    lore: 'It is a door. It is ajar. Nothing about the sediment suggests a building was ever attached.' },
+];
+
+// Expedition records: one-time milestones with permanent effects.
+// cond(S, helpers) — helpers.zoneDone(i) = all species of zone i logged.
+const MILESTONES = [
+  { id: 'm200',    name: 'Pressure Test',        desc: 'reach 200 m',              eff: { research: 0.05 }, effText: 'research +5%',   cond: S => S.allMax >= 200 },
+  { id: 'm1k',     name: 'Kilometre Club',       desc: 'reach 1 000 m',            eff: { descent: 0.05 },  effText: 'descent +5%',    cond: S => S.allMax >= 1000 },
+  { id: 'm4k',     name: 'Onto the Plain',       desc: 'reach 4 000 m',            eff: { research: 0.10 }, effText: 'research +10%',  cond: S => S.allMax >= 4000 },
+  { id: 'm6k',     name: 'Hadal',                desc: 'reach 6 000 m',            eff: { descent: 0.10 },  effText: 'descent +10%',   cond: S => S.allMax >= 6000 },
+  { id: 'mfloor',  name: 'Floor of the World',   desc: 'reach 10 935 m',           eff: { research: 0.15 }, effText: 'research +15%',  cond: S => S.allMax >= 10935 },
+  { id: 'shutter1', name: 'Shutterbug',          desc: '25 photographs',           eff: { photo: 0.10 },    effText: 'photographs +10%', cond: S => S.photos >= 25 },
+  { id: 'shutter2', name: 'Field Guide',         desc: '200 photographs',          eff: { photo: 0.15 },    effText: 'photographs +15%', cond: S => S.photos >= 200 },
+  { id: 'pings',   name: 'Active Sonar',         desc: '100 sonar pings',          eff: { ping: 0.25 },     effText: 'pings +25%',     cond: S => S.pings >= 100 },
+  { id: 'ears',    name: 'Good Ear',             desc: 'investigate 10 contacts',  eff: { contact: 0.15 },  effText: 'contacts 15% sooner', cond: S => S.contactsDone >= 10 },
+  { id: 'home',    name: 'Homecoming',           desc: 'resurface once',           eff: { research: 0.10 }, effText: 'research +10%',  cond: S => S.resurfaces >= 1 },
+  { id: 'salvor',  name: 'Salvor',               desc: 'salvage a wreck',          eff: { ping: 0.10 },     effText: 'pings +10%',     cond: S => (S.relics || []).length >= 1 },
+  { id: 'set0',    name: 'Sunlit Survey',        desc: 'log every sunlit species',   eff: { photo: 0.10 },    effText: 'photographs +10%', cond: (S, h) => h.zoneDone(0) },
+  { id: 'set1',    name: 'Twilight Survey',      desc: 'log every twilight species', eff: { research: 0.10 }, effText: 'research +10%',  cond: (S, h) => h.zoneDone(1) },
+  { id: 'set2',    name: 'Midnight Survey',      desc: 'log every midnight species', eff: { descent: 0.10 },  effText: 'descent +10%',   cond: (S, h) => h.zoneDone(2) },
+  { id: 'set3',    name: 'Abyssal Survey',       desc: 'log every abyssal species',  eff: { research: 0.15 }, effText: 'research +15%',  cond: (S, h) => h.zoneDone(3) },
+  { id: 'set4',    name: 'Hadal Survey',         desc: 'log every hadal species',    eff: { photo: 0.20 },    effText: 'photographs +20%', cond: (S, h) => h.zoneDone(4) },
+  { id: 'set5',    name: 'Rift Survey',          desc: 'log everything below the floor', eff: { research: 0.25 }, effText: 'research +25%', cond: (S, h) => h.zoneDone(5) },
+];
+
+// Dry dock: permanent purchases, paid in expedition grants (✦).
+const DOCK = [
+  { key: 'funding',  name: 'Grant Funding',      max: Infinity, cost: n => n + 1,                 desc: '+10% all research per level' },
+  { key: 'pilots',   name: 'Veteran Pilots',     max: Infinity, cost: n => n + 1,                 desc: '+8% descent speed per level' },
+  { key: 'biologist', name: 'Staff Biologist',   max: Infinity, cost: n => n + 1,                 desc: '+15% photograph value per level' },
+  { key: 'sensors',  name: 'Rare-Earth Sensors', max: 5,        cost: n => 3 * Math.pow(2, n),    desc: '+2% rare sighting chance per level' },
+  { key: 'keel',     name: 'Reinforced Keel',    max: 5,        cost: n => [4, 10, 24, 60, 150][n], desc: 'begin every expedition with the next hull tier already fitted' },
+  { key: 'refit',    name: 'Standing Refit',     max: 4,        cost: n => [5, 12, 30, 75][n],    desc: 'begin with floodlights & sonar at this level' },
+];
