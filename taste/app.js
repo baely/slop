@@ -335,6 +335,103 @@ const DIMENSIONS = [
       </div>`,
   },
   {
+    id: 'layout', title: 'app shell', blurb: 'how a page is arranged before any styling happens.',
+    options: [
+      { key: 'topnav', label: 'top nav', note: 'bar up top, content below' },
+      { key: 'sidebar', label: 'sidebar', note: 'rail on the left — tool energy' },
+      { key: 'centered', label: 'centered column', note: 'one narrow, readable column' },
+      { key: 'dashboard', label: 'dashboard grid', note: 'dense panels, everything at once' },
+    ],
+    specimen: (opt) => `<div class="spec-wire wire-${opt.key}">${{
+      topnav: '<span class="wb"></span><span class="wb"></span>',
+      sidebar: '<span class="wb"></span><span class="wb"></span>',
+      centered: '<span class="wb"></span>',
+      dashboard: '<span class="wb"></span><span class="wb"></span><span class="wb"></span><span class="wb"></span>',
+    }[opt.key]}</div>`,
+  },
+  {
+    id: 'dataDisplay', title: 'data display', blurb: 'the default shape of records: columns, tiles, rows, or a feed.',
+    options: [
+      { key: 'table', label: 'table', note: 'columns, dense, scannable' },
+      { key: 'cards', label: 'card grid', note: 'every record gets a tile' },
+      { key: 'list', label: 'list', note: 'stacked rows, quiet separators' },
+      { key: 'feed', label: 'timeline', note: 'chronological, dotted spine' },
+    ],
+    specimen: (opt) => ({
+      table: `<table class="mock-table"><tr><td>MEL→SYD</td><td>March</td><td class="num">1h 25m</td></tr><tr><td>SYD→HND</td><td>April</td><td class="num">9h 40m</td></tr><tr><td>HND→MEL</td><td>June</td><td class="num">10h 05m</td></tr></table>`,
+      cards: `<div class="mock-minigrid"><span class="mini-card"><b>MEL→SYD</b><span>March</span><i>1h 25m</i></span><span class="mini-card"><b>SYD→HND</b><span>April</span><i>9h 40m</i></span><span class="mini-card"><b>HND→MEL</b><span>June</span><i>10h 05m</i></span></div>`,
+      list: `<div class="mock-list"><span class="mock-li"><span><b>MEL→SYD</b> — March</span><i>1h 25m</i></span><span class="mock-li"><span><b>SYD→HND</b> — April</span><i>9h 40m</i></span><span class="mock-li"><span><b>HND→MEL</b> — June</span><i>10h 05m</i></span></div>`,
+      feed: `<div class="mock-feed"><span class="mock-fe"><s></s><span><b>MEL→SYD</b><i>March · 1h 25m</i></span></span><span class="mock-fe"><s></s><span><b>SYD→HND</b><i>April · 9h 40m</i></span></span><span class="mock-fe"><s></s><span><b>HND→MEL</b><i>June · 10h 05m</i></span></span></div>`,
+    })[opt.key],
+  },
+  {
+    id: 'platform', title: 'platform stance', blurb: 'which screen gets designed first. flip the specimen with its desktop/phone toggle to feel this.',
+    options: [
+      { key: 'desktop', label: 'desktop-first', note: 'tools live on big screens; phone gets the minimum' },
+      { key: 'mobile', label: 'mobile-first', note: 'thumb-reach layouts; desktop is a wide phone' },
+      { key: 'adaptive', label: 'both, properly', note: 'each breakpoint gets real design time' },
+    ],
+    specimen: (opt) => `
+      <div class="spec-devices">
+        <span class="dev desk${opt.key !== 'mobile' ? ' fav' : ''}"></span>
+        <span class="dev phone${opt.key !== 'desktop' ? ' fav' : ''}"></span>
+      </div>`,
+  },
+  {
+    id: 'voice', title: 'prose vs data', blurb: 'does the ui explain in sentences, or present numbers and get out of the way?',
+    options: [
+      { key: 'prose', label: 'prose-forward', note: 'sentences explain everything' },
+      { key: 'balanced', label: 'balanced', note: 'a headline number, one line of words' },
+      { key: 'data', label: 'data-forward', note: 'labels and values; zero hand-holding' },
+    ],
+    specimen: (opt) => ({
+      prose: `<p class="spec-voice">You've been in the office fourteen times this month — three more than last, and your longest streak since March.</p>`,
+      balanced: `<div class="spec-voice"><span class="spec-h3">14 office days</span><p>three more than last month</p></div>`,
+      data: `<div class="spec-voice spec-mono"><span>office_days=14 ▲3</span><span>streak=6w</span></div>`,
+    })[opt.key],
+  },
+  {
+    id: 'icons', title: 'iconography', blurb: 'emoji, unicode glyphs, ascii punctuation, or nothing but words.',
+    options: [
+      { key: 'emoji', label: 'emoji', note: 'expressive, colorful, casual' },
+      { key: 'unicode', label: 'unicode glyphs', note: 'geometric marks: ◆ ● ▲' },
+      { key: 'ascii', label: 'ascii', note: 'terminal punctuation: [x] -> ::' },
+      { key: 'none', label: 'words only', note: 'no pictures; type does the work' },
+    ],
+    specimen: (opt) => `<div class="spec-icons">${{
+      emoji: '✈️ trips&ensp;·&ensp;📷 rolls&ensp;·&ensp;☕ coffee',
+      unicode: '◆ trips&ensp;·&ensp;● rolls&ensp;·&ensp;▲ coffee',
+      ascii: '[t]rips&ensp;·&ensp;[r]olls&ensp;·&ensp;[c]offee',
+      none: 'trips&ensp;·&ensp;rolls&ensp;·&ensp;coffee',
+    }[opt.key]}</div>`,
+  },
+  {
+    id: 'tone', title: 'microcopy tone', blurb: 'the personality in empty states, buttons, and toasts.',
+    options: [
+      { key: 'playful', label: 'playful', note: 'a little cheeky' },
+      { key: 'deadpan', label: 'deadpan', note: 'plain sentences, no affect' },
+      { key: 'technical', label: 'technical', note: 'log-file energy' },
+    ],
+    specimen: (opt) => `<div class="spec-tone"><span class="spec-small">empty state</span><p>${{
+      playful: 'nothing here yet — go outside, do something, then log it',
+      deadpan: 'No entries yet.',
+      technical: '0 rows returned.',
+    }[opt.key]}</p></div>`,
+  },
+  {
+    id: 'numbers', title: 'numbers & time', blurb: 'how quantities and timestamps read.',
+    options: [
+      { key: 'humanized', label: 'humanized', note: '"a few minutes ago" — approximate, friendly' },
+      { key: 'precise', label: 'precise', note: 'exact dates, real units' },
+      { key: 'tabular', label: 'tabular mono', note: 'aligned digits, terminal columns' },
+    ],
+    specimen: (opt) => ({
+      humanized: `<div class="spec-nums">updated a few minutes ago<br>about two weeks of streak</div>`,
+      precise: `<div class="spec-nums">updated 2026-07-11 14:32<br>streak: 13 days</div>`,
+      tabular: `<div class="spec-nums spec-mono">upd&nbsp;&nbsp;14:32:07<br>stk&nbsp;&nbsp;13d</div>`,
+    })[opt.key],
+  },
+  {
     id: 'motion', title: 'motion', blurb: 'hover the samples. how alive should things feel?',
     options: [
       { key: 'none', label: 'none', note: 'instant, zero animation', vars: { '--dur': '0s', '--ease': 'linear', '--hover-t': 'none' } },
@@ -369,20 +466,23 @@ const DEFAULTS = {
   display: 'schibsted', body: 'instrument', mono: 'jetbrains', headings: 'massive',
   casing: 'sentence', mode: 'dark', neutrals: 'pure', accent: 'orange', accentUse: 'moderate',
   radius: 'r8', borders: 'hairline', shadow: 'none', density: 'comfortable',
-  texture: 'solid', fill: 'flat', motion: 'subtle', signature: 'none',
+  texture: 'solid', fill: 'flat',
+  layout: 'topnav', dataDisplay: 'table', platform: 'adaptive', voice: 'balanced',
+  icons: 'unicode', tone: 'deadpan', numbers: 'precise',
+  motion: 'subtle', signature: 'none',
 };
 
 const PRESETS = {
   /* the first two approximate the two design families the existing apps
      already cluster into — useful as a "current state" baseline */
-  swiss: { label: 'swiss · now', picks: { display: 'schibsted', body: 'inter', mono: 'space-mono', headings: 'quiet', casing: 'caps', mode: 'light', neutrals: 'pure', accent: 'mono', accentUse: 'sparse', radius: 'r0', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'solid', fill: 'flat', motion: 'none', signature: 'none' } },
-  instrument: { label: 'instrument · now', picks: { display: 'jetbrains', body: 'plex-sans', mono: 'plex-mono', headings: 'caps', casing: 'caps', mode: 'dark', neutrals: 'warm', accent: 'amber', accentUse: 'moderate', radius: 'r8', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'solid', fill: 'flat', motion: 'subtle', signature: 'none' } },
-  terminal: { label: 'terminal', picks: { display: 'jetbrains', body: 'jetbrains', mono: 'jetbrains', headings: 'caps', casing: 'lower', mode: 'dark', neutrals: 'pure', accent: 'acid', accentUse: 'sparse', radius: 'r0', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'grid', fill: 'flat', motion: 'subtle', signature: 'glyph' } },
-  paper: { label: 'paper', picks: { display: 'newsreader', body: 'instrument', mono: 'plex-mono', headings: 'editorial', casing: 'sentence', mode: 'light', neutrals: 'warm', accent: 'crimson', accentUse: 'sparse', radius: 'r3', borders: 'hairline', shadow: 'none', density: 'airy', texture: 'grain', fill: 'flat', motion: 'subtle', signature: 'footer' } },
-  brut: { label: 'brut', picks: { display: 'archivo', body: 'inter', mono: 'space-mono', headings: 'massive', casing: 'caps', mode: 'light', neutrals: 'pure', accent: 'orange', accentUse: 'loud', radius: 'r0', borders: 'bold', shadow: 'hard', density: 'comfortable', texture: 'solid', fill: 'flat', motion: 'springy', signature: 'glyph' } },
-  club: { label: 'soft club', picks: { display: 'sora', body: 'manrope', mono: 'jetbrains', headings: 'massive', casing: 'lower', mode: 'dark', neutrals: 'tinted', accent: 'violet', accentUse: 'moderate', radius: 'r14', borders: 'elevation', shadow: 'glow', density: 'comfortable', texture: 'wash', fill: 'glass', motion: 'springy', signature: 'none' } },
-  lab: { label: 'lab', picks: { display: 'space-grotesk', body: 'plex-sans', mono: 'plex-mono', headings: 'quiet', casing: 'sentence', mode: 'light', neutrals: 'cool', accent: 'blue', accentUse: 'moderate', radius: 'r8', borders: 'hairline', shadow: 'soft', density: 'comfortable', texture: 'dots', fill: 'flat', motion: 'subtle', signature: 'footer' } },
-  editorial: { label: 'editorial', picks: { display: 'fraunces', body: 'inter', mono: 'jetbrains', headings: 'editorial', casing: 'sentence', mode: 'light', neutrals: 'pure', accent: 'mono', accentUse: 'sparse', radius: 'r0', borders: 'flat', shadow: 'none', density: 'airy', texture: 'solid', fill: 'flat', motion: 'subtle', signature: 'footer' } },
+  swiss: { label: 'swiss · now', picks: { display: 'schibsted', body: 'inter', mono: 'space-mono', headings: 'quiet', casing: 'caps', mode: 'light', neutrals: 'pure', accent: 'mono', accentUse: 'sparse', radius: 'r0', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'solid', fill: 'flat', layout: 'topnav', dataDisplay: 'table', platform: 'desktop', voice: 'data', icons: 'none', tone: 'deadpan', numbers: 'tabular', motion: 'none', signature: 'none' } },
+  instrument: { label: 'instrument · now', picks: { display: 'jetbrains', body: 'plex-sans', mono: 'plex-mono', headings: 'caps', casing: 'caps', mode: 'dark', neutrals: 'warm', accent: 'amber', accentUse: 'moderate', radius: 'r8', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'solid', fill: 'flat', layout: 'topnav', dataDisplay: 'table', platform: 'desktop', voice: 'data', icons: 'unicode', tone: 'technical', numbers: 'tabular', motion: 'subtle', signature: 'none' } },
+  terminal: { label: 'terminal', picks: { display: 'jetbrains', body: 'jetbrains', mono: 'jetbrains', headings: 'caps', casing: 'lower', mode: 'dark', neutrals: 'pure', accent: 'acid', accentUse: 'sparse', radius: 'r0', borders: 'hairline', shadow: 'none', density: 'compact', texture: 'grid', fill: 'flat', layout: 'sidebar', dataDisplay: 'table', platform: 'desktop', voice: 'data', icons: 'ascii', tone: 'technical', numbers: 'tabular', motion: 'subtle', signature: 'glyph' } },
+  paper: { label: 'paper', picks: { display: 'newsreader', body: 'instrument', mono: 'plex-mono', headings: 'editorial', casing: 'sentence', mode: 'light', neutrals: 'warm', accent: 'crimson', accentUse: 'sparse', radius: 'r3', borders: 'hairline', shadow: 'none', density: 'airy', texture: 'grain', fill: 'flat', layout: 'centered', dataDisplay: 'list', platform: 'adaptive', voice: 'prose', icons: 'none', tone: 'deadpan', numbers: 'humanized', motion: 'subtle', signature: 'footer' } },
+  brut: { label: 'brut', picks: { display: 'archivo', body: 'inter', mono: 'space-mono', headings: 'massive', casing: 'caps', mode: 'light', neutrals: 'pure', accent: 'orange', accentUse: 'loud', radius: 'r0', borders: 'bold', shadow: 'hard', density: 'comfortable', texture: 'solid', fill: 'flat', layout: 'topnav', dataDisplay: 'cards', platform: 'desktop', voice: 'balanced', icons: 'unicode', tone: 'playful', numbers: 'precise', motion: 'springy', signature: 'glyph' } },
+  club: { label: 'soft club', picks: { display: 'sora', body: 'manrope', mono: 'jetbrains', headings: 'massive', casing: 'lower', mode: 'dark', neutrals: 'tinted', accent: 'violet', accentUse: 'moderate', radius: 'r14', borders: 'elevation', shadow: 'glow', density: 'comfortable', texture: 'wash', fill: 'glass', layout: 'sidebar', dataDisplay: 'cards', platform: 'mobile', voice: 'balanced', icons: 'emoji', tone: 'playful', numbers: 'humanized', motion: 'springy', signature: 'none' } },
+  lab: { label: 'lab', picks: { display: 'space-grotesk', body: 'plex-sans', mono: 'plex-mono', headings: 'quiet', casing: 'sentence', mode: 'light', neutrals: 'cool', accent: 'blue', accentUse: 'moderate', radius: 'r8', borders: 'hairline', shadow: 'soft', density: 'comfortable', texture: 'dots', fill: 'flat', layout: 'sidebar', dataDisplay: 'table', platform: 'adaptive', voice: 'balanced', icons: 'unicode', tone: 'deadpan', numbers: 'precise', motion: 'subtle', signature: 'footer' } },
+  editorial: { label: 'editorial', picks: { display: 'fraunces', body: 'inter', mono: 'jetbrains', headings: 'editorial', casing: 'sentence', mode: 'light', neutrals: 'pure', accent: 'mono', accentUse: 'sparse', radius: 'r0', borders: 'flat', shadow: 'none', density: 'airy', texture: 'solid', fill: 'flat', layout: 'centered', dataDisplay: 'list', platform: 'adaptive', voice: 'prose', icons: 'none', tone: 'deadpan', numbers: 'humanized', motion: 'subtle', signature: 'footer' } },
 };
 
 /* ---------- state ---------- */
@@ -393,6 +493,7 @@ const state = {
   preset: null,
   customAccent: null, // {hex, ink}
   previewMode: null,  // overrides mode for viewing only
+  previewDevice: null, // 'desktop' | 'phone' — specimen viewport, viewing only
   notes: '',
 };
 
@@ -504,8 +605,10 @@ function renderSections() {
     </section>`).join('');
 
   el.querySelectorAll('.variant').forEach(card => {
-    card.addEventListener('click', () => {
-      pick(card.closest('.dim').dataset.dim, card.dataset.key);
+    const select = () => pick(card.closest('.dim').dataset.dim, card.dataset.key);
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
     });
   });
 
@@ -526,15 +629,18 @@ function localVarStyle(opt, dim) {
 
 function renderVariantCard(dim, opt) {
   const spec = typeof dim.specimen === 'function' ? dim.specimen(opt) : '';
+  // a div, not a <button>: specimens contain demo buttons/inputs, and a nested
+  // <button> makes the HTML parser force-close the outer one, spilling the
+  // card's contents into the grid
   return `
-    <button type="button" class="variant" data-key="${opt.key}" style="${localVarStyle(opt, dim)}">
+    <div class="variant" role="button" tabindex="0" data-key="${opt.key}" style="${localVarStyle(opt, dim)}">
       <span class="variant-spec">${spec}</span>
       <span class="variant-meta">
         <span class="variant-label">${opt.label}</span>
         <span class="variant-note">${opt.note || ''}</span>
       </span>
       <span class="variant-check" aria-hidden="true">✓</span>
-    </button>`;
+    </div>`;
 }
 
 function renderAccentGrid(dim) {
@@ -588,8 +694,11 @@ function pick(dimId, key) {
 function markSelections() {
   document.querySelectorAll('.dim').forEach(sec => {
     const dimId = sec.dataset.dim;
-    sec.querySelectorAll('.variant').forEach(c =>
-      c.classList.toggle('selected', c.dataset.key === state.picks[dimId]));
+    sec.querySelectorAll('.variant').forEach(c => {
+      const on = c.dataset.key === state.picks[dimId];
+      c.classList.toggle('selected', on);
+      c.setAttribute('aria-pressed', on);
+    });
     sec.querySelectorAll('[data-accent]').forEach(c =>
       c.classList.toggle('selected', c.dataset.accent === state.picks[dimId]));
   });
@@ -609,14 +718,48 @@ function markSelections() {
 /* ---------- preview (the fake app) ---------- */
 
 function renderPreview() {
+  const t = state.picks;
+  const device = state.previewDevice || (t.platform === 'mobile' ? 'phone' : 'desktop');
   const days = [3, 5, 2, 6, 4, 7, 5];
   const max = Math.max(...days);
-  const sig = state.picks.signature;
-  document.getElementById('appMock').innerHTML = `
-    <div class="mock-window">
+  const ic = ({
+    emoji:   { week: '📅 ', month: '🌙 ', year: '☀️ ' },
+    ascii:   { week: '[w] ', month: '[m] ', year: '[y] ' },
+    unicode: { week: '◆ ', month: '● ', year: '▲ ' },
+  })[t.icons] || { week: '', month: '', year: '' };
+  const tone = ({
+    playful:   { chip: 'crushing it', d1: '▲ 3 more — nice', d2: '▲ streak record!', save: 'Save it', skip: 'Nah' },
+    technical: { chip: 'Δ+3', d1: '+3 MoM', d2: 'max(streak)=6w', save: 'Save', skip: 'Skip' },
+  })[t.tone] || { chip: 'on track', d1: '▲ 3 vs last month', d2: '▲ personal best', save: 'Save', skip: 'Skip' };
+  const sync = ({
+    humanized: 'updated a few minutes ago',
+    tabular:   'upd 14:32:07 · rows 3',
+  })[t.numbers] || 'updated 2026-07-11 14:32';
+  const rows = [['Mon', 'Office', '9:12'], ['Tue', 'Home', '—'], ['Wed', 'Office', '8:47']];
+  const week = ({
+    cards: `<div class="mock-minigrid">${rows.map(r => `<span class="mini-card"><b>${r[0]}</b><span>${r[1]}</span><i>${r[2]}</i></span>`).join('')}</div>`,
+    list: `<div class="mock-list">${rows.map(r => `<span class="mock-li"><span><b>${r[0]}</b> — ${r[1]}</span><i>${r[2]}</i></span>`).join('')}</div>`,
+    feed: `<div class="mock-feed">${rows.map(r => `<span class="mock-fe"><s></s><span><b>${r[0]} ${r[2]}</b><i>${r[1] === 'Home' ? 'worked from home' : 'arrived at the office'}</i></span></span>`).join('')}</div>`,
+  })[t.dataDisplay] || `<table class="mock-table">${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td></tr>`).join('')}</table>`;
+  const recap = ({
+    prose: `<div class="mock-card mock-recap">
+          <span class="mock-card-title">Monthly recap</span>
+          <p class="mock-prose">You made it in fourteen times in June — your best month since March. Tuesdays are still the work-from-home anchor, and the Friday coffee-run streak is now six weeks old. The long Sydney trip barely dented the average.</p>
+          <p class="mock-prose muted">If the pattern holds, July lands around sixteen office days. <a class="spec-link">See the full breakdown</a>, or lower the target and take the win.</p>
+        </div>`,
+    data: `<div class="mock-card mock-recap mock-datastrip"><span>office 38%</span><span>wfh 62%</span><span>stk 6w</span><span>▲3</span></div>`,
+  })[t.voice] || `<div class="mock-card mock-recap">
+          <span class="mock-card-title">Monthly recap</span>
+          <p class="mock-prose">Best month since March — fourteen days in. <a class="spec-link">Full breakdown</a></p>
+        </div>`;
+  const sig = t.signature;
+  const mock = document.getElementById('appMock');
+  mock.dataset.device = device;
+  mock.innerHTML = `
+    <div class="mock-window" data-layout="${t.layout}">
       <div class="mock-nav">
         <span class="mock-brand">officetracker</span>
-        <span class="mock-tabs"><span class="on">Week</span><span>Month</span><span>Year</span></span>
+        <span class="mock-tabs"><span class="on">${ic.week}Week</span><span>${ic.month}Month</span><span>${ic.year}Year</span></span>
       </div>
       <div class="mock-body">
         <div class="mock-h">Where do you work?</div>
@@ -625,42 +768,37 @@ function renderPreview() {
           <div class="stat-tile">
             <span class="stat-label">Office days</span>
             <span class="stat-value">14</span>
-            <span class="stat-delta">▲ 3 vs last month</span>
+            <span class="stat-delta">${tone.d1}</span>
           </div>
           <div class="stat-tile">
             <span class="stat-label">Longest streak</span>
             <span class="stat-value">6</span>
-            <span class="stat-delta">▲ personal best</span>
+            <span class="stat-delta">${tone.d2}</span>
           </div>
         </div>
         <div class="mock-chart" role="img" aria-label="Office days per week, last 7 weeks">
           ${days.map(v => `<span class="bar" style="--v:${(v / max * 100).toFixed(0)}%" title="${v} days"></span>`).join('')}
         </div>
-        <div class="mock-card">
-          <span class="mock-card-title">Monthly recap</span>
-          <p class="mock-prose">You made it in fourteen times in June — your best month since March. Tuesdays are still the work-from-home anchor, and the Friday coffee-run streak is now six weeks old. The long Sydney trip barely dented the average.</p>
-          <p class="mock-prose muted">If the pattern holds, July lands around sixteen office days. <a class="spec-link">See the full breakdown</a>, or lower the target and take the win.</p>
-        </div>
-        <div class="mock-card">
+        <div class="mock-card mock-week">
           <div class="mock-card-head">
             <span class="mock-card-title">This week</span>
-            <span class="chip">on track</span>
+            <span class="chip">${tone.chip}</span>
           </div>
-          <table class="mock-table">
-            <tr><td>Mon</td><td>Office</td><td class="num">9:12</td></tr>
-            <tr><td>Tue</td><td>Home</td><td class="num">—</td></tr>
-            <tr><td>Wed</td><td>Office</td><td class="num">8:47</td></tr>
-          </table>
+          ${week}
           <div class="mock-form">
             <input class="input" value="Add a note…" readonly>
-            <button class="btn primary spec-noop">Save</button>
-            <button class="btn spec-noop">Skip</button>
+            <button class="btn primary spec-noop">${tone.save}</button>
+            <button class="btn spec-noop">${tone.skip}</button>
           </div>
         </div>
+        ${recap}
+        <div class="mock-sync${t.numbers === 'tabular' ? ' mono' : ''}">${sync}</div>
         ${sig === 'footer' ? `<div class="sig-footer">bailey · 2026</div>` : ''}
       </div>
       ${sig === 'glyph' ? `<div class="sig-glyph">b.</div>` : ''}
     </div>`;
+  document.querySelectorAll('.dev-btn').forEach(b =>
+    b.classList.toggle('on', b.dataset.device === device));
 }
 
 /* ---------- export ---------- */
@@ -707,6 +845,13 @@ function buildProse() {
     line('density', 'density'),
     line('texture', 'texture'),
     line('surface fill', 'fill'),
+    line('app shell', 'layout'),
+    line('data display', 'dataDisplay'),
+    line('platform stance', 'platform'),
+    line('prose vs data', 'voice'),
+    line('iconography', 'icons'),
+    line('microcopy tone', 'tone'),
+    line('numbers & time', 'numbers'),
     line('motion', 'motion'),
     line('signature', 'signature'),
     ``,
@@ -826,6 +971,10 @@ function wireActions() {
   }));
   document.getElementById('previewFab').addEventListener('click', () =>
     document.getElementById('preview').classList.toggle('open'));
+  document.querySelectorAll('.dev-btn').forEach(b => b.addEventListener('click', () => {
+    state.previewDevice = b.dataset.device;
+    renderPreview();
+  }));
 
   // rail active highlight
   const obs = new IntersectionObserver(entries => {

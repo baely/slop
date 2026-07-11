@@ -449,6 +449,42 @@ body {
   padding: 2px 8px;
 }
 
+/* ---------- structural specimens ---------- */
+
+.spec-wire {
+  height: 96px;
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.wb {
+  display: block;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: max(2px, calc(var(--r-ctl) * .35));
+}
+.wire-topnav { grid-template-rows: 14px 1fr; }
+.wire-sidebar { grid-template-columns: 24px 1fr; }
+.wire-centered .wb { width: 58%; margin: 0 auto; }
+.wire-dashboard { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+.spec-devices { display: flex; gap: 12px; align-items: flex-end; padding: 12px 4px; }
+.dev { display: block; border: 1.5px solid var(--muted); border-radius: 4px; }
+.dev.desk { width: 70px; height: 46px; }
+.dev.phone { width: 22px; height: 40px; }
+.dev.fav { border-color: var(--accent); box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--accent) 40%, transparent); }
+
+.spec-voice { font-size: calc(var(--fs) * .92); }
+.spec-voice p { color: var(--text2); font-size: calc(var(--fs) * .85); }
+.spec-voice.spec-mono { display: flex; flex-direction: column; gap: 4px; }
+.spec-icons { font-size: calc(var(--fs) * .95); padding: 10px 0; }
+.spec-tone p { font-size: calc(var(--fs) * .92); }
+.spec-nums { font-size: calc(var(--fs) * .9); line-height: 1.7; }
+.spec-nums.spec-mono { font-family: var(--font-mono); font-size: 12.5px; }
+
 /* ---------- accent grid ---------- */
 
 .accent-grid {
@@ -631,6 +667,117 @@ body {
 .mock-table .num { font-family: var(--font-mono); font-size: .92em; text-align: right; color: var(--text2); }
 .mock-form { display: flex; gap: 6px; }
 .mock-form .input { flex: 1; }
+
+/* record shapes: card grid / list / timeline */
+.mock-minigrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: var(--bw) solid var(--line-c);
+  border-radius: var(--r-ctl);
+  padding: 7px 9px;
+  font-size: calc(var(--fs) * .76);
+}
+.mini-card b { font-weight: 600; font-size: calc(var(--fs) * .84); }
+.mini-card span { color: var(--text2); }
+.mini-card i { font-style: normal; font-family: var(--font-mono); font-size: .95em; color: var(--text2); }
+
+.mock-list { display: flex; flex-direction: column; }
+.mock-li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(var(--u) * .45) 0;
+  font-size: calc(var(--fs) * .88);
+}
+.mock-li + .mock-li { border-top: 1px solid var(--line); }
+.mock-li i { font-style: normal; font-family: var(--font-mono); font-size: .9em; color: var(--text2); }
+
+.mock-feed, .spec-fill .mock-feed { display: flex; flex-direction: column; gap: 10px; position: relative; padding-left: 15px; }
+.mock-feed::before {
+  content: '';
+  position: absolute;
+  left: 3px; top: 6px; bottom: 6px;
+  width: 1px;
+  background: var(--line);
+}
+.mock-fe { position: relative; display: block; }
+.mock-fe s {
+  position: absolute;
+  left: -15px; top: 4px;
+  width: 7px; height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  text-decoration: none;
+}
+.mock-fe b { display: block; font-weight: 600; font-size: calc(var(--fs) * .86); }
+.mock-fe i { font-style: normal; color: var(--text2); font-size: calc(var(--fs) * .78); }
+
+.mock-datastrip {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+}
+.mock-sync { font-size: calc(var(--fs) * .72); color: var(--muted); }
+.mock-sync.mono { font-family: var(--font-mono); }
+
+/* app shell variants */
+.mock-window[data-layout="sidebar"] { display: grid; grid-template-columns: 116px minmax(0, 1fr); }
+.mock-window[data-layout="sidebar"] .mock-nav {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+  border-bottom: none;
+  border-right: var(--bw) solid var(--line-c);
+}
+.mock-window[data-layout="sidebar"] .mock-brand { font-size: 13px; max-width: 100%; overflow-wrap: anywhere; }
+.mock-window[data-layout="sidebar"] .mock-tabs { flex-direction: column; align-items: flex-start; width: 100%; }
+.mock-window[data-layout="centered"] .mock-nav { justify-content: center; gap: 16px; }
+.mock-window[data-layout="centered"] .mock-body { max-width: 84%; margin: 0 auto; }
+.mock-window[data-layout="dashboard"] .mock-body { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+.mock-window[data-layout="dashboard"] .mock-h,
+.mock-window[data-layout="dashboard"] .mock-sub,
+.mock-window[data-layout="dashboard"] .mock-stats,
+.mock-window[data-layout="dashboard"] .mock-recap,
+.mock-window[data-layout="dashboard"] .mock-sync,
+.mock-window[data-layout="dashboard"] .sig-footer { grid-column: 1 / -1; }
+.mock-window[data-layout="dashboard"] .mock-chart { height: 100%; min-height: 64px; }
+
+/* phone frame */
+.app-mock[data-device="phone"] .mock-window { max-width: 322px; margin: 0 auto; }
+.app-mock[data-device="phone"] .mock-window[data-layout="sidebar"] { grid-template-columns: 1fr; }
+.app-mock[data-device="phone"] .mock-window[data-layout="sidebar"] .mock-nav {
+  flex-direction: row;
+  align-items: center;
+  border-right: none;
+  border-bottom: var(--bw) solid var(--line-c);
+}
+.app-mock[data-device="phone"] .mock-window[data-layout="sidebar"] .mock-tabs { flex-direction: row; width: auto; }
+.app-mock[data-device="phone"] .mock-window[data-layout="dashboard"] .mock-body { grid-template-columns: 1fr; }
+.app-mock[data-device="phone"] .mock-form { flex-wrap: wrap; }
+
+.device-toggle { margin-left: auto; display: flex; gap: 2px; }
+.dev-btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: var(--ui-transform);
+  letter-spacing: var(--ui-tracking);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-ctl);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.dev-btn.on { color: var(--text); background: var(--surface2); border-color: var(--line); }
 
 .preview-fab { display: none; }
 
