@@ -637,6 +637,11 @@ function renderPreview() {
           ${days.map(v => `<span class="bar" style="--v:${(v / max * 100).toFixed(0)}%" title="${v} days"></span>`).join('')}
         </div>
         <div class="mock-card">
+          <span class="mock-card-title">Monthly recap</span>
+          <p class="mock-prose">You made it in fourteen times in June — your best month since March. Tuesdays are still the work-from-home anchor, and the Friday coffee-run streak is now six weeks old. The long Sydney trip barely dented the average.</p>
+          <p class="mock-prose muted">If the pattern holds, July lands around sixteen office days. <a class="spec-link">See the full breakdown</a>, or lower the target and take the win.</p>
+        </div>
+        <div class="mock-card">
           <div class="mock-card-head">
             <span class="mock-card-title">This week</span>
             <span class="chip">on track</span>

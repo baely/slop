@@ -28,5 +28,8 @@ Static, no build: `index.html` + `styles.css` + `app.js`, Google Fonts.
 ## Deploy
 
 ```
-staticer deploy --domain taste.baileys.dev --expires never
+staticer deploy --domain taste.baileys.dev --expires never --replace
 ```
+
+(`--replace` matters on redeploys — without it staticer stacks a new deployment
+behind the same domain and the oldest one keeps serving.)

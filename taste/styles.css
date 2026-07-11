@@ -616,6 +616,8 @@ body {
   gap: calc(var(--u) * .8);
 }
 .mock-card-head { display: flex; align-items: center; justify-content: space-between; }
+.mock-prose { font-size: calc(var(--fs) * .92); line-height: 1.6; }
+.mock-prose.muted { color: var(--text2); }
 .mock-card-title {
   font-family: var(--font-display);
   font-weight: var(--h-weight);
