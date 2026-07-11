@@ -4,52 +4,147 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{.Title}} — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111; background: #f7f7f8; margin: 0; }
-.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-h1 { font-size: 18px; font-weight: 600; }
-.badge { font-size: 10px; padding: 2px 6px; background: #111; color: #fff; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
-.badge.warn { background: #c33; }
-.card { background: #fff; border: 1px solid #e6e6e8; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
-.card h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
-form.entry-form { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 8px; align-items: end; }
-form.entry-form label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 3px; }
-form.entry-form input, form.entry-form textarea { width: 100%; padding: 6px 8px; font: inherit; border: 1px solid #d4d4d8; border-radius: 4px; background: #fff; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
+}
+
+body { font-family: var(--font-body); font-size: 14px; line-height: 1.55; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent-text); }
+
+/* top nav band */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; background: var(--accent-soft); flex-wrap: wrap; }
+.nav .wordmark { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: 18px; color: var(--text); text-decoration: none; text-transform: lowercase; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav a.navlink { color: var(--text-2); text-decoration: none; font-weight: 500; font-size: 13px; }
+.nav a.navlink:hover { color: var(--accent-text); }
+.nav a.navlink.active { color: var(--accent-text); font-weight: 600; }
+
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 96px; }
+
+.statusline { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 12px; color: var(--text-2); }
+
+.chip { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent-text); background: var(--accent-soft); border-radius: var(--r-ctl); padding: 3px 8px; }
+.chip.warn { color: #ffffff; background-color: #b45309; background-image: var(--sheen); }
+
+.card { background: var(--surface); border-radius: var(--r-card); padding: 16px; margin-bottom: 16px; }
+.card h2 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 15px; color: var(--text); margin-bottom: 12px; }
+
+.flash { background: var(--accent-soft); color: var(--text); border-radius: var(--r-card); padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+
+form.entry-form { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 12px; align-items: end; }
+label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+input[type="text"], input[type="date"], input[type="number"], textarea, select {
+  width: 100%; font-family: var(--font-body); font-size: 14px; color: var(--text);
+  background: var(--surface-2); border: none; border-radius: var(--r-ctl); padding: 9px 12px; min-height: 38px;
+}
+textarea { min-height: 60px; resize: vertical; }
 form.entry-form .row-full { grid-column: 1 / -1; }
 form.entry-form .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
-button { padding: 6px 12px; font: inherit; border: 1px solid #111; background: #111; color: #fff; border-radius: 4px; cursor: pointer; }
-button.secondary { background: #fff; color: #111; }
-button.danger { border-color: #c33; background: #c33; color: #fff; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text); background-color: var(--surface-2); border: none; border-radius: var(--r-ctl); padding: 9px 16px; min-height: 38px; cursor: pointer; text-decoration: none; }
+.btn.primary { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+.btn.primary:hover { background-color: var(--accent-deep); }
+.btn.danger { color: #ffffff; background-color: #b91c1c; background-image: var(--sheen); }
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 12px; }
-th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; font-weight: 600; }
-td.movies { color: #444; }
-td.movies .m { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
-td.movies img { width: 22px; height: 33px; object-fit: cover; border-radius: 1px; }
+th { font-size: 12px; font-weight: 600; color: var(--text-2); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; }
+td.movies .m { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+td.movies img { width: 26px; height: 39px; object-fit: cover; border-radius: var(--r-ctl); }
 td.actions { width: 1%; white-space: nowrap; }
-.muted { color: #888; }
-.empty { color: #999; padding: 16px; text-align: center; font-style: italic; }
+
+.muted { color: var(--text-2); }
+.mono { font-family: var(--font-mono); font-size: 0.93em; }
+.note { font-size: 12px; color: var(--text-2); margin-top: 10px; line-height: 1.6; }
+.empty { color: var(--text-2); font-size: 14px; padding: 16px; text-align: center; }
+.footnote { font-size: 12px; color: var(--text-2); text-align: center; margin-top: 8px; }
+
+.b-glyph { position: fixed; bottom: 10px; right: 10px; z-index: 90; font-family: var(--font-display); font-weight: 800; font-size: 13px; line-height: 1; color: var(--text-2); background: var(--surface); border-radius: var(--r-ctl); padding: 6px 8px; text-decoration: none; }
+.b-glyph:hover { color: var(--accent-text); }
+
+@media (max-width: 640px) {
+  form.entry-form { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
+<nav class="nav">
+  <a class="wordmark" href="/">{{.Title}}</a>
+  <div class="nav-right">
+    <a class="navlink" href="/">Schedule</a>
+    <a class="navlink" href="/history">History</a>
+    <a class="navlink active" href="/admin">Admin</a>
+  </div>
+</nav>
 <div class="app">
-  <header>
-    <h1>{{.Title}} — Admin</h1>
-    <div>
-      {{if .HasTMDB}}<span class="badge">TMDB enabled</span>{{else}}<span class="badge warn">TMDB token missing</span>{{end}}
-    </div>
-  </header>
+  <div class="statusline">
+    TMDB {{if .HasTMDB}}<span class="chip">Enabled</span>{{else}}<span class="chip warn">Token Missing</span>{{end}}
+  </div>
 
   {{if .Flash}}
-  <div class="card" style="background:#eef9ee;border-color:#bde0bd;color:#244;">
-    {{.Flash}}
-  </div>
+  <div class="flash">{{.Flash}}</div>
   {{end}}
 
   <div class="card">
-    <h2>Add or update entry</h2>
+    <h2>Add or Update Entry</h2>
     <form class="entry-form" method="POST" action="/admin/entries">
       <div>
         <label for="date">Date</label>
@@ -60,49 +155,43 @@ td.actions { width: 1%; white-space: nowrap; }
         <input type="text" id="movie1" name="movie1" placeholder="The Apartment (1960)">
       </div>
       <div>
-        <label for="movie2">Movie 2 (optional)</label>
+        <label for="movie2">Movie 2 (Optional)</label>
         <input type="text" id="movie2" name="movie2" placeholder="Title (Year)">
       </div>
       <div class="row-full">
-        <label for="reason">Reason / note</label>
+        <label for="reason">Reason / Note</label>
         <textarea id="reason" name="reason" rows="2" placeholder="Why these films tonight?"></textarea>
       </div>
       <div class="actions">
-        <button type="submit">Save entry</button>
+        <button type="submit" class="btn primary">Save Entry</button>
       </div>
     </form>
-    <p class="muted" style="margin-top:8px;font-size:11px;">Title format: <code>Name (Year)</code>. TMDB metadata is fetched automatically when a token is configured.</p>
+    <p class="note">Title format: <span class="mono">Name (Year)</span>. TMDB metadata is fetched automatically when a token is configured.</p>
   </div>
 
   {{if .HasSync}}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h2 style="margin:0;">Letterboxd diary sync</h2>
-      <span class="muted" style="font-size:11px;">user <code>{{.SyncUser}}</code>{{if .SyncInterval}} · auto every {{.SyncInterval}}{{else}} · auto-sync disabled{{end}}</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+      <h2 style="margin:0;">Letterboxd Diary Sync</h2>
+      <span class="muted" style="font-size:12px;">user <span class="mono">{{.SyncUser}}</span>{{if .SyncInterval}} · auto every <span class="mono">{{.SyncInterval}}</span>{{else}} · auto-sync disabled{{end}}</span>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <div class="muted" style="font-size:12px;">
-        <strong>{{.SyncCount}}</strong> viewings stored ·
-        last sync {{if .LastSync}}<strong>{{.LastSync}}</strong>{{else}}<em>never</em>{{end}}
+      <div class="muted" style="font-size:13px;">
+        <span class="mono">{{.SyncCount}}</span> viewings stored ·
+        last sync {{if .LastSync}}<span class="mono">{{.LastSync}}</span>{{else}}<em>never</em>{{end}}
       </div>
-      <div style="display:flex;gap:6px;margin-left:auto;">
+      <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;">
         <form method="POST" action="/admin/sync" title="Stop after seeing already-known viewings">
-          <button type="submit">Sync now</button>
+          <button type="submit" class="btn primary">Sync Now</button>
         </form>
         <form method="POST" action="/admin/sync"
               onsubmit="return confirm('Re-scrape the entire diary? This is slow for long histories.');"
               title="Re-scrape everything">
           <input type="hidden" name="force" value="1">
-          <button type="submit" class="secondary">Force full sync</button>
+          <button type="submit" class="btn">Force Full Sync</button>
         </form>
-        <a href="/admin/viewings.csv" class="secondary"
-           style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid #111;border-radius:4px;text-decoration:none;color:#111;background:#fff;">
-          Download CSV
-        </a>
-        <a href="/history" class="secondary"
-           style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid #111;border-radius:4px;text-decoration:none;color:#111;background:#fff;">
-          View history →
-        </a>
+        <a href="/admin/viewings.csv" class="btn">Download CSV</a>
+        <a href="/history" class="btn">View History →</a>
       </div>
     </div>
   </div>
@@ -110,19 +199,19 @@ td.actions { width: 1%; white-space: nowrap; }
 
   {{if .HasLetterboxd}}
   <div class="card">
-    <h2>Import from Letterboxd</h2>
+    <h2>Import From Letterboxd</h2>
     <form method="POST" action="/admin/letterboxd/preview" class="entry-form">
       <div style="grid-column: 1 / -1;">
         <label for="lb-url">Letterboxd URL</label>
         <input type="text" id="lb-url" name="url" placeholder="https://letterboxd.com/baely/watchlist/" required>
       </div>
       <div>
-        <label for="lb-start">Start date</label>
+        <label for="lb-start">Start Date</label>
         <input type="date" id="lb-start" name="start_date">
       </div>
       <div>
         <label for="lb-cadence">Cadence</label>
-        <select id="lb-cadence" name="cadence" style="width:100%;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;font:inherit;">
+        <select id="lb-cadence" name="cadence">
           <option value="weekly" selected>Weekly</option>
           <option value="weekdays">Weekdays</option>
           <option value="daily">Daily</option>
@@ -130,30 +219,30 @@ td.actions { width: 1%; white-space: nowrap; }
       </div>
       <div></div>
       <div class="actions">
-        <button type="submit" class="secondary">Preview films</button>
+        <button type="submit" class="btn primary">Preview Films</button>
       </div>
     </form>
-    <p class="muted" style="margin-top:8px;font-size:11px;">
-      Supports any user page that lists films: <code>/&lt;user&gt;/watchlist/</code>,
-      <code>/&lt;user&gt;/films/</code>, <code>/&lt;user&gt;/films/diary/</code>,
-      or <code>/&lt;user&gt;/list/&lt;slug&gt;/</code>. Pagination is followed automatically.
+    <p class="note">
+      Supports any user page that lists films: <span class="mono">/&lt;user&gt;/watchlist/</span>,
+      <span class="mono">/&lt;user&gt;/films/</span>, <span class="mono">/&lt;user&gt;/films/diary/</span>,
+      or <span class="mono">/&lt;user&gt;/list/&lt;slug&gt;/</span>. Pagination is followed automatically.
     </p>
   </div>
   {{end}}
 
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h2 style="margin:0;">Schedule ({{len .Entries}})</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+      <h2 style="margin:0;">Schedule <span class="mono" style="color:var(--text-2);font-weight:400;">({{len .Entries}})</span></h2>
       {{if .HasTMDB}}
-      <div style="display:flex;gap:6px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <form method="POST" action="/admin/refresh-tmdb" title="Re-enrich entries missing TMDB metadata">
-          <button type="submit" class="secondary">Refresh missing TMDB</button>
+          <button type="submit" class="btn">Refresh Missing TMDB</button>
         </form>
         <form method="POST" action="/admin/refresh-tmdb"
               onsubmit="return confirm('Re-fetch TMDB metadata for ALL entries (including already enriched ones)?');"
               title="Re-fetch TMDB metadata for all entries">
           <input type="hidden" name="force" value="1">
-          <button type="submit" class="secondary">Re-enrich all</button>
+          <button type="submit" class="btn">Re-enrich All</button>
         </form>
       </div>
       {{end}}
@@ -166,14 +255,14 @@ td.actions { width: 1%; white-space: nowrap; }
       <tbody>
         {{range .Entries}}
         <tr>
-          <td><strong>{{.Date}}</strong><div class="muted">{{.Day}}</div></td>
+          <td><span class="mono">{{.Date}}</span><div class="muted" style="font-size:12px;">{{.Day}}</div></td>
           <td class="movies">
             {{range .Movies}}
               <div class="m">
                 {{if .Poster}}<img src="{{.Poster}}" alt="">{{end}}
                 <div>
-                  <div>{{if .TMDBTitle}}{{.TMDBTitle}}{{else}}{{.Title}}{{end}} {{if .Year}}<span class="muted">({{.Year}})</span>{{end}}</div>
-                  {{if .Director}}<div class="muted" style="font-size:10px;">{{.Director}}{{if .Runtime}} · {{.Runtime}}m{{end}}</div>{{end}}
+                  <div>{{if .TMDBTitle}}{{.TMDBTitle}}{{else}}{{.Title}}{{end}} {{if .Year}}<span class="muted mono">({{.Year}})</span>{{end}}</div>
+                  {{if .Director}}<div class="muted" style="font-size:12px;">{{.Director}}{{if .Runtime}} · <span class="mono">{{.Runtime}}m</span>{{end}}</div>{{end}}
                 </div>
               </div>
             {{else}}
@@ -184,7 +273,7 @@ td.actions { width: 1%; white-space: nowrap; }
           <td class="actions">
             <form method="POST" action="/admin/entries/delete" onsubmit="return confirm('Delete entry on {{.Date}}?');">
               <input type="hidden" name="id" value="{{.ID}}">
-              <button type="submit" class="danger">Delete</button>
+              <button type="submit" class="btn danger">Delete</button>
             </form>
           </td>
         </tr>
@@ -192,13 +281,14 @@ td.actions { width: 1%; white-space: nowrap; }
       </tbody>
     </table>
     {{else}}
-    <div class="empty">No entries yet. Add one above.</div>
+    <div class="empty">0 entries. Add one above.</div>
     {{end}}
   </div>
 
-  <p class="muted" style="font-size:11px;text-align:center;">
-    Admin access is restricted to private network ranges (10.0.0.0/8, 192.168.0.0/16) and loopback.
+  <p class="footnote">
+    Admin access is restricted to private network ranges (<span class="mono">10.0.0.0/8</span>, <span class="mono">192.168.0.0/16</span>) and loopback.
   </p>
 </div>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 </body>
 </html>
