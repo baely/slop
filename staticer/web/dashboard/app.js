@@ -175,32 +175,51 @@ function displaySites(sites) {
     }
 
     noSites.style.display = 'none';
-    sitesList.innerHTML = sites.map(site => `
-        <div class="site-item">
-            <div class="site-header">
-                <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
-                <div class="site-actions">
-                    <label class="listed-toggle" title="${site.listed ? 'Publicly listed' : 'Not listed'}">
-                        <input type="checkbox" ${site.listed ? 'checked' : ''} onchange="toggleListed('${site.subdomain}', this.checked)">
-                        Listed
-                    </label>
-                    <button onclick="copySiteURL('${site.url}')" class="btn btn-ghost btn-small">Copy</button>
-                    <button onclick="deleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
-                </div>
-            </div>
-            <div class="site-editable">
-                <input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="updateSiteMeta('${site.subdomain}', 'title', this.value)">
-                <input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="updateSiteMeta('${site.subdomain}', 'description', this.value)">
-            </div>
-            <div class="site-meta">
-                <span>${site.file_count} files</span>
-                <span>${formatBytes(site.size_bytes)}</span>
-                <span>${formatDate(site.created_at)}</span>
-                ${site.custom_domain ? `<span>${site.custom_domain}</span>` : ''}
-                ${site.expires_at ? `<span>Expires ${formatDate(site.expires_at)}</span>` : ''}
-            </div>
+    sitesList.innerHTML = `
+        <div class="table-wrap">
+        <table class="sites-table">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th class="num">Files</th>
+                    <th class="num">Size</th>
+                    <th>Created</th>
+                    <th>Listed</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sites.map(site => `
+                <tr>
+                    <td class="col-site">
+                        <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
+                        ${site.custom_domain ? `<span class="site-sub mono">${site.custom_domain}</span>` : ''}
+                        ${site.expires_at ? `<span class="site-sub">expires ${formatDate(site.expires_at)}</span>` : ''}
+                    </td>
+                    <td><input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="updateSiteMeta('${site.subdomain}', 'title', this.value)"></td>
+                    <td><input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="updateSiteMeta('${site.subdomain}', 'description', this.value)"></td>
+                    <td class="num">${site.file_count}</td>
+                    <td class="num">${formatBytes(site.size_bytes)}</td>
+                    <td class="col-created"><time datetime="${escapeAttr(site.created_at)}" title="${escapeAttr(exactDate(site.created_at))}">${formatDate(site.created_at)}</time></td>
+                    <td>
+                        <label class="listed-toggle">
+                            <input type="checkbox" aria-label="Listed" title="${site.listed ? 'Publicly listed' : 'Not listed'}" ${site.listed ? 'checked' : ''} onchange="toggleListed('${site.subdomain}', this.checked)">
+                        </label>
+                    </td>
+                    <td class="col-actions">
+                        <div class="site-actions">
+                            <button onclick="copySiteURL('${site.url}')" class="btn btn-secondary btn-small">Copy</button>
+                            <button onclick="deleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
         </div>
-    `).join('');
+    `;
 }
 
 function copySiteURL(url) {
@@ -329,6 +348,12 @@ function formatDate(dateString) {
     return date.toLocaleDateString();
 }
 
+function exactDate(dateString) {
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return date.toLocaleString();
+}
+
 // Toast notifications
 
 function showSuccess(message) {
@@ -449,35 +474,54 @@ function displayAdminSites(sites) {
     const container = document.getElementById('admin-sites-list');
 
     if (!sites || sites.length === 0) {
-        container.innerHTML = '<p class="empty-state">No sites</p>';
+        container.innerHTML = '<p class="empty-state">0 sites.</p>';
         return;
     }
 
-    container.innerHTML = sites.map(site => `
-        <div class="site-item">
-            <div class="site-header">
-                <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
-                <div class="site-actions">
-                    <label class="listed-toggle" title="${site.listed ? 'Publicly listed' : 'Not listed'}">
-                        <input type="checkbox" ${site.listed ? 'checked' : ''} onchange="adminToggleListed('${site.subdomain}', this.checked)">
-                        Listed
-                    </label>
-                    <button onclick="adminDeleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
-                </div>
-            </div>
-            <div class="site-editable">
-                <input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'title', this.value)">
-                <input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'description', this.value)">
-            </div>
-            <div class="site-meta">
-                <span>${site.file_count} files</span>
-                <span>${formatBytes(site.size_bytes)}</span>
-                <span>${formatDate(site.created_at)}</span>
-                ${site.custom_domain ? `<span>${site.custom_domain}</span>` : ''}
-                ${site.expires_at ? `<span>Expires ${formatDate(site.expires_at)}</span>` : ''}
-            </div>
+    container.innerHTML = `
+        <div class="table-wrap">
+        <table class="sites-table">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th class="num">Files</th>
+                    <th class="num">Size</th>
+                    <th>Created</th>
+                    <th>Listed</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sites.map(site => `
+                <tr>
+                    <td class="col-site">
+                        <a href="${site.url}" target="_blank" class="site-url">${site.url}</a>
+                        ${site.custom_domain ? `<span class="site-sub mono">${site.custom_domain}</span>` : ''}
+                        ${site.expires_at ? `<span class="site-sub">expires ${formatDate(site.expires_at)}</span>` : ''}
+                    </td>
+                    <td><input type="text" class="inline-edit" placeholder="Title" value="${escapeAttr(site.title || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'title', this.value)"></td>
+                    <td><input type="text" class="inline-edit" placeholder="Description" value="${escapeAttr(site.description || '')}" onchange="adminUpdateMeta('${site.subdomain}', 'description', this.value)"></td>
+                    <td class="num">${site.file_count}</td>
+                    <td class="num">${formatBytes(site.size_bytes)}</td>
+                    <td class="col-created"><time datetime="${escapeAttr(site.created_at)}" title="${escapeAttr(exactDate(site.created_at))}">${formatDate(site.created_at)}</time></td>
+                    <td>
+                        <label class="listed-toggle">
+                            <input type="checkbox" aria-label="Listed" title="${site.listed ? 'Publicly listed' : 'Not listed'}" ${site.listed ? 'checked' : ''} onchange="adminToggleListed('${site.subdomain}', this.checked)">
+                        </label>
+                    </td>
+                    <td class="col-actions">
+                        <div class="site-actions">
+                            <button onclick="adminDeleteSite('${site.subdomain}')" class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
         </div>
-    `).join('');
+    `;
 }
 
 async function adminToggleListed(subdomain, listed) {
