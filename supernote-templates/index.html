@@ -5,31 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Supernote Template Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #0e0e0e;
-  --surface: #161616;
-  --surface-raised: #1e1e1e;
-  --border: #2a2a2a;
-  --border-hover: #3a3a3a;
-  --text: #e8e4df;
-  --text-dim: #807c77;
-  --text-muted: #4a4744;
-  --accent: #c4a882;
-  --accent-dim: #8a7560;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  /* content — paper preview / generated PNG output (not chrome) */
   --paper: #f5f1eb;
   --ink: #1a1a1a;
   --ink-light: #999;
-  --radius: 6px;
-  --transition: 180ms ease;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
 }
 
 html { font-size: 15px; }
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   height: 100vh;
@@ -39,76 +80,66 @@ body {
   grid-template-rows: auto 1fr;
 }
 
-/* Header */
+/* Header — teal nav band */
 header {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--accent-soft);
 }
 
 .logo {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: 1.35rem;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
-.logo span { color: var(--accent); font-style: italic; }
 
 .device-badge {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.7rem;
-  font-weight: 300;
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 4px 10px;
-  border-radius: 3px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-2);
+  background: var(--surface);
+  padding: 5px 10px;
+  border-radius: var(--r-ctl);
 }
 
 .download-btn {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: var(--accent);
-  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background-color: var(--accent);
+  background-image: var(--sheen);
   border: none;
-  padding: 9px 20px;
-  border-radius: var(--radius);
+  padding: 10px 18px;
+  min-height: 40px;
+  border-radius: var(--r-ctl);
   cursor: pointer;
-  transition: all var(--transition);
 }
-.download-btn:hover { background: #d4b892; transform: translateY(-1px); }
-.download-btn:active { transform: translateY(0); }
+.download-btn:hover { background-color: var(--accent-deep); }
+@media (pointer: coarse) { .download-btn { min-height: 44px; } }
 
 .header-right { display: flex; align-items: center; gap: 14px; }
 
 /* Sidebar */
 aside {
   background: var(--surface);
-  border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 20px 0;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--line) transparent;
 }
 
 .sidebar-section { padding: 0 18px; margin-bottom: 24px; }
 .sidebar-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-2);
   margin-bottom: 10px;
-  padding-left: 2px;
 }
 
 /* Template cards */
@@ -118,21 +149,16 @@ aside {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: var(--radius);
+  border-radius: var(--r-ctl);
   cursor: pointer;
-  transition: all var(--transition);
-  border: 1px solid transparent;
 }
-.template-card:hover { background: var(--surface-raised); }
-.template-card.active {
-  background: var(--surface-raised);
-  border-color: var(--accent-dim);
-}
+.template-card:hover { background: var(--surface-2); }
+.template-card.active { background: var(--accent-soft); }
 
 .template-icon {
   width: 34px;
   height: 44px;
-  border-radius: 3px;
+  border-radius: var(--r-ctl);
   background: var(--paper);
   display: flex;
   align-items: center;
@@ -146,13 +172,13 @@ aside {
 
 .template-name {
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   line-height: 1.2;
 }
 .template-desc {
-  font-size: 0.7rem;
-  color: var(--text-dim);
+  font-size: 0.72rem;
+  color: var(--text-2);
   margin-top: 2px;
 }
 
@@ -160,43 +186,43 @@ aside {
 .config-group { margin-bottom: 16px; }
 .config-label {
   font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-dim);
+  font-weight: 600;
+  color: var(--text-2);
   margin-bottom: 6px;
   display: block;
 }
 
-select, input[type="number"], input[type="range"] {
-  font-family: 'DM Sans', sans-serif;
+select, input[type="number"], input[type="date"] {
+  font-family: var(--font-body);
   font-size: 0.85rem;
-  background: var(--surface-raised);
+  background: var(--surface-2);
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: none;
+  border-radius: var(--r-ctl);
   padding: 8px 12px;
   width: 100%;
   outline: none;
-  transition: border-color var(--transition);
-  appearance: none;
-  -webkit-appearance: none;
 }
+select, input[type="number"] { appearance: none; -webkit-appearance: none; }
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23807c77' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23808088' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 30px;
 }
-select:focus, input:focus { border-color: var(--accent-dim); }
+select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .row-config { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 input[type="range"] {
   padding: 0;
   height: 4px;
+  width: 100%;
   border: none;
   border-radius: 2px;
   -webkit-appearance: none;
-  background: var(--border);
+  appearance: none;
+  background: var(--surface-2);
   margin-top: 4px;
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -214,9 +240,9 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 10px;
 }
 .range-value {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-2);
   min-width: 28px;
   text-align: right;
 }
@@ -238,37 +264,19 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
 
-/* Preview area */
+/* Preview area — paper is content, workspace is a flat surface step */
 main {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
-  background: var(--bg);
-  position: relative;
+  background: var(--surface-2);
   overflow: hidden;
 }
 
-/* Subtle grid bg */
-main::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 1px 1px, var(--border) 0.5px, transparent 0.5px);
-  background-size: 24px 24px;
-  opacity: 0.4;
-}
-
 .preview-frame {
-  position: relative;
-  z-index: 1;
-  background: white;
-  border-radius: 4px;
-  box-shadow:
-    0 2px 8px rgba(0,0,0,0.3),
-    0 12px 40px rgba(0,0,0,0.4),
-    0 0 0 1px rgba(255,255,255,0.04);
+  background: var(--paper);
+  border-radius: var(--r-card);
   max-height: calc(100vh - 120px);
   aspect-ratio: 1920 / 2560;
   overflow: hidden;
@@ -283,23 +291,32 @@ main::before {
 /* Offscreen canvas for full-res export */
 #exportCanvas { display: none; }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.sidebar-section { animation: fadeIn 400ms ease both; }
-.sidebar-section:nth-child(2) { animation-delay: 80ms; }
-.sidebar-section:nth-child(3) { animation-delay: 160ms; }
-
 /* Scrollbar */
 aside::-webkit-scrollbar { width: 4px; }
 aside::-webkit-scrollbar-track { background: transparent; }
-aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+aside::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+/* Signature */
+.b-glyph {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 90;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-2);
+  background: var(--surface);
+  border-radius: var(--r-ctl);
+  padding: 6px 8px;
+  text-decoration: none;
+}
+.b-glyph:hover { color: var(--accent-text); }
 
 @media (max-width: 768px) {
   body { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
-  aside { border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; }
+  aside { max-height: 40vh; }
   .preview-frame { max-height: calc(60vh - 80px); }
 }
 </style>
@@ -307,10 +324,10 @@ aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; 
 <body>
 
 <header>
-  <div class="logo">Template <span>Studio</span></div>
+  <div class="logo">template studio</div>
   <div class="header-right">
     <div class="device-badge">A5X2 Manta · 1920×2560</div>
-    <button class="download-btn" id="downloadBtn">↓ Download PNG</button>
+    <button class="download-btn" id="downloadBtn">Download PNG</button>
   </div>
 </header>
 
@@ -406,11 +423,11 @@ registerTemplate('monthly', {
       <div class="config-group">
         <div class="checkbox-row">
           <input type="checkbox" id="cfgWeekNums" ${config.showWeekNumbers ? 'checked' : ''}>
-          <label for="cfgWeekNums">Show week numbers</label>
+          <label for="cfgWeekNums">Show Week Numbers</label>
         </div>
         <div class="checkbox-row">
           <input type="checkbox" id="cfgLabels" ${config.showLabels ? 'checked' : ''}>
-          <label for="cfgLabels">Show dates &amp; labels</label>
+          <label for="cfgLabels">Show Dates &amp; Labels</label>
         </div>
       </div>
     `;
@@ -573,22 +590,21 @@ registerTemplate('weekly', {
   },
   configUI: (config, onChange) => `
     <div class="config-group">
-      <label class="config-label">Week starting</label>
-      <input type="date" id="cfgStartDate" value="${config.startDate}"
-        style="font-family:'DM Sans',sans-serif;font-size:0.85rem;background:var(--surface-raised);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;width:100%;outline:none;">
+      <label class="config-label">Week Starting</label>
+      <input type="date" id="cfgStartDate" value="${config.startDate}">
     </div>
     <div class="config-group">
       <div class="checkbox-row">
         <input type="checkbox" id="cfgTimeSlots" ${config.showTimeSlots ? 'checked' : ''}>
-        <label for="cfgTimeSlots">Show time slots</label>
+        <label for="cfgTimeSlots">Show Time Slots</label>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="cfgNotes" ${config.showNotes ? 'checked' : ''}>
-        <label for="cfgNotes">Notes section</label>
+        <label for="cfgNotes">Notes Section</label>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="cfgWeeklyLabels" ${config.showLabels ? 'checked' : ''}>
-        <label for="cfgWeeklyLabels">Show dates &amp; labels</label>
+        <label for="cfgWeeklyLabels">Show Dates &amp; Labels</label>
       </div>
     </div>
   `,
@@ -766,14 +782,14 @@ registerTemplate('dotgrid', {
   defaultConfig: () => ({ spacing: 40, dotSize: 3, margin: 100 }),
   configUI: (config, onChange) => `
     <div class="config-group">
-      <label class="config-label">Dot spacing</label>
+      <label class="config-label">Dot Spacing</label>
       <div class="range-row">
         <input type="range" id="cfgSpacing" min="20" max="80" value="${config.spacing}">
         <span class="range-value" id="cfgSpacingVal">${config.spacing}</span>
       </div>
     </div>
     <div class="config-group">
-      <label class="config-label">Dot size</label>
+      <label class="config-label">Dot Size</label>
       <div class="range-row">
         <input type="range" id="cfgDotSize" min="1" max="8" value="${config.dotSize}">
         <span class="range-value" id="cfgDotSizeVal">${config.dotSize}</span>
@@ -830,7 +846,7 @@ registerTemplate('lined', {
   defaultConfig: () => ({ lineSpacing: 48, showMarginLine: true, marginPos: 160, headerLines: true }),
   configUI: (config, onChange) => `
     <div class="config-group">
-      <label class="config-label">Line spacing</label>
+      <label class="config-label">Line Spacing</label>
       <div class="range-row">
         <input type="range" id="cfgLineSpacing" min="28" max="80" value="${config.lineSpacing}">
         <span class="range-value" id="cfgLineSpacingVal">${config.lineSpacing}</span>
@@ -839,11 +855,11 @@ registerTemplate('lined', {
     <div class="config-group">
       <div class="checkbox-row">
         <input type="checkbox" id="cfgMarginLine" ${config.showMarginLine ? 'checked' : ''}>
-        <label for="cfgMarginLine">Left margin line</label>
+        <label for="cfgMarginLine">Left Margin Line</label>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="cfgHeaderLines" ${config.headerLines ? 'checked' : ''}>
-        <label for="cfgHeaderLines">Header area</label>
+        <label for="cfgHeaderLines">Header Area</label>
       </div>
     </div>
   `,
@@ -915,14 +931,14 @@ registerTemplate('cornell', {
   defaultConfig: () => ({ cueWidth: 30, summaryHeight: 20, showRuledLines: true, lineSpacing: 44 }),
   configUI: (config, onChange) => `
     <div class="config-group">
-      <label class="config-label">Cue column width (%)</label>
+      <label class="config-label">Cue Column Width (%)</label>
       <div class="range-row">
         <input type="range" id="cfgCueWidth" min="15" max="45" value="${config.cueWidth}">
         <span class="range-value" id="cfgCueWidthVal">${config.cueWidth}%</span>
       </div>
     </div>
     <div class="config-group">
-      <label class="config-label">Summary height (%)</label>
+      <label class="config-label">Summary Height (%)</label>
       <div class="range-row">
         <input type="range" id="cfgSummaryH" min="10" max="35" value="${config.summaryHeight}">
         <span class="range-value" id="cfgSummaryHVal">${config.summaryHeight}%</span>
@@ -931,7 +947,7 @@ registerTemplate('cornell', {
     <div class="config-group">
       <div class="checkbox-row">
         <input type="checkbox" id="cfgCornellLines" ${config.showRuledLines ? 'checked' : ''}>
-        <label for="cfgCornellLines">Ruled lines</label>
+        <label for="cfgCornellLines">Ruled Lines</label>
       </div>
     </div>
   `,
@@ -1048,7 +1064,7 @@ registerTemplate('isometric', {
       </div>
     </div>
     <div class="config-group">
-      <label class="config-label">Dot size</label>
+      <label class="config-label">Dot Size</label>
       <div class="range-row">
         <input type="range" id="cfgIsoDotSize" min="1" max="8" value="${config.dotSize}">
         <span class="range-value" id="cfgIsoDotSizeVal">${config.dotSize}</span>
@@ -1165,5 +1181,7 @@ buildSidebar();
 buildConfig();
 render();
 </script>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 </body>
 </html>

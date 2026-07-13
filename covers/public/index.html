@@ -3,189 +3,214 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Covers — a dining log</title>
+<title>covers — a dining log</title>
 <meta name="description" content="A personal log of restaurants you've been to.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2318181b'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fafafa'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230891b2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fafafa'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
+  /* house tokens — bailey house style v1 */
   :root{
-    --bg:#f5f5f4;
-    --surface:#ffffff;
-    --ink:#18181b;
-    --ink-2:#3f3f46;
-    --muted:#71717a;
-    --faint:#a1a1aa;
-    --line:#e6e6e3;
-    --line-2:#f0f0ee;
-    --gold:#18181b;          /* filled stars (referenced inline by JS) */
-    --accent:#18181b;        /* primary actions / markers */
-    --danger:#dc2626;
-    --ring:0 0 0 3px rgba(24,24,27,.08);
-    --radius:12px;
-    --shadow:0 1px 2px rgba(24,24,27,.04), 0 10px 26px -18px rgba(24,24,27,.22);
+    --font-display:'Bricolage Grotesque',system-ui,sans-serif;
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+
+    --accent:#0891b2;
+    --accent-deep:#0e7490;
+    --accent-ink:#ffffff;
+
+    --r-ctl:3px;
+    --r-card:4px;
+    --sheen:linear-gradient(180deg,rgb(255 255 255 / .12),rgb(0 0 0 / .08));
+
+    /* light */
+    --bg:#fafafa;
+    --surface:#f1f1f3;
+    --surface-2:#e9e9ed;
+    --text:#131316;
+    --text-2:#55555e;
+    --muted:#9b9ba6;
+    --line:#e4e4e9;
+    --accent-text:#0e7490;
+    --accent-soft:#e2f0f4;
+
+    --danger:#dc2626;      /* destructive only */
+    --gold:var(--accent);  /* filled stars (referenced inline by JS) */
+
+    color-scheme:light dark;
   }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0b0d;
+      --surface:#17171a;
+      --surface-2:#212126;
+      --text:#f2f2f4;
+      --text-2:#a3a3ad;
+      --muted:#5b5b66;
+      --line:#26262c;
+      --accent-text:#3aa8c4;
+      --accent-soft:#0c2229;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0b0d;
+    --surface:#17171a;
+    --surface-2:#212126;
+    --text:#f2f2f4;
+    --text-2:#a3a3ad;
+    --muted:#5b5b66;
+    --line:#26262c;
+    --accent-text:#3aa8c4;
+    --accent-soft:#0c2229;
+  }
+
   *{margin:0;padding:0;box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{
-    font-family:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14.5px;
+    color:var(--text);
     background:var(--bg);
-    line-height:1.5;
+    line-height:1.55;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
     text-rendering:optimizeLegibility;
   }
-  .wrap{max-width:820px;margin:0 auto;padding:clamp(24px,4vw,52px) clamp(16px,4vw,32px) 120px}
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .wrap{max-width:820px;margin:0 auto;padding:clamp(18px,3vw,32px) clamp(16px,4vw,32px) 120px}
 
-  /* masthead */
-  .masthead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  .wordmark{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
-  .wordmark .dot{color:var(--faint)}
+  /* top nav band */
+  .nav{background:var(--accent-soft)}
+  .nav-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:12px clamp(16px,4vw,32px)}
+  .wordmark{font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1.1;color:var(--text)}
+  .wordmark .dot{color:var(--accent-text)}
   .top-actions{display:flex;align-items:center;gap:8px}
 
   /* stats */
-  .stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 28px;margin:22px 0 4px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .stat{display:flex;align-items:baseline;gap:6px}
-  .stat b{font-weight:700;font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
-  .stat .lab{font-size:.85rem;color:var(--muted)}
+  .stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 28px;margin:0 0 4px;padding:14px 0}
+  .stat{display:flex;align-items:baseline;gap:7px}
+  .stat b{font-family:var(--font-mono);font-weight:600;font-size:15px;color:var(--text)}
+  .stat .lab{font-size:12px;font-weight:600;color:var(--text-2)}
 
   /* controls */
-  .controls{display:flex;gap:10px;align-items:center;margin:20px 0 4px;flex-wrap:wrap}
-  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;flex:none}
-  .seg button{border:none;background:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:.15s}
-  .seg button.active{background:var(--ink);color:#fff}
-  .search{position:relative;flex:1;min-width:180px}
-  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint)}
-  input,select,textarea{font-family:inherit;color:var(--ink);font-size:1rem}
-  .search input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--line);background:var(--surface);border-radius:10px;outline:none;transition:.15s}
-  .search input:focus{border-color:var(--ink);box-shadow:var(--ring)}
+  .controls{display:flex;gap:8px;align-items:center;margin:12px 0 4px;flex-wrap:wrap}
+  .seg{display:inline-flex;background:var(--surface);border-radius:var(--r-ctl);padding:2px;flex:none}
+  .seg button{border:none;background:none;padding:7px 14px;border-radius:var(--r-ctl);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-2)}
+  .seg button.active{background-color:var(--accent);background-image:var(--sheen);color:var(--accent-ink)}
+  .search{flex:1;min-width:180px}
+  input,select,textarea{font-family:var(--font-body);color:var(--text);font-size:14px}
+  .search input{width:100%;padding:9px 12px;border:none;background:var(--surface);border-radius:var(--r-ctl);min-height:38px}
   .sort{
-    padding:10px 34px 10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:10px;outline:none;cursor:pointer;color:var(--ink-2);
+    padding:9px 34px 9px 12px;border:none;background-color:var(--surface);border-radius:var(--r-ctl);min-height:38px;cursor:pointer;color:var(--text);
     appearance:none;-webkit-appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.6'%3E%3Cpath d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23888888' stroke-width='1.6'%3E%3Cpath d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 12px center;
   }
-  .sort:focus{border-color:var(--ink)}
   .controls.map-mode .search,.controls.map-mode .sort{display:none}
 
   /* buttons */
-  .btn{font-family:inherit;font-size:.92rem;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:7px;border-radius:9px;transition:background .15s,border-color .15s,color .15s,transform .1s;-webkit-tap-highlight-color:transparent}
-  .btn:active{transform:translateY(.5px)}
-  .btn-primary{background:var(--ink);color:#fff;padding:10px 16px}
-  .btn-primary:hover{background:#000}
-  .btn-ghost{background:var(--surface);color:var(--ink-2);padding:9px 14px;border:1px solid var(--line)}
-  .btn-ghost:hover{border-color:var(--muted)}
-  .icon-btn{width:40px;height:40px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:.15s;flex:none}
-  .icon-btn:hover{border-color:var(--muted);color:var(--ink)}
+  .btn{font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--r-ctl);min-height:38px;-webkit-tap-highlight-color:transparent}
+  .btn-primary{background-color:var(--accent);background-image:var(--sheen);color:var(--accent-ink);padding:9px 16px}
+  .btn-primary:hover{background-color:var(--accent-deep)}
+  .btn-ghost{background-color:var(--surface);color:var(--text);padding:9px 14px}
+  .btn-ghost:hover{background-color:var(--surface-2)}
+  @media (pointer:coarse){.btn{min-height:44px}}
 
   /* log / months */
   #log{margin-top:8px}
-  .month{display:flex;align-items:center;gap:14px;margin:30px 0 2px}
-  .month h2{font-size:.9rem;font-weight:600;color:var(--ink);white-space:nowrap}
-  .month .rule{flex:1;height:1px;background:var(--line)}
-  .month .mcount{color:var(--faint);font-size:.8rem;white-space:nowrap}
+  .month{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin:28px 0 2px}
+  .month h2{font-family:var(--font-display);font-size:15px;font-weight:800;letter-spacing:-.02em;color:var(--text);white-space:nowrap}
+  .month .mcount{font-family:var(--font-mono);color:var(--muted);font-size:12px;white-space:nowrap}
 
-  .entry{
-    position:relative;display:grid;grid-template-columns:54px 1fr auto;gap:18px;align-items:start;
-    padding:18px;margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    transition:border-color .15s,box-shadow .15s;
-    opacity:0;transform:translateY(8px);animation:rise .4s ease forwards;
-  }
-  .entry:hover{box-shadow:var(--shadow)}
-  @keyframes rise{to{opacity:1;transform:none}}
-  @media (prefers-reduced-motion:reduce){.entry{animation:none;opacity:1;transform:none}}
+  .entry{position:relative;display:grid;grid-template-columns:54px 1fr auto;gap:18px;align-items:start;padding:16px;margin-top:10px;background:var(--surface);border-radius:var(--r-card)}
 
-  .datechip{text-align:center;border-right:1px solid var(--line-2);padding-right:14px}
-  .datechip .d{font-weight:700;font-size:1.5rem;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
-  .datechip .wd{text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;color:var(--faint);margin-top:5px}
-  .datechip .tm{font-size:.75rem;color:var(--muted);margin-top:6px}
+  .datechip{text-align:center;padding-right:10px}
+  .datechip .d{font-family:var(--font-mono);font-weight:700;font-size:22px;line-height:1;color:var(--text)}
+  .datechip .wd{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:5px}
+  .datechip .tm{font-family:var(--font-mono);font-size:11px;color:var(--text-2);margin-top:6px}
 
-  .body .name{font-weight:600;font-size:1.12rem;line-height:1.2;color:var(--ink)}
-  .body .loc{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.9rem;margin-top:3px}
-  .body .loc svg{color:var(--faint);flex:none}
-  .body .food{margin-top:10px;font-size:.95rem;color:var(--ink-2);white-space:pre-wrap}
+  .body .name{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:16px;line-height:1.2;color:var(--text)}
+  .body .loc{color:var(--text-2);font-size:13px;margin-top:3px}
+  .body .food{margin-top:10px;font-size:14px;color:var(--text-2);white-space:pre-wrap}
 
   .items{margin-top:11px;display:flex;flex-direction:column;gap:5px;max-width:420px}
-  .items li{display:flex;align-items:baseline;justify-content:space-between;gap:16px;list-style:none;font-size:.95rem;color:var(--ink-2)}
-  .items .it-price{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .items li{display:flex;align-items:baseline;justify-content:space-between;gap:16px;list-style:none;font-size:14px;color:var(--text-2)}
+  .items .it-price{font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap}
 
   .aside{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:70px}
-  .amount{font-weight:700;font-size:1.05rem;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .amount{font-family:var(--font-mono);font-weight:600;font-size:14px;color:var(--text);white-space:nowrap}
   .stars{display:inline-flex;gap:1px}
   .stars svg{width:15px;height:15px}
 
-  .entry .tools{position:absolute;top:10px;right:10px;display:flex;gap:2px;z-index:5;opacity:0;pointer-events:none;transition:opacity .15s;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:2px;box-shadow:0 4px 12px -4px rgba(24,24,27,.22)}
+  .entry .tools{position:absolute;top:10px;right:10px;display:flex;gap:2px;z-index:5;opacity:0;pointer-events:none;background:var(--surface-2);border-radius:var(--r-ctl);padding:2px}
   .entry:hover .tools,.entry:focus-within .tools{opacity:1;pointer-events:auto}
-  .tools button{width:28px;height:28px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.15s}
-  .tools button:hover{color:var(--ink);background:var(--bg)}
-  .tools button.del:hover{color:var(--danger);background:var(--bg)}
+  .tools button{border:none;background:none;color:var(--text-2);cursor:pointer;font-family:var(--font-body);font-size:12px;font-weight:600;padding:4px 8px;border-radius:var(--r-ctl)}
+  .tools button:hover{color:var(--text)}
+  .tools button.del:hover{color:var(--danger)}
 
   /* map */
   #mapView{margin-top:14px}
-  #map{height:min(62vh,540px);min-height:360px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#ececeb;z-index:1}
-  .map-note{text-align:center;color:var(--faint);font-size:.85rem;margin-top:12px}
-  .pin{width:24px;height:24px;border-radius:50%;background:var(--ink);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:grid;place-items:center;color:#fff;font-weight:600;font-size:11px}
-  .leaflet-popup-content-wrapper{background:var(--surface);color:var(--ink);border-radius:10px;box-shadow:0 18px 40px -18px rgba(24,24,27,.4)}
-  .leaflet-popup-tip{background:var(--surface)}
-  .leaflet-popup-content{margin:12px 14px;font-family:inherit}
-  .pop-loc{font-weight:700;font-size:1rem;margin-bottom:7px}
-  .pop-v{display:flex;gap:10px;align-items:baseline;font-size:.88rem;padding:5px 0;border-top:1px solid var(--line-2)}
-  .pop-v b{font-weight:600;color:var(--ink)}
-  .pop-v .pd{color:var(--faint)}
-  .pop-v .pr{color:var(--ink);margin-left:auto;letter-spacing:1px;white-space:nowrap}
+  #map{height:min(62vh,540px);min-height:360px;border-radius:var(--r-card);overflow:hidden;background:var(--surface);z-index:1}
+  .map-note{text-align:center;font-family:var(--font-mono);color:var(--text-2);font-size:12px;margin-top:12px}
+  .pin{width:24px;height:24px;border-radius:50%;background:var(--accent);border:2px solid #fff;display:grid;place-items:center;color:#fff;font-weight:600;font-size:11px;font-family:var(--font-mono)}
+  .leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border-radius:var(--r-card);box-shadow:none}
+  .leaflet-popup-tip{background:var(--surface);box-shadow:none}
+  .leaflet-popup-content{margin:12px 14px;font-family:var(--font-body)}
+  .pop-loc{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:14px;margin-bottom:7px}
+  .pop-v{display:flex;gap:10px;align-items:baseline;font-size:12.5px;padding:5px 0;border-top:1px solid var(--line)}
+  .pop-v b{font-weight:600;color:var(--text)}
+  .pop-v .pd{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+  .pop-v .pr{color:var(--text);margin-left:auto;letter-spacing:1px;white-space:nowrap}
 
   /* empty state */
-  .empty{text-align:center;padding:64px 20px;color:var(--muted)}
-  .empty h3{font-size:1.15rem;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .empty p{max-width:34ch;margin:0 auto 20px;font-size:.95rem}
+  .empty{text-align:center;padding:64px 20px;color:var(--text-2);font-size:14px}
+  .empty h3{font-family:var(--font-display);font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--text);margin-bottom:16px}
 
   /* dialog */
-  dialog{border:none;padding:0;background:transparent;color:var(--ink);max-width:560px;width:calc(100% - 28px);margin:auto}
-  dialog::backdrop{background:rgba(24,24,27,.4);backdrop-filter:blur(2px)}
-  dialog[open]{animation:pop .22s ease}
-  @keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 30px 70px -28px rgba(24,24,27,.45);padding:clamp(20px,4vw,30px);max-height:92vh;overflow:auto}
-  .sheet h2{font-size:1.4rem;font-weight:700;margin-bottom:3px}
-  .sheet .sub{color:var(--faint);font-size:.88rem;margin-bottom:20px}
+  dialog{border:none;padding:0;background:transparent;color:var(--text);max-width:560px;width:calc(100% - 28px);margin:auto}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  .sheet{background:var(--bg);border-radius:var(--r-card);padding:clamp(20px,4vw,28px);max-height:92vh;overflow:auto}
+  .sheet h2{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:3px}
+  .sheet .sub{color:var(--text-2);font-size:12.5px;margin-bottom:20px}
   .field{margin-bottom:15px}
-  .field label{display:block;font-size:.82rem;font-weight:500;color:var(--muted);margin-bottom:6px}
-  .field .req{color:var(--ink)}
-  .field input[type=text],.field input[type=date],.field input[type=time],.field input[type=password],.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--surface);border-radius:9px;outline:none;transition:.15s}
-  .field input:focus,.field textarea:focus{border-color:var(--ink);box-shadow:var(--ring)}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+  .field .req{color:var(--accent-text)}
+  .field input[type=text],.field input[type=date],.field input[type=time],.field input[type=password],.field textarea{width:100%;padding:9px 12px;border:none;background:var(--surface);border-radius:var(--r-ctl);min-height:38px}
   .field textarea{resize:vertical;min-height:62px;line-height:1.4}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 
   .locrow{display:flex;gap:8px;flex-wrap:wrap}
   .locrow input{flex:1;min-width:150px}
-  .btn-locate{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 15px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--ink-2);transition:.15s}
-  .btn-locate:hover{border-color:var(--muted);color:var(--ink)}
+  .btn-locate{white-space:nowrap;border:none;background:var(--surface);border-radius:var(--r-ctl);padding:0 14px;min-height:38px;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text)}
+  .btn-locate:hover{background:var(--surface-2)}
   #formMapWrap{display:none;margin-top:10px}
-  #formMap{height:180px;border-radius:9px;border:1px solid var(--line);overflow:hidden}
-  .map-hint{font-size:.8rem;color:var(--faint);margin-top:6px}
+  #formMap{height:180px;border-radius:var(--r-card);overflow:hidden}
+  .map-hint{font-size:12px;color:var(--muted);margin-top:6px}
 
-  .amount-input{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);transition:.15s;max-width:240px}
-  .amount-input:focus-within{border-color:var(--ink);box-shadow:var(--ring)}
-  .amount-input select{border:none;background:var(--bg);padding:0 8px;outline:none;cursor:pointer;color:var(--ink);border-right:1px solid var(--line)}
-  .amount-input input{border:none;background:transparent;padding:10px 12px;width:100%;outline:none;font-variant-numeric:tabular-nums}
-  .amount-input .sumbtn{border:none;background:var(--bg);border-left:1px solid var(--line);cursor:pointer;padding:0 13px;color:var(--muted);font-size:1rem;transition:.15s}
-  .amount-input .sumbtn:hover{color:var(--ink)}
+  .amount-input{display:flex;background:var(--surface);border-radius:var(--r-ctl);overflow:hidden;max-width:240px}
+  .amount-input:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .amount-input input:focus-visible{outline:none}
+  .amount-input select{border:none;background:var(--surface-2);padding:0 8px;cursor:pointer;color:var(--text)}
+  .amount-input input{border:none;background:transparent;padding:9px 12px;width:100%;font-family:var(--font-mono);font-size:13px}
+  .amount-input .sumbtn{border:none;background:var(--surface-2);cursor:pointer;padding:0 12px;color:var(--text-2);font-family:var(--font-body);font-size:12px;font-weight:600}
+  .amount-input .sumbtn:hover{color:var(--text)}
 
   /* items editor */
-  .item-row{display:grid;grid-template-columns:1fr 118px 36px;gap:8px;margin-bottom:8px;align-items:center}
-  .item-row .i-name{padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);outline:none;transition:.15s;font-family:inherit}
-  .item-row .i-name:focus{border-color:var(--ink);box-shadow:var(--ring)}
-  .i-pricewrap{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden;transition:.15s}
-  .i-pricewrap:focus-within{border-color:var(--ink)}
-  .i-cur{padding:0 3px 0 10px;color:var(--muted)}
-  .i-cost{border:none;background:none;outline:none;width:100%;padding:9px 8px 9px 2px;font-family:inherit;font-variant-numeric:tabular-nums}
-  .i-del{border:none;background:var(--bg);border-radius:8px;cursor:pointer;color:var(--faint);font-size:19px;line-height:1;height:38px;transition:.15s}
+  .item-row{display:grid;grid-template-columns:1fr 110px auto;gap:8px;margin-bottom:8px;align-items:center}
+  .item-row .i-name{padding:9px 11px;border:none;border-radius:var(--r-ctl);background:var(--surface);font-family:var(--font-body);min-height:38px}
+  .i-pricewrap{display:flex;align-items:center;border-radius:var(--r-ctl);background:var(--surface);overflow:hidden}
+  .i-pricewrap:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .i-pricewrap input:focus-visible{outline:none}
+  .i-cur{padding:0 3px 0 10px;color:var(--text-2);font-family:var(--font-mono);font-size:12px}
+  .i-cost{border:none;background:none;width:100%;padding:9px 8px 9px 2px;font-family:var(--font-mono);font-size:13px;min-height:38px}
+  .i-del{border:none;background:var(--surface);border-radius:var(--r-ctl);cursor:pointer;color:var(--text-2);font-family:var(--font-body);font-size:12px;font-weight:600;height:38px;padding:0 10px}
   .i-del:hover{color:var(--danger)}
-  .additem{margin-top:2px;background:none;border:1px dashed var(--line);color:var(--muted);padding:9px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:.92rem;width:100%;transition:.15s}
-  .additem:hover{border-color:var(--muted);color:var(--ink)}
+  .additem{margin-top:2px;background:var(--surface);border:none;color:var(--text);padding:9px 14px;border-radius:var(--r-ctl);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;width:100%;min-height:38px}
+  .additem:hover{background:var(--surface-2)}
 
   /* star input */
   .starpick{display:inline-flex;gap:3px;align-items:center}
@@ -193,92 +218,85 @@
   .starpick .star>svg{width:28px;height:28px;display:block}
   .starpick .half,.starpick .full{position:absolute;top:0;bottom:0;width:50%;z-index:2}
   .starpick .half{left:0}.starpick .full{right:0}
-  .clearstar{margin-left:10px;font-size:.82rem;color:var(--faint);cursor:pointer;background:none;border:none;text-decoration:underline}
-  .ratingval{margin-left:8px;color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+  .clearstar{margin-left:10px;font-size:12px;color:var(--text-2);cursor:pointer;background:none;border:none;font-family:var(--font-body);text-decoration:underline;text-underline-offset:3px}
+  .ratingval{margin-left:8px;font-family:var(--font-mono);color:var(--text-2);font-size:13px}
 
   .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
-  .err{color:var(--danger);font-size:.88rem;margin-right:auto;align-self:center}
+  .err{color:var(--danger);font-size:12.5px;margin-right:auto;align-self:center}
 
   /* menu popover */
   .menu-wrap{position:relative}
-  .menu{position:absolute;right:0;top:48px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 20px 44px -20px rgba(24,24,27,.4);padding:6px;min-width:184px;z-index:1200;display:none}
-  .menu.open{display:block;animation:pop .15s ease}
-  .menu button{display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:9px 11px;border-radius:7px;color:var(--ink);font-family:inherit;font-size:.92rem}
-  .menu button:hover{background:var(--bg)}
-  .menu .sep{height:1px;background:var(--line-2);margin:5px 4px}
-  .menu .lab{padding:8px 11px 4px;font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--faint);text-transform:uppercase}
+  .menu{position:absolute;right:0;top:46px;background:var(--surface-2);border-radius:var(--r-card);padding:6px;min-width:184px;z-index:1200;display:none}
+  .menu.open{display:block}
+  .menu button{display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:8px 11px;border-radius:var(--r-ctl);color:var(--text);font-family:var(--font-body);font-size:13px;font-weight:500}
+  .menu button:hover{background:var(--accent-soft);color:var(--accent-text)}
+  .menu .sep{height:1px;background:var(--line);margin:5px 4px}
 
   /* toast */
-  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9px;font-size:.92rem;opacity:0;pointer-events:none;transition:.25s;z-index:2000;box-shadow:0 14px 30px -12px rgba(0,0,0,.45)}
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:var(--r-ctl);font-size:13px;opacity:0;pointer-events:none;z-index:2000}
+  #toast.show{opacity:1}
 
   /* login */
   #login{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
   #login.show{display:flex}
   .login-card{text-align:center;max-width:320px;width:100%;display:flex;flex-direction:column;align-items:stretch;gap:12px}
-  .login-card .wordmark{font-size:2rem;text-align:center;margin-bottom:2px}
-  .login-card .login-sub{color:var(--muted);font-size:.92rem;margin-top:-6px;margin-bottom:10px;text-align:center}
-  .login-card input{width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--surface);border-radius:10px;outline:none;text-align:center;transition:.15s}
-  .login-card input:focus{border-color:var(--ink);box-shadow:var(--ring)}
+  .login-card .wordmark{font-size:32px;text-align:center;margin-bottom:2px}
+  .login-card .login-sub{color:var(--text-2);font-size:13px;margin-top:-6px;margin-bottom:10px;text-align:center}
+  .login-card input{width:100%;padding:12px 14px;border:none;background:var(--surface);border-radius:var(--r-ctl);text-align:center}
   .login-card .btn-primary{width:100%;justify-content:center;padding:12px}
-  .login-err{color:var(--danger);font-size:.88rem;min-height:1.2em}
+  .login-err{color:var(--danger);font-size:12.5px;min-height:1.2em}
+
+  /* signature */
+  .b-glyph{position:fixed;bottom:10px;right:10px;z-index:3001;font-family:var(--font-display);font-weight:800;font-size:13px;line-height:1;color:var(--text-2);background:var(--surface);border-radius:var(--r-ctl);padding:6px 8px;text-decoration:none}
+  .b-glyph:hover{color:var(--accent-text)}
 
   @media (max-width:560px){
-    .entry{grid-template-columns:48px 1fr;gap:13px;padding:15px}
-    .aside{grid-column:1 / -1;flex-direction:row;justify-content:space-between;align-items:center;border-top:1px solid var(--line-2);padding-top:11px;margin-top:3px}
-    .datechip{padding-right:12px}
+    .entry{grid-template-columns:48px 1fr;gap:13px;padding:14px}
+    .aside{grid-column:1 / -1;flex-direction:row;justify-content:space-between;align-items:center;padding-top:10px;margin-top:3px}
+    .datechip{padding-right:8px}
     .row{grid-template-columns:1fr}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="masthead">
-    <h1 class="wordmark">Covers<span class="dot">.</span></h1>
+<header class="nav">
+  <div class="nav-inner">
+    <h1 class="wordmark">covers<span class="dot">.</span></h1>
     <div class="top-actions">
-      <button class="btn btn-primary" id="addBtn">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
-        Log a visit
-      </button>
+      <button class="btn btn-primary" id="addBtn">Log Visit</button>
       <div class="menu-wrap">
-        <button class="icon-btn" id="menuBtn" aria-label="More" title="Data &amp; export">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><circle cx="9" cy="3.5" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="9" cy="14.5" r="1.5"/></svg>
-        </button>
+        <button class="btn btn-ghost" id="menuBtn" title="Data &amp; export">Menu</button>
         <div class="menu" id="menu">
-          <div class="lab">Backup</div>
-          <button data-act="export-json">Export as JSON</button>
-          <button data-act="export-csv">Export as CSV</button>
+          <button data-act="export-json">Export JSON</button>
+          <button data-act="export-csv">Export CSV</button>
           <button data-act="import">Import JSON…</button>
           <div class="sep"></div>
-          <button data-act="sample">Load sample data</button>
-          <button data-act="clear">Clear all</button>
+          <button data-act="sample">Load Sample Data</button>
+          <button data-act="clear">Clear All</button>
           <div class="sep"></div>
-          <button data-act="logout">Log out</button>
+          <button data-act="logout">Log Out</button>
         </div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
+<div class="wrap">
   <div class="stats" id="stats"></div>
 
   <div class="controls" id="controls">
     <div class="seg" id="seg">
-      <button data-view="log" class="active">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12" stroke-linecap="round"/></svg>List
-      </button>
-      <button data-view="map">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 14s5-4.2 5-8A5 5 0 0 0 3 6c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.6"/></svg>Map
-      </button>
+      <button data-view="log" class="active">List</button>
+      <button data-view="map">Map</button>
     </div>
     <div class="search">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
       <input type="search" id="search" placeholder="Search restaurants, places, dishes…">
     </div>
     <select class="sort" id="sort">
-      <option value="date-desc">Newest first</option>
-      <option value="date-asc">Oldest first</option>
-      <option value="rating-desc">Highest rated</option>
-      <option value="amount-desc">Most spent</option>
+      <option value="date-desc">Newest First</option>
+      <option value="date-asc">Oldest First</option>
+      <option value="rating-desc">Highest Rated</option>
+      <option value="amount-desc">Most Spent</option>
       <option value="name-asc">Name A–Z</option>
     </select>
   </div>
@@ -291,16 +309,15 @@
   </div>
 
   <div id="empty" class="empty" style="display:none">
-    <h3>No covers yet</h3>
-    <p>Start your dining log — record where you ate, what you had, and what you thought.</p>
-    <button class="btn btn-primary" onclick="openDialog()">Log your first visit</button>
+    <h3>Nothing logged yet.</h3>
+    <button class="btn btn-primary" onclick="openDialog()">Log First Visit</button>
   </div>
 </div>
 
 <dialog id="dialog">
   <form class="sheet" id="form" method="dialog">
     <h2 id="dlgTitle">Log a visit</h2>
-    <div class="sub">Required fields are marked <span style="color:var(--ink)">•</span></div>
+    <div class="sub">Required fields are marked <span class="req">•</span></div>
 
     <div class="field">
       <label>Restaurant <span class="req">•</span></label>
@@ -311,8 +328,8 @@
       <label>Location <span class="req">•</span></label>
       <div class="locrow">
         <input type="text" id="f-location" autocomplete="off" placeholder="e.g. Surry Hills, Sydney" required>
-        <button type="button" class="btn-locate" id="locateBtn">Find on map</button>
-        <button type="button" class="btn-locate" id="trackBtn" style="display:none" title="Pin where you were at this date &amp; time">From tracker</button>
+        <button type="button" class="btn-locate" id="locateBtn">Find on Map</button>
+        <button type="button" class="btn-locate" id="trackBtn" style="display:none" title="Pin where you were at this date &amp; time">From Tracker</button>
       </div>
       <div id="formMapWrap">
         <div id="formMap"></div>
@@ -336,18 +353,18 @@
       <div style="display:flex;align-items:center">
         <div class="starpick" id="starpick"></div>
         <span class="ratingval" id="ratingval"></span>
-        <button type="button" class="clearstar" id="clearStar" style="display:none">clear</button>
+        <button type="button" class="clearstar" id="clearStar" style="display:none">Clear</button>
       </div>
     </div>
 
     <div class="field">
-      <label>Menu items</label>
+      <label>Menu Items</label>
       <div id="items"></div>
-      <button type="button" class="additem" id="addItem">+ Add item</button>
+      <button type="button" class="additem" id="addItem">Add Item</button>
     </div>
 
     <div class="field">
-      <label>Amount spent</label>
+      <label>Amount Spent</label>
       <div class="amount-input">
         <select id="f-currency" aria-label="Currency">
           <option value="$">$</option>
@@ -357,7 +374,7 @@
           <option value="¥">¥</option>
         </select>
         <input type="text" inputmode="decimal" id="f-amount" placeholder="0.00">
-        <button type="button" class="sumbtn" id="sumBtn" title="Total the item prices">Σ</button>
+        <button type="button" class="sumbtn" id="sumBtn" title="Total the item prices">Sum</button>
       </div>
       <div class="map-hint" id="autoHint" style="display:none">Auto-totalled from items — type to override.</div>
     </div>
@@ -365,14 +382,14 @@
     <div class="form-actions">
       <span class="err" id="formErr"></span>
       <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
-      <button type="submit" class="btn btn-primary" id="saveBtn">Save visit</button>
+      <button type="submit" class="btn btn-primary" id="saveBtn">Save Visit</button>
     </div>
   </form>
 </dialog>
 
 <div id="login">
   <form class="login-card" id="loginForm">
-    <h1 class="wordmark">Covers<span class="dot">.</span></h1>
+    <h1 class="wordmark">covers<span class="dot">.</span></h1>
     <div class="login-sub">A private dining log.</div>
     <input type="password" id="loginPw" placeholder="Password" autocomplete="current-password" autofocus>
     <button class="btn btn-primary" type="submit">Enter</button>
@@ -382,6 +399,7 @@
 
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">
 <div id="toast"></div>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 
 <script>
 "use strict";
@@ -488,7 +506,7 @@ function addItemRow(name="",price=""){
   row.innerHTML=
     `<input class="i-name" placeholder="Dish or drink" autocomplete="off">`+
     `<div class="i-pricewrap"><span class="i-cur"></span><input class="i-cost" inputmode="decimal" placeholder="0.00"></div>`+
-    `<button type="button" class="i-del" aria-label="Remove item">×</button>`;
+    `<button type="button" class="i-del">Remove</button>`;
   row.querySelector('.i-name').value=name;
   row.querySelector('.i-cost').value=(price!==""&&price!=null)?price:"";
   row.querySelector('.i-cur').textContent=$("#f-currency").value;
@@ -523,10 +541,10 @@ function renderStats(){
   const spentStr=Object.entries(byCur).map(([c,v])=>`${c}${fmtMoney(v)}`).join("  ·  ")||"—";
   const places=new Set(entries.map(e=>normLoc(e.location))).size;
   el.innerHTML=`
-    <span class="stat"><b>${visits}</b><span class="lab">visit${visits!==1?'s':''}</span></span>
-    <span class="stat"><b>${spentStr}</b><span class="lab">spent</span></span>
-    ${avg?`<span class="stat"><b>${avg.toFixed(1)}</b><span class="lab">avg rating</span></span>`:''}
-    <span class="stat"><b>${places}</b><span class="lab">place${places!==1?'s':''}</span></span>`;
+    <span class="stat"><b>${visits}</b><span class="lab">Visit${visits!==1?'s':''}</span></span>
+    <span class="stat"><b>${spentStr}</b><span class="lab">Spent</span></span>
+    ${avg?`<span class="stat"><b>${avg.toFixed(1)}</b><span class="lab">Avg Rating</span></span>`:''}
+    <span class="stat"><b>${places}</b><span class="lab">Place${places!==1?'s':''}</span></span>`;
 }
 
 /* ---------- render log ---------- */
@@ -550,7 +568,7 @@ function render(){
   if(!entries.length){log.innerHTML="";if(currentView==="log")$("#empty").style.display="block";return;}
   $("#empty").style.display="none";
 
-  if(!list.length){log.innerHTML=`<div class="empty"><h3>No matches</h3><p>Nothing matches “${esc(q)}”.</p></div>`;return;}
+  if(!list.length){log.innerHTML=`<div class="empty"><p>0 matches for “${esc(q)}”.</p></div>`;return;}
 
   const grouped=(sort==="date-desc"||sort==="date-asc");
   let html="",lastMonth=null,idx=0;
@@ -559,7 +577,7 @@ function render(){
       const mk=monthKey(e.date);
       if(mk!==lastMonth){
         const count=list.filter(x=>monthKey(x.date)===mk).length;
-        html+=`<div class="month"><h2>${mk}</h2><span class="rule"></span><span class="mcount">${count} visit${count!==1?'s':''}</span></div>`;
+        html+=`<div class="month"><h2>${mk}</h2><span class="mcount">${count} visit${count!==1?'s':''}</span></div>`;
         lastMonth=mk;
       }
     }
@@ -579,15 +597,15 @@ function itemsHTML(e){
   return e.food?`<div class="food">${esc(e.food)}</div>`:"";
 }
 function entryHTML(e,idx){
-  const loc=e.location?`<div class="loc"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14s5-4.2 5-8A5 5 0 0 0 3 6c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.8"/></svg>${esc(e.location)}</div>`:"";
+  const loc=e.location?`<div class="loc">${esc(e.location)}</div>`:"";
   const rating=e.rating>0?starsDisplay(e.rating):"";
   const amount=e.amount>0?`<div class="amount">${esc(cur(e))}${fmtMoney(e.amount)}</div>`:"";
   const time=e.time?`<div class="tm">${fmtTime(e.time)}</div>`:"";
   return `
-  <article class="entry" style="animation-delay:${Math.min(idx*40,320)}ms">
+  <article class="entry">
     <div class="tools">
-      <button title="Edit" onclick="openDialog('${e.id}')" aria-label="Edit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L6 12l-2.6.6L4 10z"/></svg></button>
-      <button class="del" title="Delete" onclick="del('${e.id}')" aria-label="Delete"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.6 9h4.8L11 4" stroke-linecap="round"/></svg></button>
+      <button onclick="openDialog('${e.id}')">Edit</button>
+      <button class="del" onclick="del('${e.id}')">Delete</button>
     </div>
     <div class="datechip"><div class="d">${dayNum(e.date)}</div><div class="wd">${weekday(e.date)}</div>${time}</div>
     <div class="body"><div class="name">${esc(e.name)}</div>${loc}${itemsHTML(e)}</div>
@@ -641,7 +659,7 @@ function updateMapNote(pending){
   const located=new Set(entries.filter(e=>typeof e.lat==='number').map(e=>normLoc(e.location))).size;
   const missing=total-located;
   note.textContent=missing>0
-    ?`${located} of ${total} places mapped · ${missing} couldn't be located — open a visit and use “Find on map”.`
+    ?`${located} of ${total} places mapped · ${missing} couldn't be located — open a visit and use “Find on Map”.`
     :`${located} place${located!==1?'s':''} mapped.`;
 }
 async function ensureCoords(){
@@ -702,7 +720,7 @@ function openDialog(id){
   if(id){
     const e=entries.find(x=>x.id===id);
     $("#dlgTitle").textContent="Edit visit";
-    $("#saveBtn").textContent="Save changes";
+    $("#saveBtn").textContent="Save Changes";
     $("#f-name").value=e.name;
     $("#f-location").value=e.location;
     $("#f-date").value=e.date;
@@ -717,7 +735,7 @@ function openDialog(id){
     if(typeof e.lat==='number'){draftLat=e.lat;draftLng=e.lng;showFormMap(e.lat,e.lng);}
   } else {
     $("#dlgTitle").textContent="Log a visit";
-    $("#saveBtn").textContent="Save visit";
+    $("#saveBtn").textContent="Save Visit";
     $("#form").reset();
     $("#f-date").value=new Date().toISOString().slice(0,10);
     $("#f-currency").value=prefs.currency||DEFAULT_CUR;
@@ -753,10 +771,10 @@ $("#form").addEventListener('submit',async e=>{
     if(editingId){
       saved=await api('PUT','/entries/'+editingId,data);
       const i=entries.findIndex(x=>x.id===editingId); if(i>=0) entries[i]=saved;
-      toast("Visit updated");
+      toast("Saved.");
     }else{
       saved=await api('POST','/entries',data);
-      entries.push(saved); toast("Visit logged");
+      entries.push(saved); toast("Logged.");
     }
     render(); if(currentView==="map")renderMap(); dialog.close();
     if(typeof saved.lat!=='number') backgroundGeocode(saved);
@@ -787,7 +805,7 @@ $("#locateBtn").addEventListener('click',async()=>{
   if(!loc){toast("Type a location first");return;}
   const btn=$("#locateBtn"); btn.textContent="Finding…"; btn.disabled=true;
   const res=await geocode(loc);
-  btn.textContent="Find on map"; btn.disabled=false;
+  btn.textContent="Find on Map"; btn.disabled=false;
   if(!res){toast("Couldn't find that place — drop the pin manually");showFormMap(20,0,2);return;}
   draftLat=res.lat; draftLng=res.lng; showFormMap(res.lat,res.lng,14);
 });
@@ -820,7 +838,7 @@ function checkTracker(){
 async function del(id){
   const e=entries.find(x=>x.id===id);
   if(!confirm(`Delete your visit to ${e.name}?`))return;
-  try{ await api('DELETE','/entries/'+id); entries=entries.filter(x=>x.id!==id); render(); if(currentView==="map")renderMap(); toast("Visit deleted"); }
+  try{ await api('DELETE','/entries/'+id); entries=entries.filter(x=>x.id!==id); render(); if(currentView==="map")renderMap(); toast("Deleted."); }
   catch{ toast("Delete failed"); }
 }
 window.del=del;
@@ -841,7 +859,7 @@ menu.addEventListener('click',e=>{
 });
 function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function today(){return new Date().toISOString().slice(0,10);}
-function exportJSON(){if(!entries.length){toast("Nothing to export");return;}download(`covers-${today()}.json`,JSON.stringify(entries,null,2),"application/json");toast("Exported JSON");}
+function exportJSON(){if(!entries.length){toast("Nothing to export");return;}download(`covers-${today()}.json`,JSON.stringify(entries,null,2),"application/json");toast("Exported JSON.");}
 function itemsToText(e){if(e.items&&e.items.length)return e.items.map(it=>it.price!=null?`${it.name} (${cur(e)}${fmtMoney(it.price)})`:it.name).join('; ');return e.food||"";}
 function csvCell(v){if(v===undefined||v===null)return"";const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 function exportCSV(){
@@ -850,7 +868,7 @@ function exportCSV(){
   const rows=entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
     cols.map(c=>c==="items"?csvCell(itemsToText(e)):csvCell(e[c])).join(","));
   download(`covers-${today()}.csv`,[cols.join(","),...rows].join("\n"),"text/csv");
-  toast("Exported CSV");
+  toast("Exported CSV.");
 }
 $("#importFile").addEventListener('change',e=>{
   const file=e.target.files[0]; if(!file)return;
@@ -870,7 +888,7 @@ $("#importFile").addEventListener('change',e=>{
 async function clearAll(){
   if(!entries.length){toast("Already empty");return;}
   if(!confirm(`Delete all ${entries.length} visits? Export first if you want a backup.`))return;
-  try{ await api('DELETE','/entries'); entries=[]; render(); if(currentView==="map")renderMap(); toast("Cleared"); }
+  try{ await api('DELETE','/entries'); entries=[]; render(); if(currentView==="map")renderMap(); toast("Cleared."); }
   catch{ toast("Couldn't clear"); }
 }
 async function loadSample(){
@@ -882,7 +900,7 @@ async function loadSample(){
     {name:"Sungei Road Laksa",location:"Jalan Berseh, Singapore",date:back(70),time:"12:30",rating:4,currency:"S$",lat:1.3066,lng:103.8576,items:[{name:"Laksa (large)",price:5},{name:"Iced kopi",price:2}],amount:7},
     {name:"Tsuta",location:"Sumida, Tokyo",date:back(95),rating:5,currency:"¥",lat:35.7101,lng:139.8107,items:[{name:"Shoyu soba",price:1200},{name:"Ajitama egg",price:150}],amount:1350}
   ];
-  try{ const res=await api('POST','/import',{entries:s}); entries=res.entries; render(); if(currentView==="map")renderMap(); toast("Sample data loaded"); }
+  try{ const res=await api('POST','/import',{entries:s}); entries=res.entries; render(); if(currentView==="map")renderMap(); toast("Sample loaded."); }
   catch{ toast("Couldn't load sample"); }
 }
 function back(days){const d=new Date();d.setDate(d.getDate()-days);return d.toISOString().slice(0,10);}

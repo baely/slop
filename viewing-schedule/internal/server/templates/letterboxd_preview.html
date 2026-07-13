@@ -4,39 +4,130 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{.Title}} — Letterboxd Import</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111; background: #f7f7f8; margin: 0; }
-.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-h1 { font-size: 18px; font-weight: 600; }
-a { color: #0070cc; }
-.card { background: #fff; border: 1px solid #e6e6e8; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
-.card h2 { font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
-.muted { color: #888; font-size: 11px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
+}
+
+body { font-family: var(--font-body); font-size: 14px; line-height: 1.55; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent-text); }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* top nav band */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; background: var(--accent-soft); flex-wrap: wrap; }
+.nav .wordmark { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: 18px; color: var(--text); text-decoration: none; text-transform: lowercase; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav a.navlink { color: var(--text-2); text-decoration: none; font-weight: 500; font-size: 13px; }
+.nav a.navlink:hover { color: var(--accent-text); }
+.nav a.navlink.active { color: var(--accent-text); font-weight: 600; }
+
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 96px; }
+.page-title { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: clamp(24px, 5vw, 34px); line-height: 1.1; margin-bottom: 16px; }
+
+.card { background: var(--surface); border-radius: var(--r-card); padding: 16px; margin-bottom: 16px; }
+
+.muted { color: var(--text-2); font-size: 13px; }
+.mono { font-family: var(--font-mono); font-size: 0.93em; }
+.warn-line { color: #b45309; font-size: 13px; font-weight: 500; }
+
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 6px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; font-size: 12px; }
-th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; font-weight: 600; }
-input[type="date"], input[type="text"] { font: inherit; padding: 4px 6px; border: 1px solid #d4d4d8; border-radius: 3px; }
-input[type="date"] { width: 130px; }
+th { font-size: 12px; font-weight: 600; color: var(--text-2); text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); }
+td { padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 13px; }
+
+label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.inline { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-weight: 500; font-size: 13px; }
+input[type="date"], input[type="text"] {
+  font-family: var(--font-body); font-size: 14px; color: var(--text);
+  background: var(--surface-2); border: none; border-radius: var(--r-ctl); padding: 8px 10px; min-height: 36px;
+}
+input[type="date"] { width: 150px; }
 input[type="text"] { width: 100%; }
-button { padding: 6px 14px; font: inherit; border: 1px solid #111; background: #111; color: #fff; border-radius: 4px; cursor: pointer; }
-button.secondary { background: #fff; color: #111; }
-.actions { display: flex; gap: 8px; align-items: center; }
-.row-toggle { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text); background-color: var(--surface-2); border: none; border-radius: var(--r-ctl); padding: 9px 16px; min-height: 38px; cursor: pointer; text-decoration: none; }
+.btn.primary { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+.btn.primary:hover { background-color: var(--accent-deep); }
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+
+.actions { display: flex; gap: 12px; align-items: center; }
+.row-toggle { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.scroll { overflow-x: auto; }
+
+.b-glyph { position: fixed; bottom: 10px; right: 10px; z-index: 90; font-family: var(--font-display); font-weight: 800; font-size: 13px; line-height: 1; color: var(--text-2); background: var(--surface); border-radius: var(--r-ctl); padding: 6px 8px; text-decoration: none; }
+.b-glyph:hover { color: var(--accent-text); }
 </style>
 </head>
 <body>
+<nav class="nav">
+  <a class="wordmark" href="/">{{.Title}}</a>
+  <div class="nav-right">
+    <a class="navlink" href="/">Schedule</a>
+    <a class="navlink" href="/history">History</a>
+    <a class="navlink active" href="/admin">Admin</a>
+  </div>
+</nav>
 <div class="app">
-  <header>
-    <h1>Letterboxd import preview</h1>
-    <a href="/admin">&larr; back to admin</a>
-  </header>
+  <h1 class="page-title">Import Preview</h1>
 
   <div class="card">
     <div class="muted">Source: <a href="{{.SourceURL}}" target="_blank" rel="noreferrer">{{.SourceURL}}</a></div>
-    <div class="muted">Found {{len .Films}} films · start {{.StartDate}} · cadence {{.Cadence}}</div>
-    {{if not .HasTMDB}}<div class="muted" style="color:#c33;">TMDB token not configured — imported entries will save without posters/metadata.</div>{{end}}
+    <div class="muted" style="margin-top:4px;">Found <span class="mono">{{len .Films}}</span> films · start <span class="mono">{{.StartDate}}</span> · cadence <span class="mono">{{.Cadence}}</span></div>
+    {{if not .HasTMDB}}<div class="warn-line" style="margin-top:6px;">TMDB token not configured — imported entries will save without posters/metadata.</div>{{end}}
   </div>
 
   <form method="POST" action="/admin/letterboxd/import">
@@ -45,30 +136,33 @@ button.secondary { background: #fff; color: #111; }
 
     <div class="card">
       <div class="row-toggle">
-        <label><input type="checkbox" id="toggle-all" checked> Select all</label>
+        <label class="inline"><input type="checkbox" id="toggle-all" checked> Select All</label>
         <span class="muted">Edit dates and titles below before importing.</span>
       </div>
-      <table>
-        <thead><tr><th></th><th>Date</th><th>Title</th><th>Letterboxd</th></tr></thead>
-        <tbody>
-          {{range .Films}}
-          <tr>
-            <td><input type="checkbox" name="include_{{.Index}}" value="1" checked class="incl"></td>
-            <td><input type="date" name="date_{{.Index}}" value="{{.Date}}" required></td>
-            <td><input type="text" name="title_{{.Index}}" value="{{.FullTitle}}" required></td>
-            <td><a href="{{.Link}}" target="_blank" rel="noreferrer" class="muted">{{.Slug}}</a></td>
-          </tr>
-          {{end}}
-        </tbody>
-      </table>
+      <div class="scroll">
+        <table>
+          <thead><tr><th></th><th>Date</th><th>Title</th><th>Letterboxd</th></tr></thead>
+          <tbody>
+            {{range .Films}}
+            <tr>
+              <td><input type="checkbox" name="include_{{.Index}}" value="1" checked class="incl"></td>
+              <td><input type="date" name="date_{{.Index}}" value="{{.Date}}" required></td>
+              <td><input type="text" name="title_{{.Index}}" value="{{.FullTitle}}" required></td>
+              <td><a href="{{.Link}}" target="_blank" rel="noreferrer" class="muted">{{.Slug}}</a></td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="card actions">
-      <button type="submit">Import {{len .Films}} films</button>
-      <a href="/admin" class="muted">Cancel</a>
+      <button type="submit" class="btn primary">Import {{len .Films}} Films</button>
+      <a href="/admin" class="muted" style="text-decoration:none;">Cancel</a>
     </div>
   </form>
 </div>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 <script>
 document.getElementById('toggle-all').addEventListener('change', function(e){
   document.querySelectorAll('.incl').forEach(c => c.checked = e.target.checked);

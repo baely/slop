@@ -1,19 +1,20 @@
 {{define "trip"}}{{template "head" .}}
-<header class="topbar">
-  <a class="wordmark" href="/">Voyage</a>
-  <form method="post" action="/logout"><button class="btn-ghost btn-sm">Sign out</button></form>
+<header class="nav">
+  <a class="wordmark" href="/">voyage</a>
+  <form method="post" action="/logout"><button class="btn-ghost">Sign Out</button></form>
 </header>
+<div class="wrap">
 
-<a class="back" href="/">&larr; All trips</a>
+<a class="back" href="/">&larr; All Trips</a>
 <h1>{{.Trip.Title}}</h1>
 
 <div class="locations">
   {{range .Locations}}<span class="tag">{{.Name}}
-    <form method="post" action="/locations/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm" style="padding:0 4px">&times;</button></form>
+    <form method="post" action="/locations/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost" style="padding:2px 6px;font-size:12px">Remove</button></form>
   </span>{{end}}
   <form method="post" action="/trips/{{.Trip.ID}}/locations" class="inline">
     <input type="hidden" name="redirect" value="{{.CurrentURL}}">
-    <input name="name" placeholder="Add location" class="btn-sm">
+    <input name="name" placeholder="Add location">
     <button class="btn-sm">Add</button>
   </form>
 </div>
@@ -32,7 +33,7 @@
       <button class="btn-sm">Update</button>
     </form>
     <span class="grow"></span>
-    <span class="meta">{{if .TripNights}}Per-night totals use <strong>{{.TripNights}} nights</strong> ({{.TripNightsLabel}}) · per-person totals use <strong>{{.Trip.PartySize}}</strong>{{else}}Add a date range to get per-night totals{{end}}</span>
+    <span class="meta">{{if .TripNights}}Per-night totals use <strong><span class="num">{{.TripNights}}</span> nights</strong> ({{.TripNightsLabel}}) &middot; per-person totals use <strong><span class="num">{{.Trip.PartySize}}</span></strong>{{else}}Add a date range to get per-night totals{{end}}</span>
   </div>
 </div>
 
@@ -42,14 +43,14 @@
 
 {{/* 1 — BUDGET */}}
 <div class="card">
-  <div class="ticket"><span class="stamp">1 · Budget</span></div>
+  <div class="ticket"><span class="stamp">1 &middot; Budget</span></div>
   <ul class="opts">
     {{range .Budgets}}<li id="axis_option-{{.Option.ID}}">
       <span class="mono">{{.Option.Label}}</span>
       {{if .Option.TotalLabel}}<span class="muted">{{.Option.TotalLabel}}</span>{{end}}
-      <span class="votes">&#9829; {{.Option.Votes}}</span>
+      <span class="votes"><span class="num">{{.Option.Votes}}</span> votes</span>
       <span class="grow"></span>
-      <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
     </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
   </ul>
   <form method="post" action="/axes/{{.BudgetAxis.ID}}/options" class="addform" style="margin-top:10px">
@@ -58,33 +59,33 @@
     <input name="currency" value="{{defaultCurrency}}" size="4">
     <select name="basis"><option value="total">total</option><option value="pp">pp</option></select>
     <input name="label" placeholder="or custom label">
-    <button class="btn-primary btn-sm">Add budget</button>
+    <button class="btn-primary btn-sm">Add Budget</button>
   </form>
 </div>
 
 {{/* 2 — DATES */}}
 <div class="card">
-  <div class="ticket"><span class="stamp">2 · Dates</span></div>
+  <div class="ticket"><span class="stamp">2 &middot; Dates</span></div>
   <ul class="opts">
     {{range .Dates}}<li>
       <span class="mono">{{.Label}}</span>
-      {{if .Nights}}<span class="muted">· {{.Nights}} nights</span>{{end}}
-      <span class="votes">&#9829; {{.Votes}}</span>
+      {{if .Nights}}<span class="muted">&middot; <span class="num">{{.Nights}}</span> nights</span>{{end}}
+      <span class="votes"><span class="num">{{.Votes}}</span> votes</span>
       <span class="grow"></span>
-      <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
     </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
   </ul>
   <form method="post" action="/axes/{{.DatesAxis.ID}}/options" class="addform" style="margin-top:10px">
     <input type="hidden" name="redirect" value="{{.CurrentURL}}">
     <input type="date" name="start"><input type="date" name="end">
     <input name="label" placeholder="or custom label">
-    <button class="btn-primary btn-sm">Add dates</button>
+    <button class="btn-primary btn-sm">Add Dates</button>
   </form>
 </div>
 
 {{/* 3 — ACCOMMODATION (its own step; a list per budget) */}}
 <div class="card">
-  <div class="ticket"><span class="stamp">3 · Accommodation</span></div>
+  <div class="ticket"><span class="stamp">3 &middot; Accommodation</span></div>
   <p class="muted">Add the places you'd stay for each budget.</p>
   {{range .Budgets}}
   <div class="group">
@@ -95,11 +96,11 @@
         {{if metaStr .Meta "price"}}<span class="muted mono">{{cur (metaStr .Meta "currency")}}{{metaStr .Meta "price"}} {{metaStr .Meta "basis"}}</span>{{end}}
       {{if .TotalLabel}}<span class="muted">{{.TotalLabel}}</span>{{end}}
         {{if metaStr .Meta "area"}}<span class="muted">&middot; {{metaStr .Meta "area"}}</span>{{end}}
-        {{if metaStr .Meta "rating"}}<span class="muted">&middot; {{metaStr .Meta "rating"}}<span class="star">&#9733;</span></span>{{end}}
+        {{if metaStr .Meta "rating"}}<span class="muted">&middot; <span class="num">{{metaStr .Meta "rating"}}</span><span class="star">&#9733;</span></span>{{end}}
         {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
         <span class="grow"></span>
-        <span class="votes">&#9829; {{.Votes}}</span>
-        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+        <span class="votes"><span class="num">{{.Votes}}</span> votes</span>
+        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
       </li>{{else}}<li class="muted">No accommodation yet for this budget.</li>{{end}}
     </ul>
     <form method="post" action="/options/{{.Option.ID}}/hotels" class="addform" style="margin-top:8px">
@@ -111,7 +112,7 @@
       <input name="area" placeholder="area" size="9">
       <input name="rating" placeholder="rating" size="5">
       <input name="link" placeholder="link">
-      <button class="btn-primary btn-sm">Add accommodation</button>
+      <button class="btn-primary btn-sm">Add Accommodation</button>
     </form>
   </div>
   {{else}}<p class="muted">Add a budget first, then list places to stay for it.</p>{{end}}
@@ -120,14 +121,14 @@
 {{/* 4 — ACTIVITIES */}}
 {{if .Activities}}
 <div class="card">
-  <div class="ticket"><span class="stamp">4 · Activities</span></div>
+  <div class="ticket"><span class="stamp">4 &middot; Activities</span></div>
   <ul class="activities">
     {{range .Activities.Items}}<li>
       <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}{{if .Link}} <a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}</span>
       <span class="grow"></span>
-      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="up"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&uarr;</button></form>
-      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="down"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&darr;</button></form>
-      <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="up"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Up</button></form>
+      <form method="post" action="/activities/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="down"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Down</button></form>
+      <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
     </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
   </ul>
   <form method="post" action="/trips/{{.Trip.ID}}/activities" class="addform" style="margin-top:10px">
@@ -150,8 +151,8 @@
   <div class="shareurl">
     <input id="shareurl" value="{{.ShareURL}}" readonly>
     <button class="btn-sm" type="button" onclick="navigator.clipboard.writeText(document.getElementById('shareurl').value);this.textContent='Copied';">Copy</button>
-    <a class="btn-sm btn-ghost" href="{{.ShareURL}}" target="_blank" rel="noopener">Open</a>
-    <form method="post" action="/trips/{{.Trip.ID}}/share/rotate" class="inline" onsubmit="return confirm('Rotate the link? The old one will stop working.')"><input type="hidden" name="redirect" value="{{.CurrentURL}}"><button class="btn-ghost btn-sm">Rotate</button></form>
+    <a class="btn-sm" href="{{.ShareURL}}" target="_blank" rel="noopener">Open</a>
+    <form method="post" action="/trips/{{.Trip.ID}}/share/rotate" class="inline" onsubmit="return confirm('Rotate the link? The old one will stop working.')"><input type="hidden" name="redirect" value="{{.CurrentURL}}"><button class="btn-ghost">Rotate</button></form>
   </div>
 </div>
 
@@ -162,9 +163,9 @@
       <div class="row">
         <span class="mono">{{.Option.Label}}</span>
         {{if .Option.TotalLabel}}<span class="muted">{{.Option.TotalLabel}}</span>{{end}}
-        <span class="votes">&#9829; {{.Option.Votes}}</span>
+        <span class="votes"><span class="num">{{.Option.Votes}}</span> votes</span>
         <span class="grow"></span>
-        <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+        <form method="post" action="/options/{{.Option.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
       </div>
     </li>{{else}}<li class="muted">No budgets yet.</li>{{end}}
   </ul>
@@ -174,7 +175,7 @@
     <input name="currency" value="{{defaultCurrency}}" size="4">
     <select name="basis"><option value="total">total</option><option value="pp">pp</option></select>
     <input name="label" placeholder="or custom label">
-    <button class="btn-primary btn-sm">Add budget</button>
+    <button class="btn-primary btn-sm">Add Budget</button>
   </form>
 </div>
 
@@ -184,10 +185,10 @@
     {{range .Dates}}<li style="display:block">
       <div class="row">
         <span class="mono">{{.Label}}</span>
-        {{if .Nights}}<span class="muted">· {{.Nights}} nights</span>{{end}}
-        <span class="votes">&#9829; {{.Votes}}</span>
+        {{if .Nights}}<span class="muted">&middot; <span class="num">{{.Nights}}</span> nights</span>{{end}}
+        <span class="votes"><span class="num">{{.Votes}}</span> votes</span>
         <span class="grow"></span>
-        <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+        <form method="post" action="/options/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
       </div>
     </li>{{else}}<li class="muted">No date ranges yet.</li>{{end}}
   </ul>
@@ -195,7 +196,7 @@
     <input type="hidden" name="redirect" value="{{.CurrentURL}}">
     <input type="date" name="start"><input type="date" name="end">
     <input name="label" placeholder="or custom label">
-    <button class="btn-primary btn-sm">Add dates</button>
+    <button class="btn-primary btn-sm">Add Dates</button>
   </form>
 </div>
 
@@ -212,14 +213,14 @@
         {{if metaStr .Meta "area"}}<span class="muted">&middot; {{metaStr .Meta "area"}}</span>{{end}}
         {{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}
         <span class="grow"></span>
-        <span class="votes">&#9829; {{.Votes}}</span>
+        <span class="votes"><span class="num">{{.Votes}}</span> votes</span>
         {{if ne .Status "option"}}<span class="pill pill-{{.Status}}">{{.Status}}</span>{{end}}
       </div>
       <div class="statusbtns" style="margin-top:6px">
-        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="preferred"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Prefer</button></form>
-        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="selected"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Select</button></form>
-        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">Reset</button></form>
-        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="preferred"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Prefer</button></form>
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="selected"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Select</button></form>
+        <form method="post" action="/items/{{.ID}}/status" class="inline"><input type="hidden" name="status" value="option"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Reset</button></form>
+        <form method="post" action="/items/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
       </div>
     </li>{{else}}<li class="muted">No accommodation for this budget.</li>{{end}}
   </ul>
@@ -232,7 +233,7 @@
     <input name="area" placeholder="area" size="9">
     <input name="rating" placeholder="rating" size="5">
     <input name="link" placeholder="link">
-    <button class="btn-primary btn-sm">Add accommodation</button>
+    <button class="btn-primary btn-sm">Add Accommodation</button>
   </form>
 </div>
 {{else}}<div class="empty">No budgets yet — add one above.</div>{{end}}
@@ -245,8 +246,8 @@
       <div class="row">
         <span>{{.Label}}{{if .Notes}} <span class="muted">— {{.Notes}}</span>{{end}}{{if .Link}} <a href="{{.Link}}" target="_blank" rel="noopener">link</a>{{end}}</span>
         <span class="grow"></span>
-        <span class="votes">score {{.Votes}}</span>
-        <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost btn-sm">&times;</button></form>
+        <span class="votes">score <span class="num">{{.Votes}}</span></span>
+        <form method="post" action="/activities/{{.ID}}/delete" class="inline"><input type="hidden" name="redirect" value="{{$.CurrentURL}}"><button class="btn-ghost">Delete</button></form>
       </div>
     </li>{{else}}<li class="muted">No activities yet.</li>{{end}}
   </ul>
@@ -261,4 +262,5 @@
 {{end}}
 
 {{end}}
+</div>
 {{template "foot" .}}{{end}}

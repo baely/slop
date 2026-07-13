@@ -4,125 +4,242 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  /* ---------- house tokens ---------- */
   :root {
-    --ink:#16201f; --ink-2:#3a4544; --soft:#5d6a69; --faint:#94a09f;
-    --line:#e2e8e7; --line-2:#eef2f1; --bg:#fff; --page:#f3f7f6; --bg-2:#f6faf9;
-    --accent:#0f8a82; --accent-deep:#0b6f68; --accent-tint:#e4f3f1;
-    --warm:#ef5d48; --warm-deep:#d44329; --warm-tint:#fdece8;
-    --gold:#e0a236;
-    --danger:#c4402c; --ok:#0f8a82;
-    --shadow: 0 1px 2px rgba(16,42,40,.05), 0 10px 26px -18px rgba(16,42,40,.28);
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --accent: #0891b2;
+    --accent-deep: #0e7490;
+    --accent-ink: #ffffff;
+
+    --r-ctl: 3px;
+    --r-card: 4px;
+    --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+    /* status (reserved, never decorative) */
+    --ok: #15803d;
+    --warn: #b45309;
+    --bad: #b91c1c;
+    --danger: #b91c1c;
+
+    /* light */
+    --bg: #fafafa;
+    --surface: #f1f1f3;
+    --surface-2: #e9e9ed;
+    --text: #131316;
+    --text-2: #55555e;
+    --muted: #9b9ba6;
+    --line: #e4e4e9;
+    --accent-text: #0e7490;
+    --accent-soft: #e2f0f4;
+
+    color-scheme: light dark;
   }
-  * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--page);
-    margin: 0; line-height: 1.55; font-size: 15px; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 22px 18px 90px; }
-  a { color: var(--accent); text-underline-offset: 2px; }
-  h1 { font-size: 27px; letter-spacing: -0.02em; margin: 6px 0 2px; }
-  h2 { font-size: 16px; letter-spacing: -0.01em; margin: 0 0 12px; }
-  h3 { font-size: 15px; margin: 0; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0d;
+      --surface: #17171a;
+      --surface-2: #212126;
+      --text: #f2f2f4;
+      --text-2: #a3a3ad;
+      --muted: #5b5b66;
+      --line: #26262c;
+      --accent-text: #3aa8c4;
+      --accent-soft: #0c2229;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+
+  /* ---------- base ---------- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body); font-size: 14.5px; line-height: 1.55;
+    color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 18px 72px; }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+  h1 { font-size: clamp(28px, 6vw, 44px); margin: 6px 0 4px; }
+  h2 { font-size: clamp(18px, 3vw, 22px); margin: 0 0 12px; }
+  h3 { font-size: 16px; margin: 0; }
   p { margin: 6px 0; }
-  .muted { color: var(--faint); font-size: 13px; }
-  .meta { color: var(--soft); font-size: 13px; }
-  .mono { font-family: var(--mono); font-size: 0.9em; letter-spacing: -0.01em; }
-  .star { color: var(--gold); }
 
-  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
-  .wordmark { font-weight: 700; letter-spacing: -0.02em; font-size: 18px; text-decoration: none; color: var(--ink); }
-  .wordmark::after { content: "."; color: var(--warm); }
-  .back { display: inline-block; color: var(--faint); text-decoration: none; font-size: 13px; margin-bottom: 4px; }
-  .back:hover { color: var(--accent); }
+  a { color: var(--accent-text); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 
-  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--faint); margin-bottom: 5px; }
-  input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
-    border-radius: 6px; padding: 8px 10px; transition: border-color .15s, box-shadow .15s; }
-  input::placeholder, textarea::placeholder { color: var(--faint); }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
-  textarea { width: 100%; resize: vertical; }
-  button { font: inherit; cursor: pointer; }
+  .mono, .num, code, pre, time { font-family: var(--font-mono); font-size: 0.92em; }
+  .muted { color: var(--text-2); font-size: 13px; }
+  .meta { color: var(--text-2); font-size: 13px; }
+  .lead { color: var(--text-2); font-size: 14px; margin: 6px 0 2px; }
+  .star { color: var(--muted); }
 
-  .btn, button.btn-primary, button.btn-sm, .vote { border: 1px solid var(--line); background: var(--bg); color: var(--ink);
-    border-radius: 6px; padding: 8px 13px; transition: transform .05s, background .15s, border-color .15s, color .15s; }
-  .btn:hover, button.btn-sm:hover { border-color: var(--faint); }
-  .btn:active, .btn-primary:active, .btn-sm:active { transform: translateY(1px); }
-  button.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  button.btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
-  .btn-sm { padding: 5px 10px; font-size: 13px; }
-  .btn-ghost { background: none; border: none; color: var(--faint); padding: 5px 8px; border-radius: 6px; }
-  .btn-ghost:hover { color: var(--accent); background: var(--accent-tint); }
-  .btn-danger { color: var(--danger); border: none; background: none; }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- top nav (full-width accent band) ---------- */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: var(--accent-soft);
+    padding: 12px max(18px, calc((100% - 860px) / 2 + 18px));
+  }
+  .wordmark {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em;
+    font-size: 20px; color: var(--text); text-decoration: none;
+  }
+  .back { display: inline-block; color: var(--text-2); text-decoration: none; font-size: 13px; margin-bottom: 4px; }
+  .back:hover { color: var(--accent-text); }
+
+  /* ---------- forms ---------- */
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+  input, select, textarea {
+    font-family: var(--font-body); font-size: 14px; color: var(--text);
+    background: var(--surface-2); border: none; border-radius: var(--r-ctl);
+    padding: 9px 11px; min-height: 38px;
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  textarea { width: 100%; resize: vertical; min-height: auto; }
+  .group input, .group select, .group textarea { background: var(--surface); }
+
+  /* ---------- buttons (labels Title Case in markup) ---------- */
+  button { font-family: var(--font-body); cursor: pointer; }
+  .btn-primary, button.btn-sm, a.btn-sm, .vote {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-body); font-size: 14px; font-weight: 600;
+    color: var(--text); background-color: var(--surface-2); border: none;
+    border-radius: var(--r-ctl); padding: 9px 15px; min-height: 38px;
+    cursor: pointer; text-decoration: none;
+  }
+  button.btn-sm, a.btn-sm, .vote { font-size: 13px; padding: 7px 12px; min-height: 34px; }
+  button.btn-sm:hover, a.btn-sm:hover, .vote:hover { background-color: var(--surface); }
+  .btn-primary {
+    color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen);
+    font-weight: 600; border-radius: var(--r-ctl); padding: 9px 16px;
+  }
+  .btn-primary:hover { background-color: var(--accent-deep); }
+  .btn-primary.btn-sm { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+  .btn-primary.btn-sm:hover { background-color: var(--accent-deep); }
+
+  .btn-ghost {
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    background: none; border: none; color: var(--text-2);
+    padding: 6px 8px; border-radius: var(--r-ctl); cursor: pointer;
+  }
+  .btn-ghost:hover { color: var(--accent-text); background: var(--surface-2); }
+  .btn-danger { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--bad); border: none; background: none; padding: 6px 8px; cursor: pointer; }
   .btn-danger:hover { text-decoration: underline; }
+  @media (pointer: coarse) { .btn-primary, button.btn-sm, a.btn-sm, .vote { min-height: 44px; } }
 
+  /* ---------- layout helpers ---------- */
   .inline { display: inline; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .grow { flex: 1; }
   .stack > * + * { margin-top: 13px; }
 
-  .card { border: 1px solid var(--line); border-radius: 10px; padding: 17px 18px; margin: 14px 0; background: var(--bg); box-shadow: var(--shadow); }
-  .lead { color: var(--soft); font-size: 14px; margin: 4px 0 2px; }
+  /* ---------- cards ---------- */
+  .card { background: var(--surface); border-radius: var(--r-card); padding: 16px 18px; margin: 14px 0; }
 
-  /* boarding-pass flourish on a page heading */
-  .ticket { display: flex; align-items: center; gap: 12px; margin: 8px 0 2px; }
-  .ticket::after { content: ""; flex: 1; height: 0; border-top: 1px dashed var(--line); }
-  .ticket .stamp { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--accent); border: 1px solid var(--accent-tint); background: var(--accent-tint); border-radius: 4px; padding: 2px 7px; }
+  /* ---------- boarding-pass stamp (flat) ---------- */
+  .ticket { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+  .ticket::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .stamp {
+    font-family: var(--font-mono); font-weight: 500; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent-text); background: var(--accent-soft);
+    border-radius: var(--r-ctl); padding: 3px 8px;
+  }
 
-  .modes { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 18px 0 8px; }
-  .modes a { text-decoration: none; padding: 8px 15px; color: var(--faint); font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .modes a:hover { color: var(--ink); }
-  .modes a.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  /* ---------- mode tabs ---------- */
+  .modes { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 20px 0 8px; }
+  .modes a { text-decoration: none; padding: 8px 14px; color: var(--text-2); font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .modes a:hover { color: var(--text); }
+  .modes a.active { color: var(--accent-text); border-bottom-color: var(--accent); font-weight: 600; }
 
-  .locations { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 4px; }
-  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 11px; font-size: 13px; }
-  .tag::before { content: "📍"; font-size: 11px; }
+  /* ---------- location chips ---------- */
+  .locations { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--surface-2); border-radius: var(--r-ctl);
+    padding: 4px 6px 4px 10px; font-size: 13px; color: var(--text);
+  }
 
-  .pill { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--soft);
-    background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 8px; }
-  .pill-selected { background: var(--accent-tint); color: var(--accent-deep); border-color: #d6def4; }
-  .pill-preferred { background: #fff6e6; color: #8a5a00; border-color: #f0e2c0; }
+  /* ---------- chips / status ---------- */
+  .pill {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    color: var(--accent-text); background: var(--accent-soft);
+    border-radius: var(--r-ctl); padding: 3px 8px;
+  }
+  .pill { color: var(--text-2); background: var(--surface-2); }
+  .pill-preferred { color: var(--accent-text); background: var(--accent-soft); }
+  .pill-selected { color: var(--accent-ink); background-color: var(--accent-deep); background-image: var(--sheen); }
 
-  /* budget → hotels grouping */
-  .group { border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; margin: 11px 0; background: var(--bg); }
+  /* ---------- nested budget group ---------- */
+  .group { background: var(--surface-2); border-radius: var(--r-card); padding: 13px 14px; margin: 11px 0; }
   .group-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-  .group-title { font-weight: 650; font-size: 15px; }
+  .group-title { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 15px; }
 
+  /* ---------- option lists ---------- */
   .opts { list-style: none; padding: 0; margin: 0; }
-  .opts > li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .opts > li { display: flex; align-items: center; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .opts > li:last-child { border-bottom: none; }
   .addform { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
   .addform input[name=label], .addform input[name=notes] { flex: 1 1 130px; }
 
   .hotels { list-style: none; padding: 0; margin: 8px 0 4px; }
-  .hotels li { padding: 8px 2px; border-bottom: 1px dashed var(--line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hotels li { padding: 9px 2px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .hotels li:last-child { border-bottom: none; }
-  .hotels li.chosen { background: var(--accent-tint); border-radius: 6px; padding: 8px 10px; border-bottom: none; }
+  .hotels li.chosen { background: var(--accent-soft); border-radius: var(--r-ctl); padding: 9px 11px; border-bottom: none; }
 
   .activities { list-style: none; padding: 0; margin: 4px 0; counter-reset: rank; }
-  .activities li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .activities li { display: flex; align-items: center; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .activities li:last-child { border-bottom: none; }
-  .activities li::before { counter-increment: rank; content: counter(rank); font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 16px; }
+  .activities li::before { counter-increment: rank; content: counter(rank); font-family: var(--font-mono); font-weight: 500; font-size: 12px; color: var(--accent-text); min-width: 16px; }
 
-  .votes { color: var(--soft); font-size: 13px; white-space: nowrap; }
-  .vote { color: var(--soft); border-radius: 999px; padding: 5px 12px; }
-  .vote:hover { border-color: var(--warm); color: var(--warm-deep); }
-  .vote.on { background: var(--warm); color: #fff; border-color: var(--warm); }
+  /* ---------- votes ---------- */
+  .votes { color: var(--text-2); font-size: 13px; white-space: nowrap; }
+  .vote.on, .vote.on:hover { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+  .vote.on:hover { background-color: var(--accent-deep); }
 
   .statusbtns { display: flex; gap: 6px; flex-wrap: wrap; }
 
   .shareurl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .shareurl input { flex: 1 1 240px; background: var(--bg-2); font-family: var(--mono); font-size: 13px; }
-  .empty { color: var(--faint); font-size: 14px; padding: 22px 0; text-align: center; }
-  .section-title { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 2px; }
+  .shareurl input { flex: 1 1 240px; font-family: var(--font-mono); font-size: 13px; }
+  .empty { color: var(--text-2); font-size: 14px; padding: 22px 0; text-align: center; }
+  .section-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 24px 0 2px; }
   .section-title h2 { margin: 0; }
+
+  /* ---------- signature ---------- */
+  .b-glyph {
+    position: fixed; bottom: 10px; right: 10px; z-index: 90;
+    font-family: var(--font-display); font-weight: 800; font-size: 13px; line-height: 1;
+    color: var(--text-2); background: var(--surface); border-radius: var(--r-ctl);
+    padding: 6px 8px; text-decoration: none;
+  }
+  .b-glyph:hover { color: var(--accent-text); }
 </style>
 </head>
-<body><div class="wrap">
+<body>
 {{end}}
 
-{{define "foot"}}</div>
+{{define "foot"}}
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 <script>
 // Every action is a form POST that redirects back to the same page, which would
 // otherwise reload scrolled to the top. Remember the scroll position on submit
@@ -177,5 +294,5 @@
 <input type="hidden" name="target_type" value="{{.Type}}">
 <input type="hidden" name="target_id" value="{{.ID}}">
 <input type="hidden" name="redirect" value="/t/{{.Page.Token}}#{{.Type}}-{{.ID}}">
-<button class="vote btn-sm {{if .Voted}}on{{end}}">&#9829; {{.Votes}}</button>
-</form>{{else}}<span class="votes">&#9829; {{.Votes}}</span>{{end}}{{end}}
+<button class="vote btn-sm {{if .Voted}}on{{end}}">{{if .Voted}}Voted{{else}}Vote{{end}} &middot; <span class="num">{{.Votes}}</span></button>
+</form>{{else}}<span class="votes"><span class="num">{{.Votes}}</span> votes</span>{{end}}{{end}}

@@ -101,10 +101,13 @@ if __name__ == "__main__":
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gallery</title>
+<title>gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { background: #0b0b0d; color: #f2f2f4; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -118,7 +121,6 @@ if __name__ == "__main__":
     cursor: pointer;
     display: block;
     opacity: 0;
-    transition: opacity 0.3s;
   }
   .grid img.loaded { opacity: 1; }
   .grid img:hover { opacity: 0.8; }
@@ -148,7 +150,7 @@ if __name__ == "__main__":
     top: 16px;
     right: 20px;
     font-size: 32px;
-    color: #fff;
+    color: #f2f2f4;
     cursor: pointer;
     z-index: 101;
     opacity: 0.6;
@@ -162,7 +164,7 @@ if __name__ == "__main__":
     top: 50%;
     transform: translateY(-50%);
     font-size: 48px;
-    color: #fff;
+    color: #f2f2f4;
     cursor: pointer;
     z-index: 101;
     opacity: 0.4;
@@ -182,21 +184,37 @@ if __name__ == "__main__":
     align-items: center;
     justify-content: center;
     font-size: 13px;
-    color: rgba(255,255,255,0.5);
+    color: #a3a3ad;
     z-index: 101;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', monospace;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
     letter-spacing: 0.02em;
   }
   .theater-info span { white-space: nowrap; }
-  .theater-info .sep { margin: 0 10px; opacity: 0.3; }
+  .theater-info .sep { margin: 0 10px; color: #5b5b66; }
   .theater-info a {
-    color: rgba(255,255,255,0.5);
+    color: #a3a3ad;
     text-decoration: none;
   }
   .theater-info a:hover {
-    color: rgba(255,255,255,0.8);
+    color: #3aa8c4;
     text-decoration: underline;
   }
+  .b-glyph {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 90;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    line-height: 1;
+    color: #a3a3ad;
+    background: #17171a;
+    border-radius: 3px;
+    padding: 6px 8px;
+    text-decoration: none;
+  }
+  .b-glyph:hover { color: #3aa8c4; }
 </style>
 </head>
 <body>
@@ -208,6 +226,7 @@ if __name__ == "__main__":
   <div class="theater-img-wrap"><img id="theater-img" src="" alt=""></div>
   <div class="theater-info" id="info"></div>
 </div>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 <script>
 const images = """ + json_data + """;
 const grid = document.getElementById('grid');

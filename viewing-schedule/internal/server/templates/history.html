@@ -4,56 +4,120 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{.Title}} — History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; color: #111; background: #fff; -webkit-font-smoothing: antialiased; }
+
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
+}
+
+body { font-family: var(--font-body); font-size: 14px; line-height: 1.55; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* top nav band */
+.topnav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 24px; background: var(--accent-soft); flex-wrap: wrap; }
+.topnav .wordmark { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: 18px; color: var(--text); text-decoration: none; text-transform: lowercase; }
+.topnav-right { display: flex; align-items: center; gap: 16px; }
+.topnav a.navlink { color: var(--text-2); text-decoration: none; font-weight: 500; font-size: 13px; }
+.topnav a.navlink:hover { color: var(--accent-text); }
 
 .app { max-width: 1100px; margin: 0 auto; padding: 24px 24px 96px; }
 
-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
-.logo { display: flex; align-items: center; gap: 10px; }
-.logo-mark { width: 32px; height: 32px; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
-.logo-text { font-size: 18px; font-weight: 600; color: #111; letter-spacing: -0.01em; }
-.subtitle { font-size: 11px; color: #999; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 8px; }
+.page-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-title { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: clamp(28px, 6vw, 44px); line-height: 1.1; color: var(--text); }
+.sub { font-size: 13px; color: var(--text-2); }
+.mono { font-family: var(--font-mono); }
 
-.nav { display: flex; gap: 6px; align-items: center; font-size: 12px; flex-wrap: wrap; }
-.nav a { color: #666; text-decoration: none; padding: 4px 8px; border: 1px solid #e0e0e0; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
-.nav a.active { background: #111; color: #fff; border-color: #111; }
+.year-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.year-filter a { font-family: var(--font-mono); font-size: 13px; color: var(--text-2); text-decoration: none; background: var(--surface); padding: 5px 10px; border-radius: var(--r-ctl); }
+.year-filter a:hover { color: var(--accent-text); }
+.year-filter a.active { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); font-weight: 600; }
 
-.summary { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; color: #555; font-size: 12px; }
-.summary div { display: flex; flex-direction: column; }
-.summary strong { color: #111; font-size: 18px; font-weight: 600; }
-.summary span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; }
+.summary { display: flex; gap: 32px; margin-bottom: 28px; flex-wrap: wrap; }
+.summary div { display: flex; flex-direction: column; gap: 2px; }
+.summary strong { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; color: var(--text); font-size: 30px; line-height: 1; }
+.summary span { font-size: 12px; font-weight: 600; color: var(--text-2); }
 
 /* Side month index, sticky */
 .layout { display: grid; grid-template-columns: 56px 1fr; gap: 24px; align-items: start; }
-.month-rail { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 4px; padding-top: 36px; }
-.month-rail a { display: block; padding: 6px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; color: #aaa; text-decoration: none; border-left: 2px solid transparent; transition: color 0.1s, border-color 0.1s, background 0.1s; }
-.month-rail a:hover { color: #111; }
-.month-rail a.has-data { color: #555; font-weight: 600; }
-.month-rail a.active { color: #fff; background: #111; border-color: #111; }
-.month-rail .count { font-size: 9px; color: #ccc; font-weight: 400; display: block; margin-top: 1px; }
-.month-rail a.has-data .count { color: #888; }
-.month-rail a.active .count { color: #ddd; }
+.month-rail { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; padding-top: 36px; }
+.month-rail a { display: block; padding: 6px 4px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; color: var(--muted); text-decoration: none; border-radius: var(--r-ctl); }
+.month-rail a:hover { color: var(--accent-text); }
+.month-rail a.has-data { color: var(--text-2); font-weight: 500; }
+.month-rail a.active { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+.month-rail .count { font-family: var(--font-mono); font-size: 9px; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+.month-rail a.has-data .count { color: var(--text-2); }
+.month-rail a.active .count { color: rgb(255 255 255 / .85); }
 
 .months { display: flex; flex-direction: column; gap: 32px; }
 .month { scroll-margin-top: 16px; }
-.month-header { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid #e6e6e8; }
-.month-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-.month-count { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.08em; }
+.month-header { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; margin-bottom: 12px; }
+.month-title { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 18px; color: var(--text); }
+.month-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
 
 .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.dow { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #bbb; text-align: center; padding: 4px 0 2px; }
+.dow { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; padding: 4px 0 2px; }
 
 /* Base day cell - same shape regardless of how many films are in it. */
 .day {
   aspect-ratio: 1/1;
-  background: #f7f7f8;
-  border-radius: 4px;
+  background: var(--surface);
+  border-radius: var(--r-card);
   position: relative;
   overflow: hidden;
-  transition: transform 0.12s, box-shadow 0.12s;
 }
 .day.empty { background: transparent; }
 
@@ -63,34 +127,34 @@ header { display: flex; align-items: center; justify-content: space-between; pad
   top: 4px;
   left: 4px;
   z-index: 2;
+  font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
-  color: #888;
+  font-weight: 500;
+  color: var(--text-2);
   line-height: 1;
   padding: 3px 5px;
-  border-radius: 2px;
+  border-radius: var(--r-ctl);
   pointer-events: none;
 }
 
 /* Empty days: just the date, no card chrome. */
-.day:not(.has-viewing) .date-badge { color: #bbb; }
+.day:not(.has-viewing) .date-badge { color: var(--muted); }
 
 /* Days with viewings: poster strip fills the cell, date overlays it. */
-.day.has-viewing { background: #111; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-.day.has-viewing:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); z-index: 3; }
+.day.has-viewing { background: #111; cursor: pointer; }
 .day.has-viewing .date-badge {
   color: #fff;
   background: linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.35));
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
-/* Today indicator: blue ring around the cell. */
-.day.today { box-shadow: inset 0 0 0 2px #0070cc, 0 1px 2px rgba(0,0,0,0.08); }
-.day.has-viewing.today { box-shadow: inset 0 0 0 2px #0070cc, 0 4px 12px rgba(0,0,0,0.12); }
-.day.today .date-badge { color: #0070cc; background: #fff; }
-.day.has-viewing.today .date-badge { color: #fff; background: #0070cc; }
+/* Today indicator: teal ring around the cell (selected-state teal). */
+.day.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.day.has-viewing.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.day.today .date-badge { color: var(--accent-text); background: var(--bg); }
+.day.has-viewing.today .date-badge { color: #fff; background: var(--accent); }
 
-/* Poster strip: fills cell, splits adaptively based on count. */
+/* Poster strip: fills cell, splits adaptively based on count. (content) */
 .day .strip { position: absolute; inset: 0; display: flex; gap: 1px; background: #111; }
 .day .strip .slot {
   flex: 1 1 0;
@@ -120,54 +184,64 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 @media (max-width: 600px) {
   .layout { grid-template-columns: 40px 1fr; gap: 12px; }
   .app { padding: 16px 12px 64px; }
+  .topnav { padding: 12px 16px; }
   .month-rail a { font-size: 9px; }
 }
 
-.empty-state { text-align: center; padding: 64px 16px; color: #999; }
-.empty-state h2 { font-size: 16px; color: #555; margin-bottom: 8px; }
-.empty-state code { background: #f5f5f5; padding: 2px 6px; border-radius: 2px; font-family: ui-monospace, monospace; font-size: 12px; }
+.empty-state { text-align: center; padding: 64px 16px; color: var(--text-2); }
+.empty-state h2 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 20px; color: var(--text); margin-bottom: 8px; }
+.empty-state code { font-family: var(--font-mono); background: var(--surface); padding: 2px 6px; border-radius: var(--r-ctl); font-size: 12px; }
 
 /* Modal */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-start; justify-content: center; padding: 32px 16px; z-index: 100; overflow-y: auto; }
 .overlay.open { display: flex; }
-.modal { background: #fff; border-radius: 6px; width: 100%; max-width: 720px; padding: 24px; box-shadow: 0 12px 36px rgba(0,0,0,0.3); }
-.modal h2 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin-bottom: 16px; }
-.viewing { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid #f0f0f0; }
+.modal { background: var(--surface); border-radius: var(--r-card); width: 100%; max-width: 720px; padding: 24px; position: relative; }
+.modal h2 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 18px; color: var(--text); margin-bottom: 16px; padding-right: 72px; }
+.viewing { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
 .viewing:first-of-type { border-top: none; padding-top: 0; }
-.viewing img { width: 110px; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-.viewing .no-poster { width: 110px; aspect-ratio: 2/3; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 9px; text-transform: uppercase; }
-.v-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-.v-info h3 .yr { font-weight: 400; color: #999; }
-.v-meta { font-size: 11px; color: #888; margin-bottom: 4px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-.v-meta .stars { color: #f5a623; font-weight: 600; letter-spacing: 0.05em; }
-.v-meta .like { color: #c33; }
-.v-meta .rewatch { color: #888; font-style: italic; }
-.v-overview { font-size: 12px; color: #444; line-height: 1.5; margin-top: 8px; }
-.v-link { font-size: 11px; margin-top: 8px; }
-.v-link a { color: #0070cc; text-decoration: none; }
-.modal-close { float: right; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; padding: 0 4px; line-height: 1; }
+.viewing img { width: 110px; border-radius: var(--r-ctl); }
+.viewing .no-poster { width: 110px; aspect-ratio: 2/3; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 9px; border-radius: var(--r-ctl); }
+.v-info h3 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 18px; color: var(--text); margin-bottom: 6px; }
+.v-info h3 .yr { font-family: var(--font-mono); font-weight: 500; color: var(--muted); font-size: 0.7em; }
+.v-meta { font-size: 12px; color: var(--text-2); margin-bottom: 6px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.v-meta .stars { color: var(--text); font-weight: 600; letter-spacing: 0.05em; }
+.v-meta .num { font-family: var(--font-mono); color: var(--text-2); }
+.v-meta .tag { font-size: 11px; font-weight: 600; color: var(--accent-text); background: var(--accent-soft); border-radius: var(--r-ctl); padding: 2px 8px; }
+.v-overview { font-size: 13px; color: var(--text-2); line-height: 1.55; margin-top: 8px; }
+.v-link { font-size: 12px; margin-top: 10px; }
+.v-link a { color: var(--accent-text); text-decoration: none; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: var(--surface-2); border: none; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-2); padding: 6px 12px; border-radius: var(--r-ctl); line-height: 1; }
+.modal-close:hover { color: var(--accent-text); }
+
+.b-glyph { position: fixed; bottom: 10px; right: 10px; z-index: 90; font-family: var(--font-display); font-weight: 800; font-size: 13px; line-height: 1; color: var(--text-2); background: var(--surface); border-radius: var(--r-ctl); padding: 6px 8px; text-decoration: none; }
+.b-glyph:hover { color: var(--accent-text); }
 </style>
 </head>
 <body>
+<nav class="topnav">
+  <a class="wordmark" href="/">{{.Title}}</a>
+  <div class="topnav-right">
+    <a class="navlink" href="/">Schedule</a>
+  </div>
+</nav>
 <div class="app">
-  <header>
-    <div class="logo">
-      <div class="logo-mark">VS</div>
-      <div class="logo-text">{{.Title}}</div>
-      <span class="subtitle">History {{if .User}}· {{.User}}{{end}}</span>
-    </div>
-    <div class="nav">
-      <a href="/">← Schedule</a>
-      {{range .Years}}
-        <a href="/history?year={{.}}"{{if eq . $.Year}} class="active"{{end}}>{{.}}</a>
-      {{end}}
-    </div>
-  </header>
+  <div class="page-head">
+    <h1 class="page-title">History</h1>
+    {{if .User}}<span class="sub">Diary of <span class="mono">{{.User}}</span></span>{{end}}
+  </div>
+
+  {{if .Years}}
+  <div class="year-filter">
+    {{range .Years}}
+      <a href="/history?year={{.}}"{{if eq . $.Year}} class="active"{{end}}>{{.}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if not .HasAny}}
   <div class="empty-state">
     <h2>No viewings yet</h2>
-    <p>Set <code>LETTERBOXD_USER</code> and click <strong>Sync now</strong> on the admin panel to import your diary.</p>
+    <p>Set <code>LETTERBOXD_USER</code> and click <strong>Sync Now</strong> on the admin panel to import your diary.</p>
   </div>
   {{else}}
   <div class="summary" id="summary"></div>
@@ -180,11 +254,13 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 
 <div class="overlay" id="overlay">
   <div class="modal" id="modal">
-    <button class="modal-close" id="modal-close" aria-label="Close">×</button>
+    <button class="modal-close" id="modal-close" aria-label="Close">Close</button>
     <h2 id="modal-date"></h2>
     <div id="modal-body"></div>
   </div>
 </div>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 
 <script>
 const YEAR = {{.Year}};
@@ -220,11 +296,11 @@ function renderSummary(viewings) {
     if (v.slug) totals.films.add(v.slug);
   }));
   document.getElementById('summary').innerHTML =
-    '<div><strong>' + totals.count + '</strong><span>viewings</span></div>' +
-    '<div><strong>' + totals.films.size + '</strong><span>unique films</span></div>' +
-    '<div><strong>' + totals.rated + '</strong><span>rated</span></div>' +
-    '<div><strong>' + totals.liked + '</strong><span>liked</span></div>' +
-    '<div><strong>' + totals.rewatch + '</strong><span>rewatches</span></div>';
+    '<div><strong>' + totals.count + '</strong><span>Viewings</span></div>' +
+    '<div><strong>' + totals.films.size + '</strong><span>Unique Films</span></div>' +
+    '<div><strong>' + totals.rated + '</strong><span>Rated</span></div>' +
+    '<div><strong>' + totals.liked + '</strong><span>Liked</span></div>' +
+    '<div><strong>' + totals.rewatch + '</strong><span>Rewatches</span></div>';
 }
 
 // Build a day cell. The cell shape is identical regardless of how many films
@@ -279,7 +355,7 @@ function renderCalendar(viewings) {
   for (let m = 0; m < 12; m++) {
     html += '<section class="month" id="m' + m + '">';
     html += '<div class="month-header">';
-    html += '<div class="month-title">' + MONTHS[m] + ' <span style="color:#bbb;font-weight:400;font-size:13px;">' + YEAR + '</span></div>';
+    html += '<div class="month-title">' + MONTHS[m] + ' <span style="color:var(--muted);font-weight:400;font-size:14px;font-family:var(--font-mono);">' + YEAR + '</span></div>';
     html += '<div class="month-count">' + (monthCounts[m] ? monthCounts[m] + ' viewings' : '—') + '</div>';
     html += '</div>';
     html += '<div class="month-grid">';
@@ -337,9 +413,9 @@ function openModal(date, items) {
     html += '<div class="v-info">';
     html += '<h3>' + escapeHTML(displayTitle(v)) + (v.year ? ' <span class="yr">(' + escapeHTML(v.year) + ')</span>' : '') + '</h3>';
     const meta = [];
-    if (v.rating) meta.push('<span class="stars" title="' + v.rating + '/5">' + stars(v.rating) + '</span> <span style="color:#aaa;">' + v.rating.toFixed(1) + '</span>');
-    if (v.liked) meta.push('<span class="like">❤ liked</span>');
-    if (v.rewatch) meta.push('<span class="rewatch">↻ rewatch</span>');
+    if (v.rating) meta.push('<span class="stars" title="' + v.rating + '/5">' + stars(v.rating) + '</span> <span class="num">' + v.rating.toFixed(1) + '</span>');
+    if (v.liked) meta.push('<span class="tag">Liked</span>');
+    if (v.rewatch) meta.push('<span class="tag">Rewatch</span>');
     if (meta.length) html += '<div class="v-meta">' + meta.join('') + '</div>';
     const meta2 = [];
     if (v.director) meta2.push(escapeHTML(v.director));

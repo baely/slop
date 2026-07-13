@@ -70,52 +70,194 @@ const indexPage = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hermes</title>
+<title>hermes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
+  /* ---------- tokens (copied from house.css) ---------- */
+  :root {
+    --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --accent: #0891b2;
+    --accent-deep: #0e7490;
+    --accent-ink: #ffffff;
+
+    --r-ctl: 3px;
+    --r-card: 4px;
+    --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+    --bg: #fafafa;
+    --surface: #f1f1f3;
+    --surface-2: #e9e9ed;
+    --text: #131316;
+    --text-2: #55555e;
+    --muted: #9b9ba6;
+    --line: #e4e4e9;
+    --accent-text: #0e7490;
+    --accent-soft: #e2f0f4;
+
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0d;
+      --surface: #17171a;
+      --surface-2: #212126;
+      --text: #f2f2f4;
+      --text-2: #a3a3ad;
+      --muted: #5b5b66;
+      --line: #26262c;
+      --accent-text: #3aa8c4;
+      --accent-soft: #0c2229;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+
+  /* ---------- base ---------- */
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px 16px; color: #111; font-size: 13px; line-height: 1.5; }
-  .page-header { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #e0e0e0; }
-  h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-  .subtitle { font-size: 12px; color: #999; margin: 0; }
-  p { margin-bottom: 12px; color: #666; font-size: 12px; }
-  pre { background: #fafafa; border: 1px solid #e0e0e0; padding: 14px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; margin-bottom: 20px; }
-  .form-group { margin-bottom: 12px; }
-  .form-group label { display: block; font-size: 11px; color: #999; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-group input, .form-group textarea { width: 100%; padding: 7px 9px; border: 1px solid #ddd; font-size: 13px; font-family: inherit; color: #111; outline: none; }
-  .form-group input:focus, .form-group textarea:focus { border-color: #111; }
-  .form-group input::placeholder, .form-group textarea::placeholder { color: #bbb; }
-  textarea { resize: vertical; min-height: 80px; }
-  button { display: block; width: 100%; padding: 8px; background: #111; color: #fff; border: 1px solid #111; font-size: 12px; font-family: inherit; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; margin-top: 6px; }
-  button:hover:not(:disabled) { background: #333; border-color: #333; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  #result { margin-top: 12px; padding: 6px 10px; font-size: 12px; display: none; }
-  #result.ok { display: block; background: #fff; border: 1px solid #ddd; color: #111; }
-  #result.ok a { color: #111; }
-  #result.err { display: block; background: #fff8f8; border: 1px solid #f5c0c0; color: #c00; }
+  body {
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 44px 20px 76px;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-size: clamp(34px, 9vw, 46px);
+    color: var(--text);
+  }
+  .subtitle { margin-top: 6px; font-size: 13px; color: var(--text-2); }
+
+  /* ---------- code block ---------- */
+  pre {
+    margin: 24px 0 28px;
+    background: var(--surface);
+    border-radius: var(--r-card);
+    padding: 16px;
+    overflow-x: auto;
+  }
+  pre code, pre { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; color: var(--text); }
+
+  /* ---------- form ---------- */
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  input, textarea {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    color: var(--text);
+    background: var(--surface);
+    border: none;
+    border-radius: var(--r-ctl);
+    padding: 11px 12px;
+    min-height: 44px;
+    outline: none;
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  textarea { resize: vertical; min-height: 100px; }
+
+  button {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background-color: var(--accent);
+    background-image: var(--sheen);
+    border: none;
+    border-radius: var(--r-ctl);
+    padding: 12px 16px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background-color: var(--accent-deep); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---------- result ---------- */
+  #result {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: var(--r-ctl);
+    font-size: 13px;
+    display: none;
+  }
+  #result.ok { display: block; background: var(--accent-soft); color: var(--accent-text); }
+  #result.ok a { color: var(--accent-text); }
+  #result.err { display: block; background: var(--surface); color: #b91c1c; }
+
+  /* ---------- signature ---------- */
+  .b-glyph {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 90;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text-2);
+    background: var(--surface);
+    border-radius: var(--r-ctl);
+    padding: 6px 8px;
+    text-decoration: none;
+  }
+  .b-glyph:hover { color: var(--accent-text); }
 </style>
 </head>
 <body>
-<div class="page-header">
-  <h1>Hermes</h1>
-  <p class="subtitle">Message API</p>
-</div>
+<h1 class="wordmark">hermes</h1>
+<p class="subtitle">Message API</p>
 
 <pre><code>curl -X POST https://hermes.baileys.app/ \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "message": "Hello!"}'</code></pre>
 
 <form id="f">
-  <div class="form-group">
+  <div class="field">
     <label for="name">Name</label>
     <input id="name" name="name" required placeholder="Your name">
   </div>
-  <div class="form-group">
+  <div class="field">
     <label for="message">Message</label>
     <textarea id="message" name="message" required placeholder="Your message"></textarea>
   </div>
-  <button type="submit">Send</button>
+  <button type="submit">Send Message</button>
 </form>
 <div id="result"></div>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
 
 <script>
 document.getElementById('f').addEventListener('submit', async function(e) {
@@ -136,7 +278,7 @@ document.getElementById('f').addEventListener('submit', async function(e) {
     });
     if (r.ok) {
       const data = await r.json();
-      res.innerHTML = 'Message sent! <a href="' + data.url + '">' + data.url + '</a>';
+      res.innerHTML = 'Sent. <a href="' + data.url + '">' + data.url + '</a>';
       res.className = 'ok';
       document.getElementById('message').value = '';
     } else {
