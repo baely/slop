@@ -5,5 +5,5 @@ services:
     env_file: .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.trackui.rule=Host(`track.baileys.app`)"
+      - "traefik.http.routers.trackui.rule=Host(`track.baileys.dev`)"
       - "traefik.http.services.trackui.loadbalancer.server.port=8080"
