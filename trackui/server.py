@@ -16,7 +16,7 @@ CORS(app)
 TRACK_TOKEN = os.environ["TRACK_TOKEN"]
 UP_TOKEN = os.environ["UP_TOKEN"]
 
-TRACK_BASE = "https://track.baileys.dev/api"
+TRACK_BASE = os.environ.get("TRACK_BASE", "https://traccar.int.xbd.au/api")
 UP_BASE = "https://api.up.com.au/api/v1"
 LASTFM_API_KEY = "caece86e4fab81a547c3cd87f4a4d43d"
 LASTFM_USER = "baileynsamrb"
@@ -379,7 +379,7 @@ def check_office_presence():
                     _save_office_state(_office_state)
                     # Fire ibbitot update on state transition
                     if dominant == "work":
-                        _update_ibbitot("yes", "According to track.baileys.app")
+                        _update_ibbitot("yes", "According to track.baileys.dev")
                     elif old_loc == "work":
                         _update_ibbitot("no", "")
                 else:
@@ -489,7 +489,7 @@ def trips():
 
 @app.route("/api/ibbitot/demo", methods=["POST"])
 def ibbitot_demo():
-    _update_ibbitot("yes", "According to track.baileys.app")
+    _update_ibbitot("yes", "According to track.baileys.dev")
     return jsonify({"status": "sent"})
 
 
