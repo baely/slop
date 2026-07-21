@@ -163,7 +163,12 @@ function render() {
   }
   bctx.putImageData(img, 0, 0);
 
-  const scale = Math.max(1, Math.min(12, Math.floor(960 / w)));
+  // integer upscale for crisp pixels, but never beyond the source's own
+  // size on either axis — the export records this canvas verbatim
+  const scale = Math.max(1, Math.min(
+    Math.floor(Math.min(960, video.videoWidth) / w),
+    Math.floor(Math.min(720, video.videoHeight) / h),
+  ));
   const dw = w * scale, dh = h * scale;
   if (display.width !== dw || display.height !== dh) {
     display.width = dw;
@@ -180,6 +185,10 @@ function tick() {
     needsRender = false;
     render();
     updateTransport();
+  }
+  // browsers may pause a gestureless playback mid-export; keep it rolling
+  if (recorder && recorder.state === 'recording' && video.paused && !video.seeking && !video.ended) {
+    video.play();
   }
   requestAnimationFrame(tick);
 }
@@ -207,6 +216,7 @@ scrub.addEventListener('input', () => {
 });
 
 function togglePlay() {
+  if (recorder) { stopExport(); return; }
   if (video.paused || video.ended) video.play(); else video.pause();
 }
 playBtn.addEventListener('click', togglePlay);

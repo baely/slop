@@ -18,8 +18,8 @@ https://dither.baileys.dev
    - **Posterize** — straight quantization, no dither
 4. Palettes: Black & White, Grayscale ×4, Game Boy (DMG greens), Amber.
 5. The result is blitted to the visible canvas at an integer scale with
-   smoothing off, so pixels stay crisp. Playback re-dithers every frame in
-   real time.
+   smoothing off, so pixels stay crisp — never scaled beyond the source's
+   own dimensions. Playback re-dithers every frame in real time.
 
 **Export WebM** replays the clip from the start while recording the canvas
 with `MediaRecorder`, then downloads the result (video only, no audio track).
