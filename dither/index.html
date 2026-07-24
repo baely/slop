@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dither — downscale &amp; dither video</title>
+<meta name="description" content="Downscale a video, dither it, preview it. Entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 4'%3E%3Crect width='4' height='4' fill='%230b0b0d'/%3E%3Cpath d='M0 0h1v1H0zM2 0h1v1H2zM1 1h1v1H1zM3 1h1v1H3zM0 2h1v1H0zM2 2h1v1H2zM1 3h1v1H1zM3 3h1v1H3z' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a class="wordmark" href="./">dither</a>
+</nav>
+
+<main>
+  <section id="stage">
+    <h1>Downscale &amp; dither video.</h1>
+    <p class="sub">Pick a clip, shrink it to a handful of pixels, push it through an error‑diffusion or ordered dither, watch it play. Runs entirely in this tab — nothing uploads.</p>
+    <div class="drop" id="dropzone">
+      <p class="drop-line">Drop a video file anywhere</p>
+      <button class="btn primary" id="chooseBtn" type="button">Choose Video</button>
+      <p class="drop-note">mp4 · webm · mov — stays local</p>
+    </div>
+  </section>
+
+  <section id="editor" hidden>
+    <div class="canvas-wrap">
+      <canvas id="display" title="Click to play or pause"></canvas>
+    </div>
+
+    <div class="transport">
+      <button class="btn" id="playBtn" type="button">Play</button>
+      <input type="range" id="scrub" min="0" max="0" step="0.01" value="0" aria-label="Seek">
+      <span class="mono" id="time">0:00 / 0:00</span>
+    </div>
+
+    <div class="controls">
+      <div class="ctl">
+        <label for="width">Width</label>
+        <input type="range" id="width" min="40" max="400" step="8" value="160">
+        <span class="mono ctl-out" id="widthOut">160 px</span>
+      </div>
+      <div class="ctl">
+        <label for="algo">Algorithm</label>
+        <select id="algo">
+          <option value="fs" selected>Floyd–Steinberg</option>
+          <option value="atkinson">Atkinson</option>
+          <option value="bayer4">Bayer 4×4</option>
+          <option value="bayer8">Bayer 8×8</option>
+          <option value="posterize">Posterize</option>
+        </select>
+      </div>
+      <div class="ctl">
+        <label for="palette">Palette</label>
+        <select id="palette">
+          <option value="bw" selected>Black &amp; White</option>
+          <option value="gray4">Grayscale ×4</option>
+          <option value="gameboy">Game Boy</option>
+          <option value="amber">Amber</option>
+        </select>
+      </div>
+      <div class="ctl">
+        <label for="bright">Brightness</label>
+        <input type="range" id="bright" min="-100" max="100" step="1" value="0">
+        <span class="mono ctl-out" id="brightOut">0</span>
+      </div>
+      <div class="ctl">
+        <label for="contrast">Contrast</label>
+        <input type="range" id="contrast" min="-100" max="100" step="1" value="0">
+        <span class="mono ctl-out" id="contrastOut">0</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="exportBtn" type="button">Export WebM</button>
+      <button class="btn" id="changeBtn" type="button">Change Video</button>
+      <span class="mono" id="specs"></span>
+    </div>
+  </section>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<input type="file" id="file" accept="video/*" hidden>
+<video id="video" playsinline hidden></video>
+
+<script src="app.js"></script>
+</body>
+</html>
