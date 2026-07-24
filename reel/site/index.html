@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reel</title>
+<meta name="description" content="baely's film log, by the numbers.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">reel</span>
+  <a id="profile-link" href="https://letterboxd.com/" rel="noopener">Letterboxd</a>
+</nav>
+
+<main>
+  <header class="hero">
+    <h1 id="hero"></h1>
+    <p id="hero-sub" class="sub"></p>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <section>
+    <h2>By release decade</h2>
+    <p class="sub" id="decades-sub"></p>
+    <div class="chart" id="decades-chart"></div>
+  </section>
+
+  <section>
+    <h2>Ratings</h2>
+    <p class="sub" id="ratings-sub"></p>
+    <div class="chart" id="ratings-chart"></div>
+  </section>
+
+  <section>
+    <h2>Logs per year</h2>
+    <p class="sub" id="pace-sub"></p>
+    <div class="chart" id="pace-chart"></div>
+  </section>
+
+  <section>
+    <h2>Five stars</h2>
+    <table id="five-stars">
+      <thead><tr><th>Film</th><th class="num">Year</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Watchlist debt</h2>
+    <p class="sub" id="watchlist-sub"></p>
+    <table id="watchlist">
+      <thead><tr><th>Film</th><th class="num">Year</th><th class="num">Added</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Where</h2>
+    <p class="sub">Tags on diary entries. Mostly services. One plane.</p>
+    <table id="tags">
+      <thead><tr><th>Tag</th><th class="num">Logs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Notes</h2>
+    <div id="reviews"></div>
+  </section>
+
+  <p class="colophon" id="colophon"></p>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
