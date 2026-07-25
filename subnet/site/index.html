@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>subnet — IPv4 + IPv6 CIDR playground</title>
+<meta name="description" content="Type a CIDR prefix, get the network, broadcast, usable range, host counts, splits and containment answers. IPv4 and IPv6, computed in the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="wordmark" href="./">subnet</a>
+</nav>
+
+<main class="wrap">
+
+  <section class="entry">
+    <label for="cidr">Prefix or Address</label>
+    <input id="cidr" type="text" class="mono big-input" spellcheck="false"
+           autocomplete="off" autocorrect="off" autocapitalize="off"
+           aria-describedby="parse-status" placeholder="192.168.0.0/24">
+    <p id="parse-status" class="status" role="status" aria-live="polite"></p>
+    <div id="presets" class="presets"></div>
+  </section>
+
+  <section class="headline-block" aria-label="Parsed prefix">
+    <h1 id="headline" class="mono">—</h1>
+    <p id="headline-sub" class="sub">Nothing parsed yet.</p>
+  </section>
+
+  <div id="stats" class="stats"></div>
+
+  <div class="cols">
+
+    <section class="card">
+      <h2 class="card-title">Facts</h2>
+      <table class="facts">
+        <tbody id="facts-body">
+          <tr><td colspan="2" class="empty">0 rows.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="col-stack">
+
+      <section class="card">
+        <h2 class="card-title">Position</h2>
+        <p class="hint">Each bar is the parent space; the teal band is where this prefix sits inside it.</p>
+        <div id="ladder" class="ladder"><p class="empty">No prefix to place.</p></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Containment</h2>
+        <label for="query">Is This Inside?</label>
+        <input id="query" type="text" class="mono" spellcheck="false"
+               autocomplete="off" autocorrect="off" autocapitalize="off"
+               aria-describedby="query-status query-why" placeholder="192.168.0.42">
+        <p id="query-status" class="answer muted" role="status" aria-live="polite">Nothing to check.</p>
+        <p id="query-why" class="why"></p>
+      </section>
+
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="split-head">
+      <h2 class="card-title">Split</h2>
+      <div class="split-ctl">
+        <label for="split-len">New Prefix Length</label>
+        <select id="split-len"></select>
+      </div>
+    </div>
+    <p id="split-note" class="status" role="status" aria-live="polite">Nothing to split.</p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Subnet</th>
+            <th>Range</th>
+            <th class="num" id="split-col-count">Usable</th>
+          </tr>
+        </thead>
+        <tbody id="split-body">
+          <tr><td colspan="4" class="empty">0 rows.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">Computed in your browser with BigInt. Nothing leaves the page.</p>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+</body>
+</html>
