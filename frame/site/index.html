@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>frame — aspect ratios, drawn to scale</title>
+<meta name="description" content="Put any source aspect ratio on any display and see the letterbox bars, the fitted pixels and the crop, to scale.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">frame</span>
+  <span class="mono nav-pair" id="navPair">2.39 → 1.78</span>
+</nav>
+
+<main class="wrap">
+
+  <h1>Aspect ratios, drawn to scale.</h1>
+  <p class="lede">Pick what it was shot on, pick what it is being shown on, read the bars.</p>
+
+  <section class="stage-card" aria-labelledby="stageHeading">
+    <h2 class="sr-only" id="stageHeading">Diagram</h2>
+    <div class="stage" id="stage">
+      <div class="frame" id="frameBox">
+        <div class="ghost" id="ghost" hidden></div>
+        <div class="clip">
+          <div class="img" id="imgBox"><span class="img-label mono" id="imgLabel"></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="legend mono" id="legend" aria-live="polite">&nbsp;</p>
+    <ul class="key">
+      <li><span class="sw sw-img"></span>Image</li>
+      <li><span class="sw sw-bar"></span>Dead bars</li>
+      <li class="key-crop" id="keyCrop" hidden><span class="sw sw-ghost"></span>Cropped off</li>
+    </ul>
+  </section>
+
+  <section class="controls" aria-label="Controls">
+
+    <div class="ctl">
+      <label for="sourceSel">Source Format</label>
+      <select id="sourceSel">
+        <optgroup label="Cinema">
+          <option value="silent">Silent aperture — 1.33:1</option>
+          <option value="academy">Academy — 1.37:1</option>
+          <option value="imax">IMAX 70mm — 1.43:1</option>
+          <option value="flat">Widescreen flat — 1.85:1</option>
+          <option value="univisium">Univisium — 2.00:1</option>
+          <option value="seventy">70mm — 2.20:1</option>
+          <option value="scope" selected>Scope, anamorphic — 2.39:1</option>
+        </optgroup>
+        <optgroup label="Stills">
+          <option value="halfframe">Half-frame 18×24 — 3:4</option>
+          <option value="m645">6×4.5 — 4:3</option>
+          <option value="m66">6×6 square — 1:1</option>
+          <option value="m67">6×7 — 5:4</option>
+          <option value="lf45">4×5 large format — 5:4</option>
+          <option value="s35">35mm — 3:2</option>
+        </optgroup>
+        <optgroup label="Digital">
+          <option value="d43">4:3</option>
+          <option value="d11">1:1 square</option>
+          <option value="d169">16:9</option>
+          <option value="d916">9:16 vertical</option>
+        </optgroup>
+        <optgroup label="Typed">
+          <option value="custom-source">Custom</option>
+        </optgroup>
+      </select>
+      <p class="note" id="sourceNote" aria-live="polite">&nbsp;</p>
+    </div>
+
+    <div class="ctl">
+      <span class="label-ish" id="targetLabel">Target Display</span>
+      <div class="seg" role="group" aria-labelledby="targetLabel" id="targetSeg">
+        <button class="btn seg-btn" type="button" data-target="t169" aria-pressed="true">16:9 TV</button>
+        <button class="btn seg-btn" type="button" data-target="t219" aria-pressed="false">21:9 Ultrawide</button>
+        <button class="btn seg-btn" type="button" data-target="t43" aria-pressed="false">4:3</button>
+        <button class="btn seg-btn" type="button" data-target="tphone" aria-pressed="false">Phone 19.5:9</button>
+        <button class="btn seg-btn" type="button" data-target="tcustom" aria-pressed="false">Custom</button>
+      </div>
+      <div class="custom-row" id="customRow" hidden>
+        <label class="inline" for="customW">Width</label>
+        <input type="number" id="customW" class="num-in" min="1" max="100000" step="1" value="1920" inputmode="numeric">
+        <span class="times mono">×</span>
+        <label class="inline" for="customH">Height</label>
+        <input type="number" id="customH" class="num-in" min="1" max="100000" step="1" value="1200" inputmode="numeric">
+      </div>
+      <p class="note" id="targetNote" aria-live="polite">&nbsp;</p>
+    </div>
+
+    <div class="ctl">
+      <span class="label-ish" id="modeLabel">Fit Mode</span>
+      <div class="seg" role="group" aria-labelledby="modeLabel" id="modeSeg">
+        <button class="btn seg-btn" type="button" data-mode="fit" aria-pressed="true">Fit</button>
+        <button class="btn seg-btn" type="button" data-mode="fill" aria-pressed="false">Fill</button>
+      </div>
+      <p class="note" id="modeNote">Fit letterboxes: nothing is lost, the screen is not filled.</p>
+    </div>
+
+    <div class="ctl ctl-wide">
+      <label for="freeIn">Any Ratio Or Size</label>
+      <div class="free-row">
+        <input type="text" id="freeIn" placeholder="2.39 · 16:9 · 1920x1080 · 3/2" autocomplete="off" spellcheck="false" enterkeyhint="done">
+        <button class="btn primary" type="button" id="useSource">Use As Source</button>
+        <button class="btn" type="button" id="useTarget">Use As Target</button>
+      </div>
+      <p class="note" id="parseNote" aria-live="polite">Parsed loosely. Two numbers, one number, or W×H in pixels.</p>
+    </div>
+
+  </section>
+
+  <section class="report" aria-labelledby="reportHeading">
+    <h2 id="reportHeading" class="sr-only">Numbers</h2>
+    <table>
+      <thead>
+        <tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Source ratio</th><td class="num" id="rSource">—</td></tr>
+        <tr><th scope="row">Target ratio</th><td class="num" id="rTarget">—</td></tr>
+        <tr><th scope="row">Target pixels</th><td class="num" id="rTargetPx">—</td></tr>
+        <tr><th scope="row">Image pixels</th><td class="num" id="rImagePx">—</td></tr>
+        <tr><th scope="row">Screen used</th><td class="num" id="rUsed">—</td></tr>
+        <tr><th scope="row">Bars</th><td class="num" id="rBars">—</td></tr>
+        <tr><th scope="row">Cropped</th><td class="num" id="rCrop">—</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+<script src="app.js"></script>
+</body>
+</html>
