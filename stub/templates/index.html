@@ -1,0 +1,104 @@
+{{define "content"}}
+<h1>stub</h1>
+
+{{if .Error}}<p class="alert bad" role="alert">{{.Error}}</p>{{end}}
+{{if .Notice}}<p class="alert ok" role="status">{{.Notice}}</p>{{end}}
+
+{{with .NewLink}}
+<div class="card newlink">
+  <div class="card-title">{{.Slug}}</div>
+  <p class="short-url mono" id="new-url">{{.ShortURL}}</p>
+  <p class="hint mono" title="{{.Target}}">→ {{.TargetShort}}</p>
+  <div class="row-actions">
+    <button type="button" class="btn copy" data-copy="{{.ShortURL}}" hidden>Copy</button>
+    <a class="btn" href="/admin/link/{{.Slug}}">Stats</a>
+  </div>
+</div>
+{{end}}
+
+<form method="post" action="/admin/create" class="card create">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <div class="field wide">
+    <label for="target">Target URL</label>
+    <input type="url" id="target" name="target" placeholder="https://example.com/a/very/long/path" value="{{.Form.Target}}" required>
+  </div>
+  <div class="field">
+    <label for="slug">Custom Slug</label>
+    <input type="text" id="slug" name="slug" placeholder="optional" value="{{.Form.Slug}}" spellcheck="false" autocapitalize="off">
+  </div>
+  <div class="field">
+    <label for="expires">Expires</label>
+    <input type="datetime-local" id="expires" name="expires" value="{{.Form.Expires}}">
+  </div>
+  <div class="field">
+    <label for="max_clicks">Max Clicks</label>
+    <input type="number" id="max_clicks" name="max_clicks" min="0" step="1" placeholder="0" value="{{.Form.MaxClicks}}">
+  </div>
+  <div class="field submit">
+    <button type="submit" class="btn primary">Create Link</button>
+  </div>
+</form>
+
+<p class="hint">{{.Count}} of {{.Max}} links stored. Blank slug generates a 7-character one from a 31-symbol alphabet with no <span class="mono">0/O</span> or <span class="mono">1/l</span>. Blank expiry and max clicks mean no limit. Targets cap at 2048 characters; per-day click history is kept for 90 days, totals forever.</p>
+
+{{if .Rows}}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Slug</th>
+      <th>Target</th>
+      <th class="num"><a href="{{index .SortLinks "clicks"}}">Clicks{{if eq .Sort "clicks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+      <th class="num">Bots</th>
+      <th><a href="{{index .SortLinks "created"}}">Created{{if eq .Sort "created"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+      <th>State</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Rows}}
+    <tr>
+      <td><a class="mono" href="/admin/link/{{.Slug}}">{{.Slug}}</a></td>
+      <td class="target" title="{{.Target}}"><a href="{{.Target}}" rel="noreferrer nofollow noopener">{{.TargetShort}}</a></td>
+      <td class="num">{{.Human}}</td>
+      <td class="num muted-cell">{{.Bots}}</td>
+      <td><span title="{{exact .Created}}">{{humanize .Created}}</span></td>
+      <td>
+        {{if eq .State "Active"}}<span class="chip">Active</span>{{else}}<span class="chip off">{{.State}}</span>{{end}}
+        {{if .Remaining}}<span class="sub mono">{{.Remaining}}</span>{{end}}
+        {{if .Expires}}<span class="sub mono" title="{{.Expires}}">expires {{.ExpiresHum}}</span>{{end}}
+      </td>
+      <td class="actions">
+        <div class="row-actions">
+          <button type="button" class="btn copy" data-copy="{{.ShortURL}}" hidden>Copy</button>
+          <form method="post" action="/admin/state" class="inline">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="slug" value="{{.Slug}}">
+            <input type="hidden" name="disabled" value="{{if .Disabled}}0{{else}}1{{end}}">
+            <button type="submit" class="btn">{{if .Disabled}}Enable{{else}}Disable{{end}}</button>
+          </form>
+          <form method="post" action="/admin/delete" class="inline" data-confirm="Delete {{.Slug}}? Click history goes with it.">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="slug" value="{{.Slug}}">
+            <button type="submit" class="btn danger">Delete</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<p class="hint">Clicks column counts human and unclassified traffic. Bots counts crawlers, link-preview fetchers and prefetches, kept separate rather than folded in or thrown away.</p>
+{{else}}
+<p class="empty">0 rows.</p>
+{{end}}
+
+<section class="card api">
+  <div class="card-title">Create From The Command Line</div>
+  <pre class="mono">curl -sS -X POST {{.BaseURL}}/api/links \
+  -H "Authorization: Bearer $APP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"https://example.com/long","slug":"demo","expires_in":"720h","max_clicks":0}'</pre>
+</section>
+{{end}}

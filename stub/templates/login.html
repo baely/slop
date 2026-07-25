@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>stub</h1>
+<p class="lede">Short links on a domain that will still be here next year, with click stats that admit when the clicker was a robot.</p>
+
+{{if .Error}}<p class="alert bad" role="alert">{{.Error}}</p>{{end}}
+
+<form method="post" action="/login" class="card stack narrow">
+  <div class="field">
+    <label for="token">Token</label>
+    <input type="password" id="token" name="token" autocomplete="current-password" autofocus required>
+  </div>
+  <button type="submit" class="btn primary">Sign In</button>
+  <p class="hint">Creating and listing links needs <span class="mono">APP_TOKEN</span>. Following a link does not.</p>
+</form>
+{{end}}
