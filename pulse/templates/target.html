@@ -1,0 +1,92 @@
+{{define "content"}}
+<h1>{{.T.Name}}</h1>
+<p class="lede mono trunc">{{.T.Method}} {{.T.URL}}</p>
+
+<section class="statrow">
+  <div><div class="stat-label">State</div><div class="stat-value state {{.T.StateKey}}">{{.T.State}}</div>{{if .T.DownSince}}<div class="stat-context">Down since {{.T.DownSince}}.</div>{{end}}</div>
+  <div><div class="stat-label">Uptime 24h</div><div class="stat-value num">{{.T.Up24}}</div></div>
+  <div><div class="stat-label">Uptime 7d</div><div class="stat-value num">{{.T.Up7d}}</div></div>
+  <div><div class="stat-label">Uptime 30d</div><div class="stat-value num">{{.Up30}}</div></div>
+  <div><div class="stat-label">Latency</div><div class="stat-value num">{{.T.Latency}}</div><div class="stat-context" title="{{.T.LastExact}}">{{.T.LastAgo}}</div></div>
+</section>
+
+{{if .T.LastErr}}<p class="notice bad">Last check failed: {{.T.LastErr}}</p>{{end}}
+{{if .T.Rolled}}<p class="fineprint">Uptime for this window includes rolled-up days, prorated across the span each day covers.</p>{{end}}
+
+{{template "spark" .T.Spark}}
+
+<form class="inline" method="post" action="/admin/targets/{{.T.ID}}/check"><button class="btn primary" type="submit">Check Now</button></form>
+<form class="inline" method="post" action="/admin/targets/{{.T.ID}}/delete"><button class="btn danger" type="submit">Delete Target</button></form>
+
+<h2 class="sec">Incidents</h2>
+{{if .Incidents}}
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Started</th><th>Ended</th><th class="num">Duration</th><th>Cause</th></tr></thead>
+  <tbody>
+  {{range .Incidents}}
+    <tr>
+      <td title="{{.StartExact}}">{{.StartAgo}}</td>
+      <td{{if .EndExact}} title="{{.EndExact}}"{{end}}>{{if .Open}}<span class="bad">Ongoing</span>{{else}}{{.EndAgo}}{{end}}</td>
+      <td class="num">{{.Duration}}</td>
+      <td class="mono">{{.Err}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}
+<p class="empty">0 incidents.</p>
+{{end}}
+
+<h2 class="sec">Settings</h2>
+<form class="card form" method="post" action="/admin/targets/{{.T.ID}}/update">
+  {{template "targetform" .Form}}
+  <p><button class="btn primary" type="submit">Save Changes</button></p>
+</form>
+
+<h2 class="sec">Recent Checks</h2>
+{{if .Checks}}
+<div class="tablewrap">
+<table>
+  <thead><tr><th>When</th><th class="num">Status</th><th class="num">Latency</th><th>Result</th><th>Error</th></tr></thead>
+  <tbody>
+  {{range .Checks}}
+    <tr>
+      <td title="{{.Exact}}">{{.Ago}}</td>
+      <td class="num">{{.Status}}</td>
+      <td class="num">{{.Latency}} ms</td>
+      <td>{{if eq .Result "Ok"}}<span class="state up">Ok</span>{{else}}<span class="state down">Failed</span>{{end}}</td>
+      <td class="mono">{{.Err}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<p class="fineprint">Showing <span class="num">{{len .Checks}}</span> of at most <span class="num">{{.Caps.Checks}}</span> retained checks. Older checks survive only as the daily summaries below.</p>
+{{else}}
+<p class="empty">Unchecked.</p>
+{{end}}
+
+<h2 class="sec">Rolled-Up Days</h2>
+{{if .Days}}
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Day</th><th class="num">Checks</th><th class="num">Ok</th><th class="num">Uptime</th><th class="num">Avg Latency</th></tr></thead>
+  <tbody>
+  {{range .Days}}
+    <tr>
+      <td class="mono">{{.Day}}</td>
+      <td class="num">{{.Total}}</td>
+      <td class="num">{{.OK}}</td>
+      <td class="num">{{.Uptime}}</td>
+      <td class="num">{{.AvgLat}} ms</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}
+<p class="empty">Nothing rolled up yet.</p>
+{{end}}
+{{end}}

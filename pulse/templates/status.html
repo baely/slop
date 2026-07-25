@@ -1,0 +1,58 @@
+{{define "content"}}
+<h1>{{.Headline}}</h1>
+<p class="lede">Uptime for the estate. <span class="num">{{.Up}}</span> up, <span class="num">{{.Down}}</span> down, <span class="num">{{.Unchecked}}</span> unchecked.</p>
+
+{{if eq .Total 0}}
+  <p class="empty">0 targets.</p>
+  <p class="empty">Sign In, then add one on Targets — a name, a URL, an interval and what counts as healthy.</p>
+{{else}}
+
+<section class="cards">
+{{range .Targets}}
+  <article class="card t">
+    <div class="t-head">
+      <h2 class="card-title">{{if $.Authed}}<a href="/t/{{.ID}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</h2>
+      <span class="state {{.StateKey}}">{{.State}}</span>
+    </div>
+    {{template "spark" .Spark}}
+    <dl class="t-meta">
+      <div><dt>24h</dt><dd class="num">{{.Up24}}</dd></div>
+      <div><dt>7d</dt><dd class="num">{{.Up7d}}</dd></div>
+      <div><dt>Latency</dt><dd class="num">{{.Latency}}</dd></div>
+      <div><dt>Checked</dt><dd{{if .LastExact}} title="{{.LastExact}}"{{end}}>{{.LastAgo}}</dd></div>
+    </dl>
+    {{if .DownSince}}<p class="down-note">Down since {{.DownSince}}.</p>{{end}}
+    {{if $.Authed}}
+    <form class="inline" method="post" action="/admin/targets/{{.ID}}/check">
+      <button class="btn" type="submit">Check Now</button>
+    </form>
+    {{end}}
+  </article>
+{{end}}
+</section>
+
+<h2 class="sec">Incidents</h2>
+{{if .Incidents}}
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Target</th><th>Started</th><th>Ended</th><th class="num">Duration</th></tr></thead>
+  <tbody>
+  {{range .Incidents}}
+    <tr>
+      <td>{{.Target}}</td>
+      <td title="{{.StartExact}}">{{.StartAgo}}</td>
+      <td{{if .EndExact}} title="{{.EndExact}}"{{end}}>{{if .Open}}<span class="bad">Ongoing</span>{{else}}{{.EndAgo}}{{end}}</td>
+      <td class="num">{{.Duration}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<p class="fineprint">Incidents are derived: a check failing after a pass opens one, the next pass closes it.</p>
+{{else}}
+<p class="empty">0 incidents.</p>
+{{end}}
+
+<p class="fineprint">Retention: the last <span class="num">{{.Caps.Checks}}</span> checks per target, then a rolled-up daily summary for <span class="num">{{.Caps.Days}}</span> days.</p>
+{{end}}
+{{end}}

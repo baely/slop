@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3Cpath d='M2 9h2.6l1.7-4.2L8.6 12l1.5-3h3.9' fill='none' stroke='%23ffffff' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="wordmark" href="/">pulse</a>
+  <span class="nav-links">
+    <a href="/"{{if eq .Nav "status"}} aria-current="page"{{end}}>Status</a>
+    {{if .Authed}}
+      <a href="/admin"{{if eq .Nav "admin"}} aria-current="page"{{end}}>Targets</a>
+      <form method="post" action="/logout"><button class="linkbtn" type="submit">Sign Out</button></form>
+    {{else}}
+      <a href="/login"{{if eq .Nav "login"}} aria-current="page"{{end}}>Sign In</a>
+    {{end}}
+  </span>
+</nav>
+<main class="wrap">
+{{if .Err}}<p class="notice bad">{{.Err}}</p>{{end}}
+{{if .Msg}}<p class="notice">{{.Msg}}</p>{{end}}
+{{template "content" .}}
+</main>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+</body>
+</html>
+
+{{define "spark"}}
+{{if .Has}}
+<figure class="spark-wrap">
+  <svg class="spark" viewBox="0 0 {{.VBW}} {{.VBH}}" preserveAspectRatio="none" role="img"
+       aria-label="Response latency over the last {{.Count}} {{.CountWord}}{{if .HasOK}}, peak {{.MaxMs}} milliseconds{{end}}{{if .Window}}, {{.Window}}{{end}}">
+    {{range .Paths}}<path d="{{.}}"/>{{end}}
+    {{range .Marks}}<rect x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}"/>{{end}}
+  </svg>
+  <figcaption class="spark-axis">
+    {{if .HasOK}}<span class="num">{{.MaxMs}}</span> ms peak · {{end}}<span class="num">{{.Count}}</span> {{.CountWord}}{{if .Window}} · <span class="bad">{{.Window}}</span>{{end}}
+  </figcaption>
+</figure>
+{{else}}
+<p class="empty">Unchecked.</p>
+{{end}}
+{{end}}
+
+{{define "targetform"}}
+<div class="grid2">
+  <p><label for="f-name">Name</label><input id="f-name" name="name" type="text" maxlength="64" required value="{{.Name}}" placeholder="covers"></p>
+  <p><label for="f-url">URL</label><input id="f-url" name="url" type="text" maxlength="400" required value="{{.URL}}" placeholder="https://covers.baileys.dev/"></p>
+  <p><label for="f-method">Method</label>
+    <select id="f-method" name="method">
+      <option value="GET"{{if eq .Method "HEAD"}}{{else}} selected{{end}}>GET</option>
+      <option value="HEAD"{{if eq .Method "HEAD"}} selected{{end}}>HEAD</option>
+    </select></p>
+  <p><label for="f-interval">Interval (Seconds)</label><input id="f-interval" name="interval" type="number" min="10" max="86400" value="{{.Interval}}" placeholder="60"></p>
+  <p><label for="f-timeout">Timeout (Seconds)</label><input id="f-timeout" name="timeout" type="number" min="1" max="60" value="{{.Timeout}}" placeholder="10"></p>
+  <p><label for="f-expect">Expected Status</label><input id="f-expect" name="expect" type="text" maxlength="40" value="{{.Expect}}" placeholder="2xx"></p>
+  <p class="span2"><label for="f-keyword">Keyword (Optional)</label><input id="f-keyword" name="keyword" type="text" maxlength="120" value="{{.Keyword}}" placeholder="must appear in the body"></p>
+</div>
+{{end}}

@@ -1,0 +1,10 @@
+{{define "content"}}
+<h1>Sign In</h1>
+<p class="lede">The token gates targets, manual checks and history. The status page needs none of it.</p>
+<form class="card form" method="post" action="/login">
+  <input type="hidden" name="next" value="{{.Next}}">
+  <p><label for="token">Token</label><input id="token" name="token" type="password" autocomplete="current-password" required autofocus></p>
+  <p><button class="btn primary" type="submit">Sign In</button></p>
+</form>
+<p class="fineprint">Or send <span class="mono">Authorization: Bearer &lt;token&gt;</span> on any request. Failed attempts are rate limited per address.</p>
+{{end}}
