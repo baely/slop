@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>swatch — palette from a photograph</title>
+<meta name="description" content="Extract a colour palette from an image with median cut. Hex, RGB, HSL, OKLCH, share and WCAG contrast. Runs entirely in the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">swatch</span>
+  <span class="nav-note">Everything runs in this tab. No image ever leaves your device.</span>
+</nav>
+
+<main>
+
+  <h1>Pull a palette out of a photograph.</h1>
+
+  <section class="drop card" id="dropZone">
+    <div class="drop-row">
+      <button type="button" class="btn primary" id="pickBtn">Choose Image</button>
+      <button type="button" class="btn" id="clearBtn" hidden>Remove Image</button>
+      <input type="file" id="fileInput" accept="image/*" class="visually-hidden">
+    </div>
+    <p class="drop-hint">Drop a file here, or paste one from the clipboard.</p>
+    <p class="err" id="fileError" role="alert"></p>
+  </section>
+
+  <section class="source card" id="source" hidden>
+    <img id="thumb" alt="Loaded image preview">
+    <dl class="meta" id="sourceMeta"></dl>
+  </section>
+
+  <section class="controls" id="controls">
+    <div class="control">
+      <label for="countRange">Colours</label>
+      <div class="control-row">
+        <input type="range" id="countRange" min="3" max="12" step="1" value="6">
+        <output class="num" id="countOut" for="countRange">6</output>
+      </div>
+    </div>
+    <div class="control">
+      <span class="control-label" id="sortLabel">Sort</span>
+      <div class="seg" role="group" aria-labelledby="sortLabel">
+        <button type="button" class="btn seg-btn" id="sortShare" data-sort="share" aria-pressed="true">Share</button>
+        <button type="button" class="btn seg-btn" id="sortLight" data-sort="lightness" aria-pressed="false">Lightness</button>
+        <button type="button" class="btn seg-btn" id="sortHue" data-sort="hue" aria-pressed="false">Hue</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="status" id="status" aria-live="polite" role="status"></p>
+
+  <section class="results" id="results">
+    <p class="empty" id="emptyState">Nothing loaded yet.</p>
+    <p class="notice num" id="resultsMeta" hidden></p>
+    <p class="notice" id="noticeLine" hidden></p>
+    <div class="grid" id="swatchGrid"></div>
+  </section>
+
+  <section class="panel" id="surfaces" hidden>
+    <h2>Surfaces</h2>
+    <p class="sub">The same palette rarely works on both. Contrast ratios use the WCAG 2.2 relative-luminance formula, measured against pure white and pure black.</p>
+    <div class="surfaces">
+      <div class="pane tone-light">
+        <h3>On white <span class="num">#ffffff</span></h3>
+        <div class="strip" id="lightStrip"></div>
+        <ul class="rows" id="lightRows"></ul>
+      </div>
+      <div class="pane tone-dark">
+        <h3>On black <span class="num">#000000</span></h3>
+        <div class="strip" id="darkStrip"></div>
+        <ul class="rows" id="darkRows"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="exports" hidden>
+    <h2>Export</h2>
+    <p class="sub">Numbering follows the sort order above.</p>
+
+    <div class="export">
+      <div class="export-head">
+        <h3>CSS custom properties</h3>
+        <button type="button" class="btn" id="copyCss" data-target="cssOut">Copy CSS</button>
+      </div>
+      <pre class="out" id="cssOut" tabindex="0"></pre>
+    </div>
+
+    <div class="export">
+      <div class="export-head">
+        <h3>JSON</h3>
+        <button type="button" class="btn" id="copyJson" data-target="jsonOut">Copy JSON</button>
+      </div>
+      <pre class="out" id="jsonOut" tabindex="0"></pre>
+    </div>
+
+    <div class="export">
+      <div class="export-head">
+        <h3>SVG strip <span class="sub-inline">widths proportional to share</span></h3>
+        <button type="button" class="btn" id="copySvg" data-target="svgOut">Copy SVG</button>
+      </div>
+      <pre class="out" id="svgOut" tabindex="0"></pre>
+    </div>
+  </section>
+
+  <section class="panel notes">
+    <h2>How it works</h2>
+    <ul class="notelist">
+      <li>The image is drawn to an offscreen canvas capped at 320px on the long edge with smoothing off, so sampling reads true pixel values and a 40-megapixel scan does not hang the tab.</li>
+      <li>Colours are clustered with <strong>median cut</strong> implemented from scratch — deterministic, single pass, no seeding or convergence to babysit.</li>
+      <li>Fully transparent pixels are skipped rather than composited to black. Shares are a percentage of the opaque pixels sampled.</li>
+    </ul>
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
