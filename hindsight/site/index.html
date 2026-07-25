@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hindsight</title>
+<meta name="description" content="Do you remember your own ratings? A guessing game built from baely's Letterboxd history.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">hindsight</span>
+  <a id="profile-link" href="https://letterboxd.com/" rel="noopener">Letterboxd</a>
+</nav>
+
+<main>
+  <header class="intro">
+    <h1>Which did you rate higher?</h1>
+    <p class="sub" id="intro-sub"></p>
+  </header>
+
+  <div class="modes" role="group" aria-label="Difficulty">
+    <button class="mode" type="button" data-mode="any" aria-pressed="true">Any Pair</button>
+    <button class="mode" type="button" data-mode="close" aria-pressed="false">Close Calls</button>
+  </div>
+
+  <section class="board" id="board">
+    <button class="film" type="button" id="film-0" data-side="0"></button>
+    <button class="film" type="button" id="film-1" data-side="1"></button>
+  </section>
+
+  <section class="verdict">
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <button class="btn primary" type="button" id="next" hidden>Next Round</button>
+  </section>
+
+  <section class="stats" id="stats"></section>
+
+  <p class="colophon">
+    <span id="colophon-text"></span>
+    <button class="linkish" type="button" id="reset">Reset Score</button>
+  </p>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
