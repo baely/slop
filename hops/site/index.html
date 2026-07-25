@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hops — traceroute reader</title>
+<meta name="description" content="Paste traceroute, mtr or tracert output and read the path: per-hop latency, packet loss, address scope.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">hops</span>
+</nav>
+
+<main class="wrap">
+
+  <h1>Read the path.</h1>
+
+  <section class="pane">
+    <label for="src">Trace Output</label>
+    <p class="hint">Paste <span class="num">traceroute</span>, <span class="num">mtr --report</span> or Windows <span class="num">tracert</span>. Format is detected on paste.</p>
+    <textarea id="src" rows="10" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" placeholder="$ traceroute one.one.one.one"></textarea>
+
+    <div class="controls">
+      <button type="button" class="btn primary" data-sample="bsd">Load Example</button>
+      <button type="button" class="btn" data-sample="v6">IPv6 Trace</button>
+      <button type="button" class="btn" data-sample="mtr">mtr Report</button>
+      <button type="button" class="btn" data-sample="tracert">Windows tracert</button>
+      <button type="button" class="btn" id="btn-clear">Clear</button>
+    </div>
+
+    <p class="status" id="detect" aria-live="polite">Nothing pasted yet.</p>
+  </section>
+
+  <section class="pane results" aria-label="Parsed trace">
+    <ul class="callouts" id="callouts"></ul>
+
+    <p class="empty" id="empty">Nothing pasted yet.</p>
+
+    <div class="table-wrap">
+      <table id="hop-table" hidden>
+        <thead>
+          <tr>
+            <th scope="col">Hop</th>
+            <th scope="col">Host</th>
+            <th scope="col">Probes</th>
+            <th scope="col" class="num">Best (ms)</th>
+            <th scope="col" class="num">Avg (ms)</th>
+            <th scope="col" class="num">Worst (ms)</th>
+            <th scope="col" class="num">Loss</th>
+            <th scope="col">Latency</th>
+          </tr>
+        </thead>
+        <tbody id="hop-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pane notes">
+    <h2>Notes</h2>
+    <ul class="note-list">
+      <li>Missing probes (<span class="num">*</span>) are counted as loss and excluded from best, average and worst — a timeout never drags an average toward zero.</li>
+      <li><span class="num">tracert</span> reports anything sub-millisecond as <span class="num">&lt;1 ms</span>; those probes are scored as <span class="num">0.5 ms</span> and shown verbatim.</li>
+      <li><span class="num">mtr</span> prints <span class="num">0.0</span> across the timing columns for a hop at 100% loss. That is absence, not a fast hop, so it reads as no reply.</li>
+      <li>Scope is decided from the address alone: RFC1918, RFC6598 CGNAT, link-local, ULA, loopback, multicast or public. No lookups, no network.</li>
+      <li>Everything runs in the page. The pasted text is kept in <span class="num">localStorage</span> and goes nowhere else.</li>
+    </ul>
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
