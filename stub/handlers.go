@@ -113,7 +113,7 @@ type rowView struct {
 func (s *server) row(l *Link, now time.Time) rowView {
 	r := rowView{
 		Slug:        l.Slug,
-		ShortURL:    s.baseURL + "/" + l.Slug,
+		ShortURL:    s.shortURL + "/" + l.Slug,
 		Target:      l.Target,
 		TargetShort: truncateString(l.Target, 56),
 		Clicks:      l.Clicks,
@@ -528,7 +528,7 @@ type apiLink struct {
 func (s *server) apiView(l *Link, now time.Time, detail bool) apiLink {
 	v := apiLink{
 		Slug:          l.Slug,
-		ShortURL:      s.baseURL + "/" + l.Slug,
+		ShortURL:      s.shortURL + "/" + l.Slug,
 		Target:        l.Target,
 		Created:       l.Created,
 		ExpiresAt:     l.ExpiresAt,
@@ -636,7 +636,7 @@ func (s *server) handleAPICreate(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	w.Header().Set("Location", s.baseURL+"/"+l.Slug)
+	w.Header().Set("Location", s.shortURL+"/"+l.Slug)
 	writeJSON(w, http.StatusCreated, s.apiView(l, now, false))
 }
 

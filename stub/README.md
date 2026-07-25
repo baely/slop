@@ -3,7 +3,7 @@
 A link shortener on a domain that will still be here next year, with click
 stats that admit when the clicker was a robot.
 
-Short links are `https://stub.baileys.dev/<slug>`. Creating one needs the
+Short links are `https://baely.sh/<slug>`. Creating one needs the
 token. Following one does not — that is the whole point.
 
 Most shorteners quietly inflate their numbers: every Slack unfurl, every
@@ -171,7 +171,8 @@ gets its own file and its own test vectors.
 |---|---|---|
 | `ADDR` | `:8080` | listen address |
 | `DATA_DIR` | `/data` | where `stub.json` lives |
-| `BASE_URL` | `https://stub.baileys.dev` | used to build the short URLs shown in the UI |
+| `BASE_URL` | `https://stub.baileys.dev` | the admin host: canonical URL for the UI and API |
+| `SHORT_URL` | falls back to `BASE_URL` | the host short links are built from (`https://baely.sh`) |
 | `APP_TOKEN` | — | **mandatory**; the process logs a line and exits 1 if it is empty |
 | `TZ` | set by the deployment | day bucketing for the chart uses local time |
 
@@ -216,7 +217,7 @@ APP_TOKEN=dev DATA_DIR=$(mktemp -d) ADDR=:8837 BASE_URL=http://localhost:8837 go
 ## Deployment
 
 Runs on the host at `~/stub/docker-compose.yaml`, behind Traefik at
-<https://stub.baileys.dev>. Built directly via docker + ssh, not through the
+<https://stub.baileys.dev>, with short links on <https://baely.sh>. Built directly via docker + ssh, not through the
 infra repo.
 
 ```sh
@@ -225,3 +226,19 @@ docker build --platform linux/amd64 -t registry.baileys.dev/stub:latest --push .
 
 The container runs as a non-root user, so the mounted volume for `DATA_DIR`
 must be writable by uid 10001.
+
+## Two hostnames
+
+The service answers on two hosts from one container:
+
+- **`baely.sh`** — the short domain. It resolves slugs and nothing else. `/`,
+  `/login`, `/api/…`, `/admin/…` and `/static/…` are all a flat `404` there,
+  and a `POST` is refused whatever the path. A public short domain has no
+  business exposing a login form.
+- **`stub.baileys.dev`** — the admin UI, the API and the stats pages.
+
+`SHORT_URL` sets the first, `BASE_URL` the second. When `SHORT_URL` is unset
+they collapse to one host and nothing is restricted, which is how it behaves
+locally. Traefik routes both to the same service; `baely.sh` is not covered by
+the wildcard certificate on the entrypoint, so its router carries
+`tls.certresolver=dev` and gets its own certificate over the DNS-01 challenge.

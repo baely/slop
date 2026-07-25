@@ -16,7 +16,7 @@ const testToken = "test-token-please-ignore"
 func newTestServer(t *testing.T) (*server, http.Handler, *Store) {
 	t.Helper()
 	store, _ := newTestStore(t)
-	s, err := newServer(store, testToken, "https://stub.example")
+	s, err := newServer(store, testToken, "https://stub.example", "https://stub.example")
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}

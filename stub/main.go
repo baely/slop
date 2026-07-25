@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -30,10 +31,15 @@ type server struct {
 	store   *Store
 	auth    *authenticator
 	baseURL string
-	secure  bool // set Secure on cookies (false only for plain-http local runs)
-	pages   map[string]*template.Template
-	static  http.Handler
-	now     func() time.Time
+	// shortURL is the domain short links are built from — an apex like
+	// https://baely.sh, kept separate from baseURL so the admin UI stays on
+	// its own hostname. Equal to baseURL when SHORT_URL is unset.
+	shortURL  string
+	shortHost string // host part of shortURL, empty when it equals baseURL's
+	secure    bool   // set Secure on cookies (false only for plain-http local runs)
+	pages     map[string]*template.Template
+	static    http.Handler
+	now       func() time.Time
 }
 
 func main() {
@@ -48,6 +54,7 @@ func main() {
 	addr := envOr("ADDR", ":8080")
 	dataDir := envOr("DATA_DIR", "/data")
 	baseURL := strings.TrimRight(envOr("BASE_URL", "https://stub.baileys.dev"), "/")
+	shortURL := strings.TrimRight(envOr("SHORT_URL", baseURL), "/")
 
 	store, err := OpenStore(dataDir)
 	if err != nil {
@@ -55,7 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv, err := newServer(store, token, baseURL)
+	srv, err := newServer(store, token, baseURL, shortURL)
 	if err != nil {
 		log.Printf("stub: startup failed: %v", err)
 		os.Exit(1)
@@ -118,7 +125,7 @@ func main() {
 	log.Println("stub: stopped")
 }
 
-func newServer(store *Store, token, baseURL string) (*server, error) {
+func newServer(store *Store, token, baseURL, shortURL string) (*server, error) {
 	pages, err := parseTemplates()
 	if err != nil {
 		return nil, err
@@ -127,15 +134,57 @@ func newServer(store *Store, token, baseURL string) (*server, error) {
 	if err != nil {
 		return nil, err
 	}
+	if shortURL == "" {
+		shortURL = baseURL
+	}
+	// Only guard by host when the two are genuinely different hostnames.
+	var shortHost string
+	if bu, err := url.Parse(baseURL); err == nil {
+		if su, err := url.Parse(shortURL); err == nil && !strings.EqualFold(su.Host, bu.Host) {
+			shortHost = su.Host
+		}
+	}
 	return &server{
-		store:   store,
-		auth:    newAuthenticator(token),
-		baseURL: baseURL,
-		secure:  strings.HasPrefix(baseURL, "https://"),
-		pages:   pages,
-		static:  http.StripPrefix("/static/", http.FileServer(noDirFS{http.FS(sub)})),
-		now:     time.Now,
+		store:     store,
+		auth:      newAuthenticator(token),
+		baseURL:   baseURL,
+		shortURL:  shortURL,
+		shortHost: shortHost,
+		secure:    strings.HasPrefix(baseURL, "https://"),
+		pages:     pages,
+		static:    http.StripPrefix("/static/", http.FileServer(noDirFS{http.FS(sub)})),
+		now:       time.Now,
 	}, nil
+}
+
+// shortDomainOnly restricts the short domain to what a short domain is for.
+// baely.sh is a public surface whose whole job is resolving slugs; it has no
+// business serving a login form, the admin pages or the API, so anything else
+// there is a flat 404. The admin host keeps the full surface.
+func (s *server) shortDomainOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.shortHost == "" || !strings.EqualFold(hostOnly(r.Host), hostOnly(s.shortHost)) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		p := strings.TrimPrefix(r.URL.Path, "/")
+		allowed := p == "healthz" || p == "robots.txt" ||
+			(r.Method == http.MethodGet && p != "" && !strings.Contains(p, "/") && !reservedSlugs[strings.ToLower(p)])
+		if !allowed {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			http.Error(w, "Not found.", http.StatusNotFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// hostOnly strips any :port so a Host header and a configured URL compare equal.
+func hostOnly(h string) string {
+	if i := strings.LastIndexByte(h, ':'); i > 0 && !strings.Contains(h[i:], "]") {
+		return h[:i]
+	}
+	return h
 }
 
 // noDirFS makes http.FileServer serve files and nothing else — no directory
@@ -191,7 +240,7 @@ func (s *server) handler() http.Handler {
 
 	mux.HandleFunc("GET /{slug}", s.handleRedirect)
 
-	return logging(securityHeaders(http.MaxBytesHandler(mux, maxBodyBytes)))
+	return logging(securityHeaders(s.shortDomainOnly(http.MaxBytesHandler(mux, maxBodyBytes))))
 }
 
 func envOr(key, def string) string {
