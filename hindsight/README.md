@@ -4,9 +4,9 @@ A guessing game against your own taste. Two films you've rated on Letterboxd,
 one question: which did you score higher? Pick, get the verdict, keep the
 streak alive.
 
-Built from a Letterboxd data export — 180 rated films, 13,176 possible pairs.
+Built from a Letterboxd data export — 203 rated films, 16,842 possible pairs.
 Two difficulty modes: **Any Pair** (any two films with different ratings) and
-**Close Calls** (half a star apart — 5,384 pairs, genuinely hard). The reveal
+**Close Calls** (half a star apart — 6,732 pairs, genuinely hard). The reveal
 shows both ratings, when you last watched each, your review if you wrote one,
 and links back to the entries.
 
