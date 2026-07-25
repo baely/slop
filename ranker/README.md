@@ -2,6 +2,12 @@
 
 A pairwise comparison ranking tool. Add items, compare them head-to-head, and get a sorted ranking using a merge sort algorithm driven by your choices.
 
+Styled as a **hand-drawn sketch** — a deliberate departure from the house style:
+thick ink borders with imperfectly straight lines (uneven border-radius, slight
+rotations), hard offset shadows, Caveat/Patrick Hand handwriting faces, a basic
+crayon palette (ink, blue, red, marker yellow) on paper, and a chalkboard dark
+mode. Behaviour is unchanged from the house-style build.
+
 ## Features
 
 - **Step 1**: Name your ranking and add items (single or bulk, newline-separated)
