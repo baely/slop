@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sheet — read a CSV</title>
+<meta name="description" content="Drop a CSV and read it: inferred column types, per-column summaries, a sortable table and a quick chart. Nothing leaves the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <h1 class="wordmark">sheet</h1>
+  <span class="nav-note">Everything is parsed in your browser.</span>
+</nav>
+
+<main>
+
+  <section id="loader" class="loader">
+    <div id="drop" class="drop">
+      <p class="display">Drop a CSV here.</p>
+      <p class="drop-sub">Comma, tab, semicolon or pipe. Quoted fields, embedded newlines and Windows line endings all handled.</p>
+      <div class="drop-actions">
+        <input type="file" id="file" class="sr-only" accept=".csv,.tsv,.tab,.txt,text/csv,text/tab-separated-values,text/plain">
+        <button type="button" class="btn primary" id="btnChoose">Choose File</button>
+        <button type="button" class="btn" id="btnSample">Load Sample</button>
+      </div>
+    </div>
+    <details class="paste">
+      <summary>Or Paste CSV Text</summary>
+      <div class="paste-body">
+        <label class="sr-only" for="pasteBox">CSV Text</label>
+        <textarea id="pasteBox" rows="6" spellcheck="false" placeholder="title,year,rating"></textarea>
+        <button type="button" class="btn primary" id="btnParse">Parse Text</button>
+      </div>
+    </details>
+  </section>
+
+  <div id="fileBar" class="file-bar" hidden>
+    <div class="file-id">
+      <span id="fileName" class="file-name mono"></span>
+      <span id="fileMeta" class="file-meta mono"></span>
+    </div>
+    <div class="file-actions">
+      <button type="button" class="btn" id="btnAnother">Load Another</button>
+      <button type="button" class="btn" id="btnClear">Clear</button>
+    </div>
+  </div>
+
+  <p id="status" class="status mono" aria-live="polite">Nothing loaded yet.</p>
+  <div id="issues" class="issues" role="status" hidden></div>
+
+  <section id="result" hidden>
+
+    <h2 class="sec">Columns</h2>
+    <div id="cards" class="cards"></div>
+
+    <h2 class="sec">Chart</h2>
+    <div class="card chart-card">
+      <div class="controls">
+        <div class="ctl">
+          <label for="chartX">X Column</label>
+          <select id="chartX"></select>
+        </div>
+        <div class="ctl">
+          <label for="chartAgg">Aggregate</label>
+          <select id="chartAgg">
+            <option value="sum">Sum</option>
+            <option value="mean">Mean</option>
+            <option value="count">Count</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label for="chartY">Y Column</label>
+          <select id="chartY"></select>
+        </div>
+        <div class="ctl">
+          <span class="ctl-label" id="kindLabel">Kind</span>
+          <div class="seg" role="group" aria-labelledby="kindLabel">
+            <button type="button" class="seg-btn" id="kindBar" aria-pressed="true">Bar</button>
+            <button type="button" class="seg-btn" id="kindLine" aria-pressed="false">Line</button>
+          </div>
+        </div>
+      </div>
+      <p id="chartNote" class="note"></p>
+      <div id="chartWrap" class="chart-wrap">
+        <div id="chartHost" class="chart-host"></div>
+        <div id="tip" class="tip" hidden></div>
+      </div>
+      <details class="plotted">
+        <summary>Plotted Data</summary>
+        <div id="chartData" class="plotted-body"></div>
+      </details>
+    </div>
+
+    <h2 class="sec">Rows</h2>
+    <div class="table-controls">
+      <label class="sr-only" for="filter">Filter Rows</label>
+      <input type="search" id="filter" placeholder="Filter rows" autocomplete="off" spellcheck="false">
+      <span id="tableCount" class="note mono" aria-live="polite"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="gridHead"></thead>
+        <tbody id="gridBody"></tbody>
+      </table>
+    </div>
+    <div class="more">
+      <button type="button" class="btn" id="btnMore" hidden>Show 500 More</button>
+      <p id="capNote" class="note"></p>
+    </div>
+
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
