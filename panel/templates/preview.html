@@ -1,0 +1,99 @@
+{{define "title"}}panel — preview{{end}}
+{{define "content"}}
+
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Err}}<p class="flash bad">{{.Err}}</p>{{end}}
+
+<p class="screens">
+  {{$cur := .Screen.Name}}
+  {{range .Screens}}<a class="chip{{if eq .Name $cur}} on{{end}}" href="/?s={{.Name}}">{{.Name}} · {{.W}}×{{.H}}</a> {{end}}
+  <a class="chip" href="/edit?s={{$cur}}">Edit This Screen</a>
+</p>
+
+<form class="params" method="get" action="/">
+  <input type="hidden" name="s" value="{{.Screen.Name}}">
+  <div class="field">
+    <label for="w">Width</label>
+    <input id="w" name="w" type="number" inputmode="numeric" min="64" max="{{.MaxDim}}" value="{{.Params.W}}">
+  </div>
+  <div class="field">
+    <label for="h">Height</label>
+    <input id="h" name="h" type="number" inputmode="numeric" min="64" max="{{.MaxDim}}" value="{{.Params.H}}">
+  </div>
+  <div class="field">
+    <label for="rotate">Rotation</label>
+    <select id="rotate" name="rotate">
+      {{$r := .Params.Rotate}}
+      <option value="0"{{if eq $r 0}} selected{{end}}>0°</option>
+      <option value="90"{{if eq $r 90}} selected{{end}}>90°</option>
+      <option value="180"{{if eq $r 180}} selected{{end}}>180°</option>
+      <option value="270"{{if eq $r 270}} selected{{end}}>270°</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="invert">Invert</label>
+    <select id="invert" name="invert">
+      <option value="0"{{if not .Params.Invert}} selected{{end}}>No</option>
+      <option value="1"{{if .Params.Invert}} selected{{end}}>Yes</option>
+    </select>
+  </div>
+  <button class="btn primary" type="submit">Render</button>
+</form>
+
+{{if .Mismatch}}
+<p class="note warn">This screen is laid out on a {{.Screen.W}}×{{.Screen.H}} canvas and you asked for {{.Params.W}}×{{.Params.H}}. Blocks keep their pixel coordinates, so anything past the edge is cropped. Change the canvas size on the Edit page to move the blocks with it.</p>
+{{end}}
+
+<div class="screen">
+  <img src="{{.PNGURL}}" width="{{.Params.OutW}}" height="{{.Params.OutH}}" alt="Rendered panel, {{.Params.OutW}} by {{.Params.OutH}} pixels, 1 bit">
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-label">Png Bytes</div>
+    <div class="stat-value num">{{.PNGBytes}}</div>
+    <div class="stat-context">1-bit paletted, black and white only</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Bin Bytes</div>
+    <div class="stat-value num">{{.BinBytes}}</div>
+    <div class="stat-context">{{.Stride}} bytes per row × {{.Params.OutH}} rows</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Blocks</div>
+    <div class="stat-value num">{{.Blocks}}</div>
+    <div class="stat-context">on {{.Screen.Name}}{{if .SavedAgo}} · saved {{.SavedAgo}}{{end}}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Panel Clock</div>
+    <div class="stat-value num">{{.Now}}</div>
+    <div class="stat-context">{{.NowDate}} · Australia/Melbourne</div>
+  </div>
+</div>
+
+<h2>Endpoints</h2>
+<table>
+  <thead>
+    <tr><th>Path</th><th>ETag</th><th class="num">Bytes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><a class="mono" href="{{.PNGURL}}">{{.PNGURL}}</a></td><td class="mono">{{.ETag}}</td><td class="num">{{.PNGBytes}}</td></tr>
+    <tr><td><a class="mono" href="{{.BinURL}}">{{.BinURL}}</a></td><td class="mono">{{.BinETag}}</td><td class="num">{{.BinBytes}}</td></tr>
+  </tbody>
+</table>
+<p class="note">Both endpoints answer <span class="mono">If-None-Match</span> with <span class="mono">304</span> while the content and the minute are unchanged. The first screen is also served at <span class="mono">/screen.png</span> and <span class="mono">/screen.bin</span> without the <span class="mono">/s/{name}/</span> prefix, so anything already flashed onto a device keeps working. Each screen has its own device key; rotate it on the Edit page.</p>
+
+<h2>Packing</h2>
+<p class="note">
+  <span class="mono">screen.bin</span> is 1 bit per pixel, MSB first, row-major, each row padded to a whole byte —
+  <span class="mono">framebuf.MONO_HLSB</span> exactly. Byte index is
+  <span class="mono">y*{{.Stride}} + x/8</span>, bit is <span class="mono">0x80 &gt;&gt; (x%8)</span>,
+  and a set bit means a <strong>white</strong> pixel. Length is always
+  <span class="mono">ceil(w/8)*h = {{.BinBytes}}</span> and it is sent with a real
+  <span class="mono">Content-Length</span>, never chunked.
+</p>
+
+<h2>MicroPython</h2>
+<pre class="snippet" id="snippet">{{.Snippet}}</pre>
+
+{{end}}
