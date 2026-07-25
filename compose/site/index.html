@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>compose — infra service scaffold</title>
+<meta name="description" content="Generates the deploy.yaml, sample.env and shell steps for a slop app in the baely/infra repo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">compose</span>
+  <button type="button" class="btn small" id="reset">Reset Form</button>
+</nav>
+
+<main class="wrap">
+
+  <h1 class="path"><span id="path-text">docker/github.com_baely_slop_&hellip;/</span></h1>
+  <p class="status" id="status" aria-live="polite">Nothing entered yet.</p>
+
+  <div class="cols">
+
+    <section class="card" aria-labelledby="h-inputs">
+      <h2 class="card-title" id="h-inputs">Service</h2>
+
+      <div class="fields">
+        <div class="field">
+          <label for="f-app">App Name</label>
+          <input id="f-app" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="voyage">
+          <p class="err" id="e-app"></p>
+        </div>
+
+        <div class="field">
+          <label for="f-domain">Public Domain</label>
+          <input id="f-domain" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="voyage.baileys.app">
+          <p class="err" id="e-domain"></p>
+        </div>
+
+        <div class="field">
+          <label for="f-port">Container Port</label>
+          <input id="f-port" type="text" autocomplete="off" inputmode="numeric" placeholder="8080">
+          <p class="err" id="e-port"></p>
+        </div>
+
+        <div class="field">
+          <label for="f-sha">Slop Commit SHA</label>
+          <input id="f-sha" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="d5f5e49">
+          <p class="err" id="e-sha"></p>
+        </div>
+
+        <div class="field span">
+          <label for="f-volume">Data Volume <span class="opt">optional</span></label>
+          <input id="f-volume" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="/data">
+          <p class="err" id="e-volume"></p>
+          <p class="note tight">Container mount path. Anything written outside a named volume is gone on the next deploy.</p>
+        </div>
+      </div>
+
+      <h3 class="card-title sub">Index Listing</h3>
+      <p class="note">Optional. Fill either one and the <code>baileys.public.*</code> labels get written, which is what puts the service on index.baileys.app.</p>
+
+      <div class="fields">
+        <div class="field">
+          <label for="f-title">Title</label>
+          <input id="f-title" type="text" autocomplete="off" placeholder="Voyage">
+        </div>
+        <div class="field">
+          <label for="f-desc">Description</label>
+          <input id="f-desc" type="text" autocomplete="off" placeholder="Trip planner">
+        </div>
+      </div>
+
+      <h3 class="card-title sub">Environment</h3>
+      <p class="note">sample.env is committed to a public repo, so secret rows ship <code>changeme</code> and the real values only ever get written on the server — the value field locks when you tick Secret.</p>
+
+      <div class="toggle-row">
+        <button type="button" class="btn toggle" id="f-secrets" aria-pressed="false">Needs Secrets</button>
+        <span class="toggle-hint mono" id="secrets-hint">env_file omitted</span>
+      </div>
+
+      <div class="rows" id="rows-head" hidden>
+        <div class="row head">
+          <span>Key</span>
+          <span>Value</span>
+          <span class="c-secret">Secret</span>
+          <span></span>
+        </div>
+      </div>
+      <div class="rows" id="rows"></div>
+      <p class="empty" id="rows-empty">0 rows.</p>
+
+      <div class="actions">
+        <button type="button" class="btn" id="add-row">Add Row</button>
+      </div>
+    </section>
+
+    <section class="out-col" aria-labelledby="h-output">
+      <h2 class="vh" id="h-output">Generated files</h2>
+
+      <div class="card pane">
+        <div class="pane-head">
+          <h3 class="card-title">deploy.yaml</h3>
+          <span class="meta mono" id="m-yaml">0 lines</span>
+          <button type="button" class="btn primary small" id="c-yaml" data-target="o-yaml">Copy</button>
+        </div>
+        <pre class="out tall" id="o-yaml"></pre>
+      </div>
+
+      <div class="card pane">
+        <div class="pane-head">
+          <h3 class="card-title">sample.env</h3>
+          <span class="meta mono" id="m-env">0 keys</span>
+          <button type="button" class="btn primary small" id="c-env" data-target="o-env">Copy</button>
+        </div>
+        <pre class="out short" id="o-env"></pre>
+      </div>
+
+      <div class="card pane">
+        <div class="pane-head">
+          <h3 class="card-title">Shell steps</h3>
+          <span class="meta mono" id="m-sh">4 steps</span>
+          <button type="button" class="btn primary small" id="c-sh" data-target="o-sh">Copy</button>
+        </div>
+        <pre class="out mid" id="o-sh"></pre>
+      </div>
+
+      <p class="copy-status" id="copy-status" aria-live="polite"></p>
+    </section>
+
+  </div>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
