@@ -1,0 +1,46 @@
+{{define "title"}}panel — edit{{end}}
+{{define "content"}}
+
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+
+<form method="post" action="/edit" class="editor">
+  <div class="field wide">
+    <label for="title">Title Line</label>
+    <input id="title" name="title" type="text" maxlength="{{.MaxTitleLen}}" value="{{.Config.Title}}" placeholder="panel">
+  </div>
+
+  <h2>Rows</h2>
+  <p class="note">Up to {{.MaxRows}} rows. Labels cap at {{.MaxLabelLen}} characters, values at {{.MaxValueLen}}. Blank rows are dropped on save. Rows that do not fit the requested panel size collapse into a <span class="mono">+N more</span> line.</p>
+  <table class="rows">
+    <thead><tr><th>Label</th><th>Value</th></tr></thead>
+    <tbody>
+      {{range .Config.Rows}}
+      <tr>
+        <td><input name="label" type="text" maxlength="{{$.MaxLabelLen}}" value="{{.Label}}"></td>
+        <td><input name="value" type="text" maxlength="{{$.MaxValueLen}}" value="{{.Value}}"></td>
+      </tr>
+      {{end}}
+      {{range $i, $_ := .Blanks}}
+      <tr>
+        <td><input name="label" type="text" maxlength="{{$.MaxLabelLen}}" value=""{{if eq $i 0}} placeholder="Bin Night"{{end}}></td>
+        <td><input name="value" type="text" maxlength="{{$.MaxValueLen}}" value=""{{if eq $i 0}} placeholder="Tuesday"{{end}}></td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{if not .Config.Rows}}<p class="empty">0 rows.</p>{{end}}
+
+  <div class="field wide">
+    <label for="footer">Footer Note</label>
+    <input id="footer" name="footer" type="text" maxlength="{{.MaxFooterLen}}" value="{{.Config.Footer}}" placeholder="study panel">
+  </div>
+
+  <button class="btn primary" type="submit">Save Changes</button>
+</form>
+
+<h2>Device Key</h2>
+<p class="note">Devices fetch <span class="mono">/screen.png</span> and <span class="mono">/screen.bin</span> with <span class="mono">?k=</span> this key, or an <span class="mono">Authorization: Bearer</span> header. It is a 128-bit random capability, not a password — rotating it kills every URL already flashed onto a device.</p>
+<p class="keyline mono">{{.DeviceKey}}</p>
+<form method="post" action="/key/rotate"><button class="btn danger" type="submit">Rotate Key</button></form>
+
+{{end}}

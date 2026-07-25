@@ -1,0 +1,302 @@
+/* bailey house style — v1 tokens, copied verbatim from house-style/house.css */
+
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
+}
+
+/* ---------- base ---------- */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { touch-action: manipulation; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+h1 { font-size: clamp(28px, 6vw, 44px); }
+h2 { font-size: clamp(20px, 4vw, 28px); margin: 24px 0 12px; }
+h3 { font-size: 16px; }
+
+a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+code, pre, .mono, time, .num {
+  font-family: var(--font-mono);
+  font-size: 0.93em;
+}
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- nav ---------- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--accent-soft);
+}
+.nav .wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 18px;
+  color: var(--text);
+  text-decoration: none;
+}
+.nav-links { display: flex; align-items: center; gap: 16px; }
+.nav a { color: var(--text-2); text-decoration: none; font-weight: 500; }
+.nav a[aria-current] { color: var(--accent-text); font-weight: 600; }
+.linkish {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 16px 64px;
+}
+
+/* ---------- controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--surface);
+  border: none;
+  border-radius: var(--r-ctl);
+  padding: 9px 16px;
+  min-height: 38px;
+  cursor: pointer;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.btn:hover { background-color: var(--surface-2); }
+.btn.primary { color: var(--accent-ink); background-color: var(--accent); background-image: var(--sheen); }
+.btn.primary:hover { background-color: var(--accent-deep); }
+.btn.danger { color: #ffffff; background-color: #b91c1c; background-image: var(--sheen); }
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+
+input[type="text"], input[type="number"], input[type="password"], select {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-ctl);
+  padding: 9px 12px;
+  min-height: 38px;
+  width: 100%;
+  touch-action: manipulation;
+}
+label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+
+.field { min-width: 0; }
+.field.wide { max-width: 520px; margin-bottom: 16px; }
+
+.params {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.params .field { width: 96px; }
+.params .btn { margin-left: auto; }
+@media (min-width: 640px) { .params .btn { margin-left: 0; } }
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-radius: var(--r-ctl);
+  padding: 3px 8px;
+  text-decoration: none;
+}
+
+/* ---------- the rendered screen ---------- */
+
+/* The panel output is content, not chrome: it keeps its own two colours and is
+   shown at exactly 1:1 with no smoothing, so what you see is the bitmap. */
+.screen {
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 16px;
+  overflow: auto;
+}
+.screen img {
+  display: block;
+  image-rendering: pixelated;
+  max-width: none;
+}
+
+/* ---------- stats ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (min-width: 560px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--surface); border-radius: var(--r-card); padding: 16px; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 32px;
+  line-height: 1.1;
+}
+.stat-value.num { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0; }
+.stat-context { font-size: 12px; color: var(--text-2); }
+
+/* ---------- tables ---------- */
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num, th.num { font-family: var(--font-mono); font-size: 0.93em; text-align: right; }
+td a.mono { word-break: break-all; }
+.rows td { padding: 6px 10px 6px 0; }
+.rows td:last-child { padding-right: 0; }
+
+/* ---------- misc ---------- */
+
+.note { color: var(--text-2); font-size: 13px; margin: 8px 0 0; max-width: 72ch; }
+.empty { color: var(--text-2); font-size: 14px; }
+.flash {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-radius: var(--r-ctl);
+  padding: 8px 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.keyline {
+  background: var(--surface);
+  border-radius: var(--r-ctl);
+  padding: 9px 12px;
+  margin: 8px 0 12px;
+  word-break: break-all;
+}
+.snippet {
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre;
+  /* This text gets copied onto a device: what is on screen must be what is in
+     the clipboard, so no ligature may redraw != as a single glyph. */
+  font-variant-ligatures: none;
+}
+.snippet-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.editor { margin-top: 8px; }
+.login { max-width: 320px; margin-top: 8px; }
+
+/* ---------- signature ---------- */
+
+.b-glyph {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 90;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-2);
+  background: var(--surface);
+  border-radius: var(--r-ctl);
+  padding: 6px 8px;
+  text-decoration: none;
+}
+.b-glyph:hover { color: var(--accent-text); }
