@@ -1,0 +1,47 @@
+{{define "main"}}
+<h1>New Paste</h1>
+
+{{if .Err}}<p class="alert">{{.Err}}</p>{{end}}
+
+<form class="stack" method="post" action="/">
+  <div class="field">
+    <label for="body">Paste</label>
+    <textarea id="body" name="body" rows="16" spellcheck="false" autocapitalize="off" autocorrect="off" required>{{.Body}}</textarea>
+    <p class="hint">Plain text, {{.MaxSize}} maximum.</p>
+  </div>
+
+  <div class="field">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" value="{{.PasteTitle}}" maxlength="120" placeholder="Optional">
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="expiry">Expiry</label>
+      <select id="expiry" name="expiry">
+        {{$sel := .Expiry}}
+        {{range .Options}}<option value="{{.Value}}"{{if eq .Value $sel}} selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+    </div>
+    <div class="field">
+      <label for="burn">Burn After Reading</label>
+      <label class="check" for="burn"><input id="burn" name="burn" type="checkbox" value="1"{{if .Burn}} checked{{end}}> Destroy on first read</label>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn primary" type="submit">Create Paste</button>
+    <span class="hint">{{.Live}} of {{.Cap}} slots used.</span>
+  </div>
+</form>
+
+<section class="notes">
+  <h2>From The Command Line</h2>
+  <p>The body is the request body; the options are query parameters.</p>
+  <pre class="snippet" id="curl">{{.Curl}}</pre>
+  <div class="row">
+    <button class="btn" type="button" data-copy-target="#curl" hidden>Copy Command</button>
+  </div>
+  <p class="hint">Expiry accepts <span class="mono">10m</span>, <span class="mono">1h</span>, <span class="mono">1d</span>, <span class="mono">1w</span>, <span class="mono">30d</span>, <span class="mono">never</span>. Add <span class="mono">&amp;burn=1</span> to burn after reading. The response is the paste URL.</p>
+</section>
+{{end}}
