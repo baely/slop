@@ -33,14 +33,18 @@ var presets = []preset{
 	{"1404x1872", 1404, 1872, "Supernote A5X"},
 }
 
-// Params is a fully validated render request.
+// Params is a fully validated render request. W and H are the COMPOSITION
+// size; rotation is applied afterwards, so the delivered image is OutW x OutH.
 type Params struct {
 	W, H   int
 	Rotate int
 	Invert bool
 }
 
-func defaultParams() Params { return Params{W: 800, H: 480} }
+// paramsFor starts from a screen's own settings; query parameters override.
+func paramsFor(sc Screen) Params {
+	return Params{W: sc.W, H: sc.H, Rotate: sc.Rotate, Invert: sc.Invert}
+}
 
 // Query renders the params back to a query string (stable key order).
 func (p Params) Query() string {
@@ -56,22 +60,37 @@ func (p Params) Query() string {
 	return v.Encode()
 }
 
-// Stride is the packed 1bpp row length in bytes.
-func (p Params) Stride() int { return (p.W + 7) / 8 }
+// OutW and OutH are the delivered dimensions, after rotation.
+func (p Params) OutW() int {
+	if p.Rotate == 90 || p.Rotate == 270 {
+		return p.H
+	}
+	return p.W
+}
 
-// BinLen is the exact byte length of /screen.bin for these params.
-func (p Params) BinLen() int { return p.Stride() * p.H }
+func (p Params) OutH() int {
+	if p.Rotate == 90 || p.Rotate == 270 {
+		return p.W
+	}
+	return p.H
+}
+
+// Stride is the packed 1bpp row length in bytes.
+func (p Params) Stride() int { return (p.OutW() + 7) / 8 }
+
+// BinLen is the exact byte length of the .bin body for these params.
+func (p Params) BinLen() int { return p.Stride() * p.OutH() }
 
 // paramError is a client mistake: it maps to 400 with the message shown.
 type paramError struct{ msg string }
 
 func (e paramError) Error() string { return e.msg }
 
-// ParseParams validates query parameters. Every failure is a clear sentence,
-// because the thing on the other end is usually a person holding a soldering
-// iron at 11pm.
-func ParseParams(q url.Values) (Params, error) {
-	p := defaultParams()
+// ParseParams validates query parameters against a screen's own settings.
+// Every failure is a clear sentence, because the thing on the other end is
+// usually a person holding a soldering iron at 11pm.
+func ParseParams(q url.Values, sc Screen) (Params, error) {
+	p := paramsFor(sc)
 
 	if name := strings.TrimSpace(q.Get("preset")); name != "" {
 		ok := false
@@ -146,40 +165,62 @@ var panelPalette = color.Palette{
 	color.Gray{Y: 0xFF},
 }
 
-// threshold: greyscale values at or above this become white. 128 is the honest
-// midpoint; nudged up slightly so thresholded stems keep their weight.
-const threshold = 140
+// RenderCtx supplies everything the renderer needs from the outside world.
+// Both hooks are total functions that never block: a missing image draws a
+// placeholder, a missing data value draws its fallback.
+type RenderCtx struct {
+	Now   time.Time
+	Data  func(Block) (string, bool)
+	Image func(string) (*image.Gray, bool)
+}
 
-// Render composes the dashboard and returns a 1-bit paletted image whose
-// bounds are exactly p.W x p.H. It is a pure function of (cfg, now, p): the
-// same content in the same minute produces the identical image, which is what
-// makes the ETag worth anything.
-func Render(cfg Config, now time.Time, p Params) *image.Paletted {
-	now = now.Truncate(time.Minute)
-
-	// The content is composed at the pre-rotation size, then rotated, so the
-	// response is always exactly p.W x p.H no matter the rotation.
-	cw, ch := p.W, p.H
-	if p.Rotate == 90 || p.Rotate == 270 {
-		cw, ch = p.H, p.W
+func (c RenderCtx) data(b Block) (string, bool) {
+	if c.Data == nil {
+		return b.Fallback, true
 	}
+	return c.Data(b)
+}
 
-	c := newCanvas(cw, ch)
-	layout(c, cfg, now)
+func (c RenderCtx) image(id string) (*image.Gray, bool) {
+	if c.Image == nil {
+		return nil, false
+	}
+	return c.Image(id)
+}
+
+// Render composes a screen and returns a 1-bit paletted image whose bounds are
+// exactly OutW x OutH. It is a pure function of (screen, ctx, params): the
+// same content at the same instant produces the identical image, which is what
+// makes the ETag worth anything.
+func Render(sc Screen, p Params, ctx RenderCtx) *image.Paletted {
+	ctx.Now = ctx.Now.Truncate(sc.Granularity())
+
+	c := newCanvas(p.W, p.H)
+	for _, b := range sc.Blocks {
+		drawBlock(c, b.Normalize(), ctx)
+	}
 
 	g := c.g
 	if p.Rotate != 0 {
 		g = rotateGray(g, p.Rotate)
 	}
 
-	out := image.NewPaletted(image.Rect(0, 0, p.W, p.H), panelPalette)
+	return toPaletted(g, p.Invert)
+}
+
+// toPaletted is the one and only path from the greyscale scratch buffer to the
+// output, and the only place the threshold is applied. No grey pixel can reach
+// a caller without going through here.
+func toPaletted(g *image.Gray, invert bool) *image.Paletted {
+	w, h := g.Rect.Dx(), g.Rect.Dy()
+	out := image.NewPaletted(image.Rect(0, 0, w, h), panelPalette)
 	on, off := idxBlack, idxWhite
-	if p.Invert {
+	if invert {
 		on, off = idxWhite, idxBlack
 	}
-	for y := 0; y < p.H; y++ {
-		src := g.Pix[y*g.Stride : y*g.Stride+p.W]
-		dst := out.Pix[y*out.Stride : y*out.Stride+p.W]
+	for y := 0; y < h; y++ {
+		src := g.Pix[y*g.Stride : y*g.Stride+w]
+		dst := out.Pix[y*out.Stride : y*out.Stride+w]
 		for x, v := range src {
 			if v < threshold {
 				dst[x] = on
@@ -189,6 +230,45 @@ func Render(cfg Config, now time.Time, p Params) *image.Paletted {
 		}
 	}
 	return out
+}
+
+// sampleCap is the largest size the editor's sample strip is drawn at. The
+// strip exists to show whether a pairing survives thresholding, and above this
+// every face in the list obviously does — so there is nothing to learn from a
+// 300px specimen except a very tall page.
+const sampleCap = 72
+
+// SampleStrip renders a short line of text in one face at one size, through the
+// real renderer. The editor shows it at 1:1 (never CSS-scaled, which would
+// resample the very thing being judged) so a font/size choice is visible before
+// it is committed to a screen.
+func SampleStrip(fontID string, size int) *image.Paletted {
+	if size > sampleCap {
+		size = sampleCap
+	}
+	ts := typeset(fontID, size)
+
+	// Shorter text as the size grows, so the strip stays a sensible width.
+	sample := "Bin Night 09:15 3.94V ao0O1lI"
+	switch {
+	case ts.size > 48:
+		sample = "Ag 09:15"
+	case ts.size > 24:
+		sample = "Bin Night 09:15"
+	}
+
+	lh := ts.LineHeight()
+	w := ts.Measure(sample) + 16
+	h := lh + 12
+	if w > 900 {
+		w = 900
+	}
+	if w < 32 {
+		w = 32
+	}
+	c := newCanvas(w, h)
+	c.drawString(ts, 8, ts.baselineIn(6, lh), ts.fit(sample, w-16), inkBlack)
+	return toPaletted(c.g, false)
 }
 
 func rotateGray(src *image.Gray, deg int) *image.Gray {
@@ -222,145 +302,337 @@ func rotateGray(src *image.Gray, deg int) *image.Gray {
 	return dst
 }
 
-// layout paints the dashboard onto the greyscale canvas.
-//
-//	+--------------------------------------------------+
-//	| TITLE                                    (band)  |  header, black fill
-//	|                                                  |
-//	|  14:32                             Saturday      |  clock block
-//	|                                 25 July 2026     |
-//	|==================================================|
-//	|  Label                                   Value   |  rows
-//	|  Label                                   Value   |
-//	|--------------------------------------------------|
-//	|  footer note                    Updated 14:32    |
-//	+--------------------------------------------------+
-func layout(c *canvas, cfg Config, now time.Time) {
-	// Everything scales off an 800x480 reference so a 400x300 badge and a
-	// 1404x1872 Supernote both come out proportioned rather than one of them
-	// having a clock the size of a dinner plate.
-	sx := float64(c.w) / 800.0
-	sy := float64(c.h) / 480.0
-	s := sx
-	if sy < s {
-		s = sy
+// ---------------------------------------------------------------- block draw
+
+// drawBlock paints one block through a clipped sub-canvas. Nothing a block
+// draws can land outside its own box, because the clip is enforced by the
+// canvas view rather than by each routine remembering its bounds.
+func drawBlock(root *canvas, b Block, ctx RenderCtx) {
+	if b.W <= 0 || b.H <= 0 {
+		return
 	}
-	px := func(ref float64, min int) int {
-		v := int(ref*s + 0.5)
-		if v < min {
-			v = min
+	c := root.sub(b.X, b.Y, b.W, b.H)
+
+	ink, paper := inkBlack, inkWhite
+	if b.Invert {
+		c.fill(0, 0, b.W, b.H, inkBlack)
+		ink, paper = inkWhite, inkBlack
+	}
+	_ = paper
+
+	switch b.Type {
+	case BlockText:
+		drawLines(c, b, splitText(b), ink)
+	case BlockClock:
+		f, ok := findFormat(clockFormats, b.Format)
+		if !ok {
+			f = clockFormats[0]
 		}
-		return v
+		drawLines(c, b, []string{ctx.Now.Format(f.Layout)}, ink)
+	case BlockDate:
+		f, ok := findFormat(dateFormats, b.Format)
+		if !ok {
+			f = dateFormats[0]
+		}
+		drawLines(c, b, []string{ctx.Now.Format(f.Layout)}, ink)
+	case BlockData:
+		text, stale := ctx.data(b)
+		lines := []string{text}
+		if stale {
+			// A stale reading is marked, not hidden: a panel showing an hour-old
+			// number as if it were current is worse than one that admits it.
+			lines[0] = text + " ·"
+		}
+		drawLines(c, b, lines, ink)
+	case BlockList:
+		drawList(c, b, ink)
+	case BlockRows:
+		drawRows(c, b, ink)
+	case BlockDivider:
+		drawDivider(c, b, ink)
+	case BlockBox:
+		if b.Fill {
+			c.fill(0, 0, b.W, b.H, ink)
+		} else {
+			c.rect(0, 0, b.W, b.H, b.Thickness, ink)
+		}
+	case BlockProgress:
+		drawProgress(c, b, ink)
+	case BlockImage:
+		drawImage(c, b, ctx, ink)
 	}
+}
 
-	pad := px(20, 4)
-	bandH := px(52, 14)
-	clockH := px(132, 30)
-	ruleH := px(3, 1)
-	footH := px(34, 12)
-	rowH := px(42, 14)
-
-	// ---- header band ----
-	c.fill(0, 0, c.w, bandH, inkBlack)
-	titleFace := face(fBold, px(29, 8))
-	title := fit(titleFace, cfg.Title, c.w-2*pad)
-	c.text(titleFace, pad, baselineIn(titleFace, 0, bandH), title, inkWhite)
-
-	// ---- clock block ----
-	top := bandH
-	clockFace := face(fBold, px(112, 16))
-	clock := now.Format("15:04")
-	base := baselineIn(clockFace, top, clockH)
-	c.text(clockFace, pad, base, clock, inkBlack)
-
-	dayFace := face(fBold, px(30, 9))
-	dateFace := face(fRegular, px(26, 8))
-	dayA, dayD := vmetrics(dayFace)
-	dateA, dateD := vmetrics(dateFace)
-	gap := px(6, 1)
-	blockH := dayA + dayD + gap + dateA + dateD
-	dayTop := top + (clockH-blockH)/2
-	rightX := c.w - pad
-	left := pad + measure(clockFace, clock) + px(16, 4)
-	avail := rightX - left
-	c.textRight(dayFace, rightX, dayTop+dayA, fit(dayFace, now.Format("Monday"), avail), inkBlack)
-	c.textRight(dateFace, rightX, dayTop+dayA+dayD+gap+dateA, fit(dateFace, now.Format("2 January 2006"), avail), inkBlack)
-
-	// ---- separator ----
-	top += clockH
-	c.fill(0, top, c.w, ruleH, inkBlack)
-	top += ruleH
-
-	// ---- footer (measured from the bottom) ----
-	footTop := c.h - footH
-	hair := px(1, 1)
-	c.fill(pad, footTop, c.w-2*pad, hair, inkBlack)
-	footFace := face(fRegular, px(15, 8))
-	stampFace := face(fMono, px(15, 8))
-	stamp := "Updated " + now.Format("15:04 Mon 2 Jan")
-	c.textRight(stampFace, c.w-pad, baselineIn(stampFace, footTop+hair, footH-hair), stamp, inkBlack)
-	if cfg.Footer != "" {
-		maxW := c.w - 2*pad - measure(stampFace, stamp) - px(16, 4)
-		c.text(footFace, pad, baselineIn(footFace, footTop+hair, footH-hair), fit(footFace, cfg.Footer, maxW), inkBlack)
+func splitText(b Block) []string {
+	if b.Text == "" {
+		return nil
 	}
+	return strings.Split(b.Text, "\n")
+}
 
-	// ---- rows ----
-	region := footTop - top
-	if region < rowH {
+// drawLines lays a paragraph out inside the block: wrapped or truncated to the
+// width, anchored as a block, aligned line by line.
+func drawLines(c *canvas, b Block, raw []string, ink uint8) {
+	if len(raw) == 0 {
 		return
 	}
-	maxRows := region / rowH
-	rows := cfg.Rows
+	ts := typeset(b.Font, b.Size)
 
-	if len(rows) == 0 {
-		f := face(fRegular, px(20, 8))
-		c.textCenter(f, c.w/2, baselineIn(f, top, region), "0 rows.", inkBlack)
-		return
+	var lines []string
+	if b.Wrap {
+		for _, l := range raw {
+			lines = append(lines, ts.wrap(l, b.W)...)
+		}
+	} else {
+		for _, l := range raw {
+			lines = append(lines, ts.fit(l, b.W))
+		}
 	}
 
+	lh := ts.LineHeight()
+	blockH := lh * len(lines)
+	widest := 0
+	for _, l := range lines {
+		if w := ts.Measure(l); w > widest {
+			widest = w
+		}
+	}
+	ox, oy := anchorPos(b.Anchor, b.W, b.H, widest, blockH)
+	if ox < 0 {
+		ox = 0
+	}
+	if oy < 0 {
+		oy = 0
+	}
+
+	for i, l := range lines {
+		top := oy + i*lh
+		x := ox + alignX(b.Align, widest, ts.Measure(l))
+		c.drawString(ts, x, ts.baselineIn(top, lh), l, ink)
+	}
+}
+
+func drawList(c *canvas, b Block, ink uint8) {
+	if len(b.Items) == 0 {
+		return
+	}
+	ts := typeset(b.Font, b.Size)
+	lh := ts.LineHeight()
+	gap := lh / 6
+	if gap < 1 {
+		gap = 1
+	}
+	step := lh + gap
+
+	bullet := ""
+	if b.Bullets {
+		bullet = "- "
+	}
+	lines := make([]string, 0, len(b.Items))
+	for _, it := range b.Items {
+		lines = append(lines, ts.fit(bullet+it, b.W))
+	}
+	// Only as many as fit; the rest collapse into a +N line rather than
+	// overflowing the box.
+	fits := b.H / step
+	if fits < 1 {
+		fits = 1
+	}
 	overflow := 0
-	if len(rows) > maxRows {
-		overflow = len(rows) - (maxRows - 1)
-		rows = rows[:maxRows-1]
+	if len(lines) > fits {
+		overflow = len(lines) - (fits - 1)
+		if fits == 1 {
+			overflow = len(lines)
+			lines = nil
+		} else {
+			lines = lines[:fits-1]
+		}
+	}
+	if overflow > 0 {
+		lines = append(lines, fmt.Sprintf("+%d more", overflow))
 	}
 
-	// Few rows on a tall panel: let them breathe a little, then centre the
-	// block in the region. A Supernote is 1872px tall and a hard-left-top
-	// stack of six rows in all that white looks like a bug, not a layout.
+	widest := 0
+	for _, l := range lines {
+		if w := ts.Measure(l); w > widest {
+			widest = w
+		}
+	}
+	ox, oy := anchorPos(b.Anchor, b.W, b.H, widest, step*len(lines)-gap)
+	if ox < 0 {
+		ox = 0
+	}
+	if oy < 0 {
+		oy = 0
+	}
+	for i, l := range lines {
+		top := oy + i*step
+		x := ox + alignX(b.Align, widest, ts.Measure(l))
+		c.drawString(ts, x, ts.baselineIn(top, lh), l, ink)
+	}
+}
+
+func drawRows(c *canvas, b Block, ink uint8) {
+	if len(b.Rows) == 0 {
+		return
+	}
+	ts := typeset(b.Font, b.Size)
+	lh := ts.LineHeight()
+	pad := lh / 3
+	if pad < 2 {
+		pad = 2
+	}
+	rowH := lh + pad
+
+	rows := b.Rows
+	fits := b.H / rowH
+	if fits < 1 {
+		fits = 1
+	}
+	overflow := 0
+	if len(rows) > fits {
+		if fits == 1 {
+			overflow = len(rows)
+			rows = nil
+		} else {
+			overflow = len(rows) - (fits - 1)
+			rows = rows[:fits-1]
+		}
+	}
+
 	shown := len(rows)
 	if overflow > 0 {
 		shown++
 	}
-	if used := shown * rowH; used < region {
-		if stretch := region / shown; stretch > rowH {
+	// A handful of rows on a tall block: let them breathe rather than stacking
+	// at the top of all that white.
+	if used := shown * rowH; used < b.H && shown > 0 {
+		if stretch := b.H / shown; stretch > rowH {
 			if lim := rowH * 3 / 2; stretch > lim {
 				stretch = lim
 			}
 			rowH = stretch
 		}
-		top += (region - shown*rowH) / 2
+	}
+	_, oy := anchorPos(b.Anchor, b.W, b.H, b.W, rowH*shown)
+	if oy < 0 {
+		oy = 0
 	}
 
-	labelFace := face(fRegular, px(18, 8))
-	valueFace := face(fMonoBold, px(19, 8))
-	y := top
+	y := oy
+	hair := 1
 	draw := func(label, value string, rule bool) {
-		vw := measure(valueFace, value)
-		c.textRight(valueFace, c.w-pad, baselineIn(valueFace, y, rowH), value, inkBlack)
-		c.text(labelFace, pad, baselineIn(labelFace, y, rowH), fit(labelFace, label, c.w-2*pad-vw-px(12, 3)), inkBlack)
+		vw := ts.Measure(value)
+		c.drawStringRight(ts, b.W, ts.baselineIn(y, rowH), value, ink)
+		c.drawString(ts, 0, ts.baselineIn(y, rowH), ts.fit(label, b.W-vw-lh/2), ink)
 		y += rowH
-		if rule {
-			c.fill(pad, y-hair, c.w-2*pad, hair, inkBlack)
+		if rule && b.Rules {
+			c.fill(0, y-hair, b.W, hair, ink)
 		}
 	}
 	for i, r := range rows {
 		last := i == len(rows)-1 && overflow == 0
-		draw(r.Label, fit(valueFace, r.Value, (c.w-2*pad)*2/3), !last)
+		draw(r.Label, ts.fit(r.Value, b.W*2/3), !last)
 	}
 	if overflow > 0 {
 		draw(fmt.Sprintf("+%d more", overflow), "", false)
 	}
 }
+
+func drawDivider(c *canvas, b Block, ink uint8) {
+	t := b.Thickness
+	if t < 1 {
+		t = 1
+	}
+	if b.Orient == "vertical" {
+		if t > b.W {
+			t = b.W
+		}
+		x, _ := anchorPos(b.Anchor, b.W, b.H, t, b.H)
+		c.fill(x, 0, t, b.H, ink)
+		return
+	}
+	if t > b.H {
+		t = b.H
+	}
+	_, y := anchorPos(b.Anchor, b.W, b.H, b.W, t)
+	c.fill(0, y, b.W, t, ink)
+}
+
+func drawProgress(c *canvas, b Block, ink uint8) {
+	ts := typeset(b.Font, b.Size)
+	v := b.Value
+	if v < 0 {
+		v = 0
+	}
+	if v > 100 {
+		v = 100
+	}
+	pct := strconv.Itoa(int(v+0.5)) + "%"
+
+	top := 0
+	barH := b.H
+	if b.Label != "" || b.H > ts.LineHeight()*2 {
+		lh := ts.LineHeight()
+		if lh < b.H {
+			c.drawString(ts, 0, ts.baselineIn(0, lh), ts.fit(b.Label, b.W-ts.Measure(pct)-8), ink)
+			c.drawStringRight(ts, b.W, ts.baselineIn(0, lh), pct, ink)
+			top = lh + 2
+			barH = b.H - top
+		}
+	}
+	if barH < 3 {
+		barH = 3
+	}
+	if top+barH > b.H {
+		barH = b.H - top
+	}
+	if barH <= 0 {
+		return
+	}
+	border := 1
+	if barH >= 12 {
+		border = 2
+	}
+	c.rect(0, top, b.W, barH, border, ink)
+	inner := b.W - 2*border - 2
+	if inner < 0 {
+		inner = 0
+	}
+	filled := int(float64(inner)*v/100 + 0.5)
+	c.fill(border+1, top+border+1, filled, barH-2*border-2, ink)
+}
+
+func drawImage(c *canvas, b Block, ctx RenderCtx, ink uint8) {
+	src, ok := ctx.image(b.Image)
+	if !ok || src.Rect.Dx() == 0 || src.Rect.Dy() == 0 {
+		// Nothing to show: an outlined box with a cross, so a missing image is
+		// obvious on a panel across the room rather than an empty rectangle.
+		c.rect(0, 0, b.W, b.H, 1, ink)
+		for i := 0; i < b.W && i < b.H; i++ {
+			c.set(i*b.W/max(b.W, b.H), i*b.H/max(b.W, b.H), ink)
+			c.set(b.W-1-i*b.W/max(b.W, b.H), i*b.H/max(b.W, b.H), ink)
+		}
+		return
+	}
+	dst, srcRect := fitRect(b.Fit, src.Rect.Dx(), src.Rect.Dy(), b.W, b.H)
+	if dst.Dx() <= 0 || dst.Dy() <= 0 {
+		return
+	}
+	scaled := scaleGray(src, srcRect, dst.Dx(), dst.Dy())
+	dither(scaled, b.Dither)
+	x, y := anchorPos(b.Anchor, b.W, b.H, dst.Dx(), dst.Dy())
+	c.blitGray(x, y, scaled)
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// ------------------------------------------------------------------ encoding
 
 // EncodePNG writes the image as a true 1-bit paletted PNG: bit depth 1, colour
 // type 3, a two-entry PLTE of black and white. Go's encoder picks bit depth 1
@@ -374,9 +646,9 @@ func EncodePNG(img *image.Paletted) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// PackBits produces the /screen.bin payload: packed 1bpp, MSB first, row-major,
-// each row padded to a whole byte. Bit set (1) means a WHITE pixel, which is
-// what framebuf.MONO_HLSB and the Waveshare drivers expect.
+// PackBits produces the .bin payload: packed 1bpp, MSB first, row-major, each
+// row padded to a whole byte. Bit set (1) means a WHITE pixel, which is what
+// framebuf.MONO_HLSB and the Waveshare drivers expect.
 //
 //	byte index = y*ceil(w/8) + x/8
 //	bit        = 0x80 >> (x % 8)

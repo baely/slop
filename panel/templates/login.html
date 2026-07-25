@@ -2,6 +2,7 @@
 {{define "content"}}
 
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Err}}<p class="flash bad">{{.Err}}</p>{{end}}
 
 <form method="post" action="/login" class="login">
   <div class="field wide">

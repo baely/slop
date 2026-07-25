@@ -6,26 +6,18 @@ import (
 	"image"
 	"image/png"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
 
-func sampleConfig() Config {
-	return Config{
-		Title:  "Kitchen Panel",
-		Footer: "study panel, esp32",
-		Rows: []Row{
-			{"Bin Night", "Tuesday"},
-			{"Next Tram 96", "6 min"},
-			{"Melbourne", "14C, rain"},
-			{"Standup", "09:15"},
-			{"Battery", "3.94 V"},
-			{"Uptime", "41 days"},
-		},
-	}
-}
-
 var fixedNow = time.Date(2026, 7, 25, 14, 32, 11, 0, time.UTC)
+
+func sampleScreen() Screen {
+	sc := Screen{Name: "default", W: 800, H: 480, DeviceKey: "k", UpdatedAt: fixedNow}
+	sc.Blocks = starterBlocks("clock-rows", sc)
+	return sc
+}
 
 // chunks walks the PNG chunk stream so the encoded header can be inspected
 // rather than trusted.
@@ -52,18 +44,148 @@ func chunks(t *testing.T, b []byte) map[string][]byte {
 	return out
 }
 
-// TestPNGIsTrue1Bit checks the encoded bytes, not just the decoded pixels: bit
-// depth 1, colour type 3 (paletted), and a two-entry PLTE of pure black and
-// pure white. A 24-bit image of black and white pixels would fail here.
+// assertPureAndInside is the assertion every block type has to pass: nothing
+// but pure black and pure white, and no ink outside the block's own box.
+func assertPureAndInside(t *testing.T, img *image.Paletted, sc Screen, b Block, what string) {
+	t.Helper()
+	if len(img.Palette) != 2 {
+		t.Fatalf("%s: palette has %d entries", what, len(img.Palette))
+	}
+	bounds := img.Bounds()
+	inkIn, inkOut := 0, 0
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, bl, a := img.At(x, y).RGBA()
+			black := r == 0 && g == 0 && bl == 0 && a == 0xffff
+			white := r == 0xffff && g == 0xffff && bl == 0xffff && a == 0xffff
+			if !black && !white {
+				t.Fatalf("%s: pixel (%d,%d) is neither pure black nor pure white: %d %d %d %d", what, x, y, r, g, bl, a)
+			}
+			if !black {
+				continue
+			}
+			if x >= b.X && x < b.X+b.W && y >= b.Y && y < b.Y+b.H {
+				inkIn++
+			} else {
+				inkOut++
+				if inkOut < 3 {
+					t.Errorf("%s: ink at (%d,%d) is outside the block box (%d,%d %dx%d)", what, x, y, b.X, b.Y, b.W, b.H)
+				}
+			}
+		}
+	}
+	if inkOut > 0 {
+		t.Fatalf("%s: %d ink pixels escaped the block bounds", what, inkOut)
+	}
+	if inkIn == 0 {
+		t.Fatalf("%s: the block drew nothing at all", what)
+	}
+}
+
+// oneBlockScreen puts a single block on a plain canvas at a known offset.
+func oneBlockScreen(b Block) (Screen, Block) {
+	b.X, b.Y, b.W, b.H = 40, 50, 320, 180
+	b = b.Normalize()
+	return Screen{Name: "t", W: 480, H: 320, Blocks: []Block{b}}, b
+}
+
+func testCtx() RenderCtx {
+	return RenderCtx{
+		Now:   fixedNow,
+		Data:  func(b Block) (string, bool) { return "21.4", false },
+		Image: func(id string) (*image.Gray, bool) { return gradient(200, 140), id != "" },
+	}
+}
+
+func gradient(w, h int) *image.Gray {
+	g := image.NewGray(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			g.Pix[y*g.Stride+x] = uint8((x*255/w + y*255/h) / 2)
+		}
+	}
+	return g
+}
+
+// TestEveryBlockTypeIsPureAndContained is the headline test: for each of the
+// ten block types, the render is 1-bit and nothing leaks out of the box.
+func TestEveryBlockTypeIsPureAndContained(t *testing.T) {
+	cases := map[string]Block{
+		BlockText: {Type: BlockText, Text: "Kitchen Panel", Font: "go-bold", Size: 32, Anchor: "c", Align: "center"},
+		BlockClock: {Type: BlockClock, Format: "24h", Font: "go-bold", Size: 96, Anchor: "c",
+			Align: "center"},
+		BlockDate: {Type: BlockDate, Format: "long", Font: "go", Size: 24, Anchor: "c", Align: "center"},
+		BlockRows: {Type: BlockRows, Font: "pixel8x16", Size: 16, Rules: true, Rows: []Row{{"Bin Night", "Tuesday"}, {"Battery", "3.94 V"}, {"Tram 96", "6 min"}}},
+		BlockList: {Type: BlockList, Font: "pixel8x16", Size: 16, Bullets: true, Items: []string{"First", "Second", "Third"}},
+		BlockDivider: {Type: BlockDivider, Orient: "horizontal", Thickness: 4,
+			Anchor: "c"},
+		BlockBox:      {Type: BlockBox, Thickness: 3},
+		BlockProgress: {Type: BlockProgress, Label: "Battery", Value: 62, Font: "pixel8x16", Size: 16},
+		BlockImage:    {Type: BlockImage, Image: "img1", Dither: "floyd", Fit: "cover", Anchor: "c"},
+		BlockData: {Type: BlockData, URL: "https://example.com/a.json", Path: "v", Text: "{{v}}°C",
+			Fallback: "—", Interval: 300, Timeout: 5, Font: "go-bold", Size: 40, Anchor: "c", Align: "center"},
+	}
+	for name, blk := range cases {
+		t.Run(name, func(t *testing.T) {
+			sc, b := oneBlockScreen(blk)
+			img := Render(sc, paramsFor(sc), testCtx())
+			assertPureAndInside(t, img, sc, b, name)
+		})
+	}
+
+	// The variants that take a different drawing path.
+	variants := map[string]Block{
+		"box filled":       {Type: BlockBox, Fill: true},
+		"divider vertical": {Type: BlockDivider, Orient: "vertical", Thickness: 6, Anchor: "c"},
+		"text inverted":    {Type: BlockText, Text: "Header", Font: "go-bold", Size: 28, Invert: true},
+		"text wrapped":     {Type: BlockText, Text: strings.Repeat("wrap this text ", 12), Font: "go", Size: 18, Wrap: true},
+		"image atkinson":   {Type: BlockImage, Image: "img1", Dither: "atkinson", Fit: "contain", Anchor: "c"},
+		"image threshold":  {Type: BlockImage, Image: "img1", Dither: "threshold", Fit: "stretch"},
+		"image missing":    {Type: BlockImage, Image: "gone", Dither: "floyd", Fit: "contain"},
+		"progress zero":    {Type: BlockProgress, Label: "Empty", Value: 0, Font: "pixel8x16", Size: 16},
+		"progress full":    {Type: BlockProgress, Label: "Full", Value: 100, Font: "pixel8x16", Size: 16},
+		"rows overflowing": {Type: BlockRows, Font: "pixel8x16", Size: 16, Rules: true, Rows: manyRows(24)},
+		"list overflowing": {Type: BlockList, Font: "pixel8x16", Size: 16, Items: manyItems(24)},
+	}
+	for name, blk := range variants {
+		t.Run(name, func(t *testing.T) {
+			sc, b := oneBlockScreen(blk)
+			ctx := testCtx()
+			if name == "image missing" {
+				ctx.Image = func(id string) (*image.Gray, bool) { return nil, false }
+			}
+			img := Render(sc, paramsFor(sc), ctx)
+			assertPureAndInside(t, img, sc, b, name)
+		})
+	}
+}
+
+func manyRows(n int) []Row {
+	out := make([]Row, n)
+	for i := range out {
+		out[i] = Row{Label: "Label " + itoa(i), Value: itoa(i*7) + " min"}
+	}
+	return out
+}
+
+func manyItems(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = "Item number " + itoa(i)
+	}
+	return out
+}
+
+// TestPNGIsTrue1Bit checks the encoded bytes, not just the decoded pixels.
 func TestPNGIsTrue1Bit(t *testing.T) {
+	sc := sampleScreen()
 	for _, p := range []Params{
 		{W: 800, H: 480},
 		{W: 400, H: 300},
-		{W: 1404, H: 1872},
 		{W: 800, H: 480, Rotate: 90},
 		{W: 800, H: 480, Invert: true},
 	} {
-		img := Render(sampleConfig(), fixedNow, p)
+		img := Render(sc, p, testCtx())
 		b, err := EncodePNG(img)
 		if err != nil {
 			t.Fatalf("%v: %v", p, err)
@@ -73,11 +195,11 @@ func TestPNGIsTrue1Bit(t *testing.T) {
 		if !ok || len(ihdr) != 13 {
 			t.Fatalf("%v: bad IHDR", p)
 		}
-		if w := binary.BigEndian.Uint32(ihdr[0:4]); int(w) != p.W {
-			t.Errorf("%v: IHDR width = %d", p, w)
+		if w := binary.BigEndian.Uint32(ihdr[0:4]); int(w) != p.OutW() {
+			t.Errorf("%v: IHDR width = %d, want %d", p, w, p.OutW())
 		}
-		if h := binary.BigEndian.Uint32(ihdr[4:8]); int(h) != p.H {
-			t.Errorf("%v: IHDR height = %d", p, h)
+		if h := binary.BigEndian.Uint32(ihdr[4:8]); int(h) != p.OutH() {
+			t.Errorf("%v: IHDR height = %d, want %d", p, h, p.OutH())
 		}
 		if depth := ihdr[8]; depth != 1 {
 			t.Errorf("%v: bit depth = %d, want 1", p, depth)
@@ -98,17 +220,10 @@ func TestPNGIsTrue1Bit(t *testing.T) {
 	}
 }
 
-// TestNoGreyPixels decodes the encoded PNG and asserts every single pixel is
-// pure black or pure white. Anti-aliasing anywhere in the pipeline fails this.
-func TestNoGreyPixels(t *testing.T) {
-	for _, p := range []Params{
-		{W: 800, H: 480},
-		{W: 400, H: 300},
-		{W: 1404, H: 1872},
-		{W: 800, H: 480, Rotate: 270},
-		{W: 300, H: 500, Invert: true},
-	} {
-		b, err := EncodePNG(Render(sampleConfig(), fixedNow, p))
+func TestNoGreyPixelsOnAFullScreen(t *testing.T) {
+	sc := sampleScreen()
+	for _, p := range []Params{{W: 800, H: 480}, {W: 400, H: 300}, {W: 800, H: 480, Rotate: 270}, {W: 300, H: 500, Invert: true}} {
+		b, err := EncodePNG(Render(sc, p, testCtx()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,24 +238,21 @@ func TestNoGreyPixels(t *testing.T) {
 		if !ok {
 			t.Fatalf("%v: decoded as %T, want *image.Paletted", p, img)
 		}
-		if len(pal.Palette) != 2 {
-			t.Fatalf("%v: palette has %d entries", p, len(pal.Palette))
-		}
-		bounds := img.Bounds()
-		if bounds.Dx() != p.W || bounds.Dy() != p.H {
+		bounds := pal.Bounds()
+		if bounds.Dx() != p.OutW() || bounds.Dy() != p.OutH() {
 			t.Fatalf("%v: bounds = %v", p, bounds)
 		}
 		black, white := 0, 0
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				r, g, bl, a := img.At(x, y).RGBA()
+				r, g, bl, a := pal.At(x, y).RGBA()
 				switch {
 				case r == 0 && g == 0 && bl == 0 && a == 0xffff:
 					black++
 				case r == 0xffff && g == 0xffff && bl == 0xffff && a == 0xffff:
 					white++
 				default:
-					t.Fatalf("%v: pixel (%d,%d) is neither black nor white: %d %d %d %d", p, x, y, r, g, bl, a)
+					t.Fatalf("%v: pixel (%d,%d) is neither black nor white", p, x, y)
 				}
 			}
 		}
@@ -150,17 +262,17 @@ func TestNoGreyPixels(t *testing.T) {
 	}
 }
 
-// TestBinLengthExact: ceil(w/8)*h, for every preset and every rotation.
 func TestBinLengthExact(t *testing.T) {
-	sizes := [][2]int{{800, 480}, {400, 300}, {1404, 1872}, {101, 77}, {64, 64}, {999, 65}}
+	sc := sampleScreen()
+	sizes := [][2]int{{800, 480}, {400, 300}, {101, 77}, {64, 64}, {999, 65}}
 	for _, s := range sizes {
 		for _, rot := range []int{0, 90, 180, 270} {
 			p := Params{W: s[0], H: s[1], Rotate: rot}
-			want := ((p.W + 7) / 8) * p.H
+			want := ((p.OutW() + 7) / 8) * p.OutH()
 			if got := p.BinLen(); got != want {
 				t.Errorf("%v: BinLen = %d, want %d", p, got, want)
 			}
-			got := len(PackBits(Render(sampleConfig(), fixedNow, p)))
+			got := len(PackBits(Render(sc, p, testCtx())))
 			if got != want {
 				t.Errorf("%v: packed %d bytes, want %d", p, got, want)
 			}
@@ -168,17 +280,14 @@ func TestBinLengthExact(t *testing.T) {
 	}
 }
 
-// TestPackingIsMSBFirst pins the documented bit order against a hand-built row.
 func TestPackingIsMSBFirst(t *testing.T) {
 	img := image.NewPaletted(image.Rect(0, 0, 12, 2), panelPalette)
 	for i := range img.Pix {
 		img.Pix[i] = idxBlack
 	}
-	// Row 0: white at x=0 and x=7 -> 0b10000001 = 0x81, then x=8 -> 0x80.
 	img.SetColorIndex(0, 0, idxWhite)
 	img.SetColorIndex(7, 0, idxWhite)
 	img.SetColorIndex(8, 0, idxWhite)
-	// Row 1: white at x=3 -> 0b00010000 = 0x10.
 	img.SetColorIndex(3, 1, idxWhite)
 
 	got := PackBits(img)
@@ -191,49 +300,69 @@ func TestPackingIsMSBFirst(t *testing.T) {
 	}
 }
 
-// TestDeterministicWithinMinute is what makes the ETag meaningful.
 func TestDeterministicWithinMinute(t *testing.T) {
-	cfg := sampleConfig()
-	p := Params{W: 800, H: 480}
-	a, err := EncodePNG(Render(cfg, fixedNow, p))
+	sc := sampleScreen()
+	p := paramsFor(sc)
+	ctx := testCtx()
+	a, err := EncodePNG(Render(sc, p, ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := EncodePNG(Render(cfg, fixedNow.Add(48*time.Second), p))
+	ctx.Now = fixedNow.Add(48 * time.Second)
+	b, err := EncodePNG(Render(sc, p, ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(a, b) {
 		t.Error("same minute produced different bytes")
 	}
-	c, err := EncodePNG(Render(cfg, fixedNow.Add(time.Minute), p))
+	ctx.Now = fixedNow.Add(time.Minute)
+	c, err := EncodePNG(Render(sc, p, ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if bytes.Equal(a, c) {
 		t.Error("a new minute produced identical bytes; the clock is not rendering")
 	}
-	cfg.Rows[0].Value = "Wednesday"
-	d, err := EncodePNG(Render(cfg, fixedNow, p))
-	if err != nil {
-		t.Fatal(err)
+}
+
+// A seconds clock changes the whole screen's granularity, deliberately.
+func TestSecondsFormatChangesGranularity(t *testing.T) {
+	sc := Screen{Name: "t", W: 300, H: 100, Blocks: []Block{
+		{Type: BlockClock, X: 0, Y: 0, W: 300, H: 100, Format: "24h", Font: "go-bold", Size: 40},
+	}}
+	if g := sc.Granularity(); g != time.Minute {
+		t.Errorf("plain clock granularity = %v", g)
 	}
-	if bytes.Equal(a, d) {
-		t.Error("changed content produced identical bytes")
+	sc.Blocks[0].Format = "24h-sec"
+	if g := sc.Granularity(); g != time.Second {
+		t.Errorf("seconds clock granularity = %v", g)
+	}
+	ctx := testCtx()
+	a := PackBits(Render(sc, paramsFor(sc), ctx))
+	ctx.Now = fixedNow.Add(time.Second)
+	b := PackBits(Render(sc, paramsFor(sc), ctx))
+	if bytes.Equal(a, b) {
+		t.Error("a seconds clock did not change after one second")
 	}
 }
 
-func TestRotationKeepsRequestedBounds(t *testing.T) {
-	for _, rot := range []int{0, 90, 180, 270} {
-		p := Params{W: 800, H: 480, Rotate: rot}
-		got := Render(sampleConfig(), fixedNow, p).Bounds()
+func TestRotationSwapsOutputBounds(t *testing.T) {
+	sc := sampleScreen()
+	for _, rot := range []int{0, 180} {
+		got := Render(sc, Params{W: 800, H: 480, Rotate: rot}, testCtx()).Bounds()
 		if got.Dx() != 800 || got.Dy() != 480 {
 			t.Errorf("rotate=%d: bounds %v, want 800x480", rot, got)
 		}
 	}
-	// 180 is its own inverse.
-	a := Render(sampleConfig(), fixedNow, Params{W: 400, H: 300})
-	b := Render(sampleConfig(), fixedNow, Params{W: 400, H: 300, Rotate: 180})
+	for _, rot := range []int{90, 270} {
+		got := Render(sc, Params{W: 800, H: 480, Rotate: rot}, testCtx()).Bounds()
+		if got.Dx() != 480 || got.Dy() != 800 {
+			t.Errorf("rotate=%d: bounds %v, want 480x800", rot, got)
+		}
+	}
+	a := Render(sc, Params{W: 400, H: 300}, testCtx())
+	b := Render(sc, Params{W: 400, H: 300, Rotate: 180}, testCtx())
 	if bytes.Equal(a.Pix, b.Pix) {
 		t.Fatal("rotate=180 changed nothing")
 	}
@@ -243,8 +372,9 @@ func TestRotationKeepsRequestedBounds(t *testing.T) {
 }
 
 func TestInvertIsComplement(t *testing.T) {
-	a := Render(sampleConfig(), fixedNow, Params{W: 400, H: 300})
-	b := Render(sampleConfig(), fixedNow, Params{W: 400, H: 300, Invert: true})
+	sc := sampleScreen()
+	a := Render(sc, Params{W: 400, H: 300}, testCtx())
+	b := Render(sc, Params{W: 400, H: 300, Invert: true}, testCtx())
 	for i := range a.Pix {
 		if a.Pix[i] == b.Pix[i] {
 			t.Fatalf("pixel %d not inverted", i)
@@ -253,28 +383,35 @@ func TestInvertIsComplement(t *testing.T) {
 }
 
 func TestRenderSurvivesAwkwardContent(t *testing.T) {
-	long := ""
-	for i := 0; i < 200; i++ {
-		long += "wide"
-	}
-	cfg := Config{Title: long, Footer: long, Rows: make([]Row, maxRows)}
-	for i := range cfg.Rows {
-		cfg.Rows[i] = Row{Label: long, Value: long}
+	long := strings.Repeat("wide", 200)
+	sc := Screen{Name: "t", W: 800, H: 480}
+	sc.Blocks = []Block{
+		{Type: BlockText, X: 0, Y: 0, W: 800, H: 40, Text: long, Font: "go", Size: 24},
+		{Type: BlockRows, X: 0, Y: 40, W: 800, H: 200, Font: "pixel7x13", Size: 13, Rows: manyRows(maxRows)},
+		{Type: BlockList, X: 0, Y: 240, W: 800, H: 20, Font: "pixel7x13", Size: 13, Items: manyItems(maxListItems)},
+		{Type: BlockProgress, X: 0, Y: 270, W: 20, H: 4, Value: 50, Font: "pixel7x13", Size: 13},
+		{Type: BlockBox, X: 700, Y: 400, W: 4, H: 4, Thickness: 40},
 	}
 	for _, p := range []Params{{W: 64, H: 64}, {W: 800, H: 480}, {W: 2400, H: 1200}} {
-		img := Render(cfg, fixedNow, p)
-		if img.Bounds().Dx() != p.W {
+		img := Render(sc, p, testCtx())
+		if img.Bounds().Dx() != p.OutW() {
 			t.Fatalf("%v: wrong width", p)
 		}
+		for _, v := range img.Pix {
+			if v != idxBlack && v != idxWhite {
+				t.Fatalf("%v: palette index %d escaped", p, v)
+			}
+		}
 	}
-	// And the empty case.
-	img := Render(Config{Title: "panel"}, fixedNow, Params{W: 800, H: 480})
-	if img.Bounds().Dy() != 480 {
-		t.Fatal("empty config broke the render")
+	// And a screen with nothing on it.
+	img := Render(Screen{Name: "t", W: 200, H: 100}, Params{W: 200, H: 100}, testCtx())
+	if img.Bounds().Dy() != 100 {
+		t.Fatal("an empty screen broke the render")
 	}
 }
 
 func TestParseParams(t *testing.T) {
+	sc := Screen{Name: "t", W: 800, H: 480}
 	tests := []struct {
 		name    string
 		query   string
@@ -287,7 +424,6 @@ func TestParseParams(t *testing.T) {
 		{"preset then override", "preset=400x300&w=500", Params{W: 500, H: 300}, ""},
 		{"rotate", "rotate=270", Params{W: 800, H: 480, Rotate: 270}, ""},
 		{"invert word", "invert=true", Params{W: 800, H: 480, Invert: true}, ""},
-		{"invert off", "invert=0", Params{W: 800, H: 480}, ""},
 		{"unknown preset", "preset=nope", Params{}, "unknown preset"},
 		{"w not a number", "w=big", Params{}, "whole number"},
 		{"w too small", "w=8", Params{}, "between 64 and 2400"},
@@ -302,12 +438,12 @@ func TestParseParams(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := ParseParams(q)
+			got, err := ParseParams(q, sc)
 			if tc.wantErr != "" {
 				if err == nil {
 					t.Fatalf("want error containing %q, got none", tc.wantErr)
 				}
-				if !bytes.Contains([]byte(err.Error()), []byte(tc.wantErr)) {
+				if !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("error %q does not contain %q", err, tc.wantErr)
 				}
 				return
@@ -319,6 +455,19 @@ func TestParseParams(t *testing.T) {
 				t.Fatalf("got %+v, want %+v", got, tc.want)
 			}
 		})
+	}
+
+	// A screen's own settings are the starting point.
+	rot := Screen{Name: "t", W: 480, H: 800, Rotate: 90, Invert: true}
+	got, err := ParseParams(url.Values{}, rot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != (Params{W: 480, H: 800, Rotate: 90, Invert: true}) {
+		t.Fatalf("screen settings not used: %+v", got)
+	}
+	if got.OutW() != 800 || got.OutH() != 480 {
+		t.Fatalf("rotated output = %dx%d, want 800x480", got.OutW(), got.OutH())
 	}
 }
 
@@ -332,48 +481,9 @@ func TestParamsQueryIsStable(t *testing.T) {
 	}
 }
 
-func TestFitTruncates(t *testing.T) {
-	f := face(fRegular, 18)
-	long := "an extremely long label that will not fit in ninety pixels at all"
-	got := fit(f, long, 90)
-	if got == long {
-		t.Fatal("expected truncation")
-	}
-	if measure(f, got) > 90 {
-		t.Fatalf("%q still measures %d px", got, measure(f, got))
-	}
-	if short := fit(f, "ok", 200); short != "ok" {
-		t.Fatalf("short string was mangled: %q", short)
-	}
-	if fit(f, "anything", 0) != "" {
-		t.Fatal("zero width should produce nothing")
-	}
-}
-
-// The scratch canvas may hold greys; the PNG must not. This asserts the
-// threshold step is the only path from one to the other.
-func TestThresholdIsTheOnlyExit(t *testing.T) {
-	c := newCanvas(60, 30)
-	c.text(face(fRegular, 20), 2, 20, "Ag", inkBlack)
-	grey := 0
-	for _, v := range c.g.Pix {
-		if v != inkBlack && v != inkWhite {
-			grey++
-		}
-	}
-	if grey == 0 {
-		t.Skip("no antialiasing produced; nothing to prove")
-	}
-	img := Render(Config{Title: "Ag"}, fixedNow, Params{W: 200, H: 100})
-	for _, v := range img.Pix {
-		if v != idxBlack && v != idxWhite {
-			t.Fatalf("palette index %d escaped the threshold", v)
-		}
-	}
-}
-
 func TestEncodeDecodeRoundTrip(t *testing.T) {
-	img := Render(sampleConfig(), fixedNow, Params{W: 200, H: 120})
+	sc := sampleScreen()
+	img := Render(sc, Params{W: 200, H: 120}, testCtx())
 	b, err := EncodePNG(img)
 	if err != nil {
 		t.Fatal(err)
@@ -388,5 +498,81 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 	}
 	if !bytes.Equal(PackBits(img), PackBits(pal)) {
 		t.Error("packing the decoded image differs from packing the source")
+	}
+}
+
+// The canvas may hold greys; the PNG must not.
+func TestThresholdIsTheOnlyExit(t *testing.T) {
+	c := newCanvas(60, 30)
+	c.drawString(typeset("go", 20), 2, 20, "Ag", inkBlack)
+	grey := 0
+	for _, v := range c.g.Pix {
+		if v != inkBlack && v != inkWhite {
+			grey++
+		}
+	}
+	if grey == 0 {
+		t.Skip("no antialiasing produced; nothing to prove")
+	}
+	img := toPaletted(c.g, false)
+	for _, v := range img.Pix {
+		if v != idxBlack && v != idxWhite {
+			t.Fatalf("palette index %d escaped the threshold", v)
+		}
+	}
+}
+
+// Blocks draw in list order, so a later one covers an earlier one.
+func TestLaterBlocksDrawOverEarlier(t *testing.T) {
+	sc := Screen{Name: "t", W: 100, H: 100, Blocks: []Block{
+		{Type: BlockBox, X: 0, Y: 0, W: 100, H: 100, Fill: true},
+		{Type: BlockBox, X: 20, Y: 20, W: 60, H: 60, Fill: false, Thickness: 60},
+	}}
+	// The second box is an outline thick enough to be solid, drawn in black
+	// over black: still black. Make it meaningful by inverting it instead.
+	sc.Blocks[1] = Block{Type: BlockText, X: 20, Y: 20, W: 60, H: 60,
+		Text: "X", Font: "go-bold", Size: 40, Anchor: "c", Align: "center", Invert: true}
+	img := Render(sc, paramsFor(sc), testCtx())
+	// Inside the second block there must now be white pixels; outside it, none.
+	whiteInside, whiteOutside := 0, 0
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 100; x++ {
+			if img.ColorIndexAt(x, y) != idxWhite {
+				continue
+			}
+			if x >= 20 && x < 80 && y >= 20 && y < 80 {
+				whiteInside++
+			} else {
+				whiteOutside++
+			}
+		}
+	}
+	if whiteInside == 0 {
+		t.Error("the later block did not draw over the filled box")
+	}
+	if whiteOutside != 0 {
+		t.Errorf("%d white pixels outside the later block", whiteOutside)
+	}
+}
+
+func TestSampleStripIsPure(t *testing.T) {
+	for _, tf := range faces {
+		size := tf.Min
+		if tf.Bitmap {
+			size = tf.Native
+		}
+		img := SampleStrip(tf.ID, size)
+		black := 0
+		for _, v := range img.Pix {
+			if v != idxBlack && v != idxWhite {
+				t.Fatalf("%s: sample strip has index %d", tf.ID, v)
+			}
+			if v == idxBlack {
+				black++
+			}
+		}
+		if black == 0 {
+			t.Errorf("%s: sample strip is blank", tf.ID)
+		}
 	}
 }

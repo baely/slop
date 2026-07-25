@@ -25,9 +25,22 @@ var staticFS embed.FS
 
 var pages = map[string]*template.Template{}
 
+var funcs = template.FuncMap{
+	"add":  func(a, b int) int { return a + b },
+	"sub":  func(a, b int) int { return a - b },
+	"last": func(i, n int) bool { return i == n-1 },
+	"title": func(s string) string {
+		if s == "" {
+			return ""
+		}
+		return strings.ToUpper(s[:1]) + s[1:]
+	},
+}
+
 func init() {
 	for _, name := range []string{"preview.html", "edit.html", "login.html"} {
-		pages[name] = template.Must(template.ParseFS(tmplFS, "templates/base.html", "templates/"+name))
+		pages[name] = template.Must(template.New(name).Funcs(funcs).
+			ParseFS(tmplFS, "templates/base.html", "templates/"+name))
 	}
 }
 
@@ -75,22 +88,34 @@ func main() {
 		log.Printf("fatal: could not open data dir %s: %v", dataDir, err)
 		os.Exit(1)
 	}
+	images, err := newImageStore(dataDir)
+	if err != nil {
+		log.Printf("fatal: could not open image dir: %v", err)
+		os.Exit(1)
+	}
+
+	ctx, stopRefresher := context.WithCancel(context.Background())
+	defer stopRefresher()
 
 	srv := &Server{
 		auth:    NewAuth(token),
 		store:   store,
+		images:  images,
+		data:    newDataStore(false),
 		cache:   newRenderCache(),
 		loc:     loc,
 		baseURL: baseURL,
 		now:     time.Now,
+		ctx:     ctx,
 	}
+	go runRefresher(ctx, store, srv.data)
 
 	httpSrv := &http.Server{
 		Addr:              addr,
 		Handler:           logRequests(srv.Routes()),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      45 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    16 << 10,
 	}
@@ -101,15 +126,17 @@ func main() {
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		<-sig
 		log.Println("shutting down")
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		stopRefresher()
+		shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := httpSrv.Shutdown(ctx); err != nil {
+		if err := httpSrv.Shutdown(shutCtx); err != nil {
 			log.Printf("shutdown: %v", err)
 		}
 		close(idle)
 	}()
 
-	log.Printf("panel listening on %s data=%s base=%s tz=%s", addr, dataDir, baseURL, loc)
+	log.Printf("panel listening on %s data=%s base=%s tz=%s screens=%d",
+		addr, dataDir, baseURL, loc, len(store.Screens()))
 	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Printf("fatal: %v", err)
 		os.Exit(1)
@@ -126,8 +153,12 @@ func (s *Server) Routes() http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	mux.HandleFunc("GET /screen.png", s.handleScreen(false))
-	mux.HandleFunc("GET /screen.bin", s.handleScreen(true))
+	// Legacy paths: always the first screen, so a device already flashed with
+	// one of these URLs keeps working across the rework.
+	mux.HandleFunc("GET /screen.png", s.handleScreen(false, false))
+	mux.HandleFunc("GET /screen.bin", s.handleScreen(true, false))
+	mux.HandleFunc("GET /s/{screen}/screen.png", s.handleScreen(false, true))
+	mux.HandleFunc("GET /s/{screen}/screen.bin", s.handleScreen(true, true))
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -137,11 +168,24 @@ func (s *Server) Routes() http.Handler {
 		s.requireToken(s.handlePreview)(w, r)
 	})
 	mux.HandleFunc("GET /edit", s.requireToken(s.handleEdit))
-	mux.HandleFunc("POST /edit", s.requireToken(s.handleSave))
-	mux.HandleFunc("POST /key/rotate", s.requireToken(s.handleRotateKey))
+	mux.HandleFunc("GET /layout.json", s.requireToken(s.handleLayoutJSON))
+	mux.HandleFunc("GET /images/{id}/pic.png", s.requireToken(s.handleImageServe))
+	mux.HandleFunc("GET /sample.png", s.requireToken(s.handleSample))
+
+	post := func(pattern string, h http.HandlerFunc) {
+		mux.HandleFunc(pattern, s.requireToken(requireSameSite(h)))
+	}
+	post("POST /edit", s.handleSave)
+	post("POST /screens", s.handleScreens)
+	post("POST /starter", s.handleStarter)
+	post("POST /layout", s.handleLayoutSave)
+	post("POST /images", s.handleImageUpload)
+	post("POST /images/delete", s.handleImageDelete)
+	post("POST /key/rotate", s.handleRotateKey)
+
 	mux.HandleFunc("GET /login", s.handleLoginForm)
-	mux.HandleFunc("POST /login", s.handleLogin)
-	mux.HandleFunc("POST /logout", s.handleLogout)
+	mux.HandleFunc("POST /login", requireSameSite(s.handleLogin))
+	mux.HandleFunc("POST /logout", requireSameSite(s.handleLogout))
 
 	if static, err := fs.Sub(staticFS, "static"); err == nil {
 		fileServer := http.StripPrefix("/static/", http.FileServer(http.FS(static)))
@@ -157,13 +201,20 @@ func (s *Server) Routes() http.Handler {
 }
 
 // securityHeaders applies the estate-wide headers to every response.
+//
+// Referrer-Policy is same-origin, NOT no-referrer: under no-referrer Chrome
+// sends "Origin: null" on same-origin form posts, which breaks any origin
+// check and, worse, tempts you into loosening the check instead. same-origin
+// still strips the referrer for cross-origin navigations, which is the part
+// that was ever worth having.
 func securityHeaders(next http.Handler) http.Handler {
 	const csp = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-		"font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'"
+		"font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; " +
+		"form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 		h.Set("X-Content-Type-Options", "nosniff")
-		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Referrer-Policy", "same-origin")
 		h.Set("Content-Security-Policy", csp)
 		h.Set("X-Frame-Options", "DENY")
 		next.ServeHTTP(w, r)

@@ -151,7 +151,8 @@ code, pre, .mono, time, .num {
 .btn.danger { color: #ffffff; background-color: #b91c1c; background-image: var(--sheen); }
 @media (pointer: coarse) { .btn { min-height: 44px; } }
 
-input[type="text"], input[type="number"], input[type="password"], select {
+input[type="text"], input[type="number"], input[type="password"], input[type="url"],
+input[type="file"], select, textarea {
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--text);
@@ -163,10 +164,33 @@ input[type="text"], input[type="number"], input[type="password"], select {
   width: 100%;
   touch-action: manipulation;
 }
+input[type="number"] { font-family: var(--font-mono); }
+textarea { line-height: 1.5; resize: vertical; }
+textarea.code { font-family: var(--font-mono); font-size: 12.5px; font-variant-ligatures: none; }
 label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
 
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin: 8px 0 0;
+}
+.check input { width: auto; min-height: 0; }
+
 .field { min-width: 0; }
-.field.wide { max-width: 520px; margin-bottom: 16px; }
+.field.wide { max-width: 640px; margin-bottom: 16px; }
+
+.grid4, .grid5 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+@media (min-width: 620px) { .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 620px) { .grid5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
 .params {
   display: flex;
@@ -191,6 +215,100 @@ label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2);
   padding: 3px 8px;
   text-decoration: none;
 }
+.chip.on { color: var(--accent-ink); background: var(--accent); background-image: var(--sheen); }
+
+.screens { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+
+.rowforms { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.rowforms .inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rowforms input[type="text"], .rowforms input[type="number"] { width: 110px; }
+.rowforms input[type="file"] { width: auto; max-width: 100%; }
+
+.btn.small { font-size: 12.5px; padding: 5px 10px; min-height: 30px; }
+@media (pointer: coarse) { .btn.small { min-height: 38px; } }
+
+/* ---------- the block editor ---------- */
+
+.canvas {
+  position: relative;
+  background: #fff;
+  flex: none;
+}
+.canvas img { display: block; image-rendering: pixelated; max-width: none; }
+
+.blk {
+  position: absolute;
+  box-sizing: border-box;
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+  cursor: move;
+  touch-action: none;
+}
+.blk.on { outline: 2px solid var(--accent); }
+.blk-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--accent-ink);
+  background: var(--accent);
+  padding: 2px 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.blk-handle {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+@media (pointer: coarse) { .blk-handle { width: 22px; height: 22px; } }
+
+.block-card {
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-card);
+  padding: 12px 16px 16px;
+  margin: 12px 0;
+}
+.block-card.on { background: var(--accent-soft); }
+.block-card legend {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 15px;
+  padding: 0;
+}
+.block-card input, .block-card select, .block-card textarea { background: var(--bg); }
+
+.blockbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.addbar { margin-top: 16px; align-items: center; }
+.addbar select { width: auto; min-width: 140px; }
+
+/* The sample strip is the render, not a picture of it: it is never scaled by
+   the browser, because resampling a 1-bit bitmap would smooth away the exact
+   thing you are looking at. Too wide for the card, it scrolls. */
+.samplewrap { grid-column: 1 / -1; min-width: 0; }
+.sample { overflow-x: auto; background: #fff; border-radius: var(--r-ctl); }
+.sample img {
+  display: block;
+  image-rendering: pixelated;
+  max-width: none;
+  padding: 2px;
+}
+.hint { font-size: 12px; color: var(--text-2); margin: 4px 0 0; }
+.hint.bad { color: #b91c1c; font-weight: 600; }
+
+.thumbs { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.thumb { background: var(--surface); border-radius: var(--r-card); padding: 8px; width: 160px; }
+.thumb img { display: block; width: 100%; height: 100px; object-fit: contain; background: #fff; border-radius: var(--r-ctl); }
+.thumb-meta { font-size: 11px; color: var(--text-2); margin: 6px 0; word-break: break-all; }
 
 /* ---------- the rendered screen ---------- */
 
@@ -250,6 +368,7 @@ td a.mono { word-break: break-all; }
 /* ---------- misc ---------- */
 
 .note { color: var(--text-2); font-size: 13px; margin: 8px 0 0; max-width: 72ch; }
+.note.warn { color: #b45309; font-weight: 500; }
 .empty { color: var(--text-2); font-size: 14px; }
 .flash {
   background: var(--accent-soft);
@@ -259,6 +378,11 @@ td a.mono { word-break: break-all; }
   font-weight: 600;
   margin-bottom: 16px;
 }
+.flash.bad { background: #fdecec; color: #b91c1c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .flash.bad { background: #2a1414; color: #f0a3a3; }
+}
+:root[data-theme="dark"] .flash.bad { background: #2a1414; color: #f0a3a3; }
 .keyline {
   background: var(--surface);
   border-radius: var(--r-ctl);

@@ -1,46 +1,394 @@
 {{define "title"}}panel — edit{{end}}
+
+{{/* ---- font + size, the one control where the two choices are not independent ---- */}}
+{{define "typectl"}}
+<div class="field">
+  <label for="b{{.I}}-font">Font</label>
+  <select id="b{{.I}}-font" name="b{{.I}}.font" data-font="{{.I}}">
+    {{$f := .B.Font}}
+    {{range .Faces}}<option value="{{.ID}}"{{if eq .ID $f}} selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+</div>
+<div class="field" data-sizewrap="{{.I}}">
+  <label for="b{{.I}}-size">Size</label>
+  {{if .Face.Bitmap}}
+  <select id="b{{.I}}-size" name="b{{.I}}.size" data-size="{{.I}}">
+    {{$s := .B.Size}}
+    {{range .Sizes}}<option value="{{.}}"{{if eq . $s}} selected{{end}}>{{.}} px</option>{{end}}
+  </select>
+  {{else}}
+  <input id="b{{.I}}-size" name="b{{.I}}.size" data-size="{{.I}}" type="number" inputmode="numeric"
+         min="{{.Face.Min}}" max="{{.Face.Max}}" step="1" value="{{.B.Size}}">
+  {{end}}
+</div>
+<div class="samplewrap">
+  <div class="sample"><img src="/sample.png?font={{.B.Font}}&amp;size={{.B.Size}}" alt="Sample of {{.Face.Name}} at {{.B.Size}} pixels" data-sample="{{.I}}"></div>
+  <p class="hint{{if .Advice}} bad{{end}}" data-advice="{{.I}}">{{if .Advice}}{{.Advice}}{{else}}{{.Note}}{{end}}</p>
+</div>
+{{end}}
+
+{{define "alignctl"}}
+<div class="field">
+  <label for="b{{.I}}-align">Align</label>
+  <select id="b{{.I}}-align" name="b{{.I}}.align">
+    {{$a := .B.Align}}
+    {{range .Aligns}}<option value="{{.}}"{{if eq . $a}} selected{{end}}>{{title .}}</option>{{end}}
+  </select>
+</div>
+{{end}}
+
+{{define "invertctl"}}
+<label class="check"><input type="checkbox" name="b{{.I}}.invert" value="1"{{if .B.Invert}} checked{{end}}> Invert (White On Black)</label>
+{{end}}
+
 {{define "content"}}
 
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Err}}<p class="flash bad">{{.Err}}</p>{{end}}
 
-<form method="post" action="/edit" class="editor">
-  <div class="field wide">
-    <label for="title">Title Line</label>
-    <input id="title" name="title" type="text" maxlength="{{.MaxTitleLen}}" value="{{.Config.Title}}" placeholder="panel">
+<h1>{{.Screen.Name}}</h1>
+
+<p class="screens">
+  {{$cur := .Screen.Name}}
+  {{range .Screens}}<a class="chip{{if eq .Name $cur}} on{{end}}" href="/edit?s={{.Name}}">{{.Name}} · {{.W}}×{{.H}}</a> {{end}}
+</p>
+
+<div class="rowforms">
+  <form method="post" action="/screens" class="inline">
+    <input type="hidden" name="op" value="add">
+    <input type="text" name="name" placeholder="hallway" maxlength="32" aria-label="New screen name" required>
+    <input type="number" name="w" value="800" min="64" max="{{.MaxDim}}" aria-label="Width">
+    <input type="number" name="h" value="480" min="64" max="{{.MaxDim}}" aria-label="Height">
+    <button class="btn" type="submit">Add Screen</button>
+  </form>
+  <form method="post" action="/screens" class="inline">
+    <input type="hidden" name="op" value="duplicate">
+    <input type="hidden" name="s" value="{{.Screen.Name}}">
+    <button class="btn" type="submit">Duplicate Screen</button>
+  </form>
+  <form method="post" action="/screens" class="inline">
+    <input type="hidden" name="op" value="delete">
+    <input type="hidden" name="s" value="{{.Screen.Name}}">
+    <button class="btn danger" type="submit">Delete Screen</button>
+  </form>
+</div>
+<p class="note">Up to {{.MaxScreens}} screens, {{.MaxBlocks}} blocks each. Each screen has its own dimensions, rotation, invert and device key.</p>
+
+<h2>Starter Layouts</h2>
+<div class="rowforms">
+  {{range .Starters}}
+  <form method="post" action="/starter" class="inline">
+    <input type="hidden" name="s" value="{{$.Screen.Name}}">
+    <input type="hidden" name="starter" value="{{.ID}}">
+    <button class="btn" type="submit" title="{{.About}}">{{.Name}}</button>
+  </form>
+  {{end}}
+</div>
+<p class="note">Loading a starter replaces every block on this screen.</p>
+
+<h2>Layout</h2>
+<p class="note">Drag a block to move it, drag its bottom-right corner to resize. Snaps to 8 pixels; hold Shift for free placement. The numbers below stay in sync both ways, and everything works without JavaScript — the numbers are the source of truth.</p>
+
+<div class="screen">
+  <div class="canvas" id="canvas" style="width:{{.Screen.W}}px;height:{{.Screen.H}}px" data-w="{{.Screen.W}}" data-h="{{.Screen.H}}">
+    <img src="{{.PNGURL}}" width="{{.Screen.W}}" height="{{.Screen.H}}" alt="This screen rendered at 1:1">
+    {{range .Views}}
+    <div class="blk{{if eq .I $.Focus}} on{{end}}" data-blk="{{.I}}"
+         style="left:{{.B.X}}px;top:{{.B.Y}}px;width:{{.B.W}}px;height:{{.B.H}}px">
+      <span class="blk-tag">{{add .I 1}} {{.Name}}</span>
+      <span class="blk-handle" data-handle="{{.I}}"></span>
+    </div>
+    {{end}}
   </div>
+</div>
 
-  <h2>Rows</h2>
-  <p class="note">Up to {{.MaxRows}} rows. Labels cap at {{.MaxLabelLen}} characters, values at {{.MaxValueLen}}. Blank rows are dropped on save. Rows that do not fit the requested panel size collapse into a <span class="mono">+N more</span> line.</p>
-  <table class="rows">
-    <thead><tr><th>Label</th><th>Value</th></tr></thead>
-    <tbody>
-      {{range .Config.Rows}}
-      <tr>
-        <td><input name="label" type="text" maxlength="{{$.MaxLabelLen}}" value="{{.Label}}"></td>
-        <td><input name="value" type="text" maxlength="{{$.MaxValueLen}}" value="{{.Value}}"></td>
-      </tr>
-      {{end}}
-      {{range $i, $_ := .Blanks}}
-      <tr>
-        <td><input name="label" type="text" maxlength="{{$.MaxLabelLen}}" value=""{{if eq $i 0}} placeholder="Bin Night"{{end}}></td>
-        <td><input name="value" type="text" maxlength="{{$.MaxValueLen}}" value=""{{if eq $i 0}} placeholder="Tuesday"{{end}}></td>
-      </tr>
-      {{end}}
-    </tbody>
-  </table>
-  {{if not .Config.Rows}}<p class="empty">0 rows.</p>{{end}}
+<form method="post" action="/edit?s={{.Screen.Name}}" class="editor" id="editor">
 
-  <div class="field wide">
-    <label for="footer">Footer Note</label>
-    <input id="footer" name="footer" type="text" maxlength="{{.MaxFooterLen}}" value="{{.Config.Footer}}" placeholder="study panel">
+  <h2>Screen</h2>
+  <div class="grid4">
+    <div class="field">
+      <label for="screen_name">Name</label>
+      <input id="screen_name" name="screen_name" type="text" maxlength="32" value="{{.Screen.Name}}">
+    </div>
+    <div class="field">
+      <label for="screen_w">Canvas Width</label>
+      <input id="screen_w" name="screen_w" type="number" min="64" max="{{.MaxDim}}" value="{{.Screen.W}}">
+    </div>
+    <div class="field">
+      <label for="screen_h">Canvas Height</label>
+      <input id="screen_h" name="screen_h" type="number" min="64" max="{{.MaxDim}}" value="{{.Screen.H}}">
+    </div>
+    <div class="field">
+      <label for="screen_rotate">Rotation</label>
+      <select id="screen_rotate" name="screen_rotate">
+        {{$r := .Screen.Rotate}}
+        <option value="0"{{if eq $r 0}} selected{{end}}>0°</option>
+        <option value="90"{{if eq $r 90}} selected{{end}}>90°</option>
+        <option value="180"{{if eq $r 180}} selected{{end}}>180°</option>
+        <option value="270"{{if eq $r 270}} selected{{end}}>270°</option>
+      </select>
+    </div>
   </div>
+  <label class="check"><input type="checkbox" name="screen_invert" value="1"{{if .Screen.Invert}} checked{{end}}> Invert The Whole Screen</label>
+  <p class="note">Rotation is applied after composition: a 90° or 270° screen is delivered {{.Screen.H}}×{{.Screen.W}}. Presets: {{range .Presets}}<span class="mono">{{.W}}×{{.H}}</span> {{.Note}}. {{end}}</p>
 
-  <button class="btn primary" type="submit">Save Changes</button>
+  <h2>Blocks</h2>
+  {{if not .Views}}<p class="empty">0 blocks. Add one below, or load a starter layout.</p>{{end}}
+
+  {{range .Views}}
+  <fieldset class="block-card{{if eq .I $.Focus}} on{{end}}" id="block-{{.I}}">
+    <legend>{{add .I 1}} · {{.Name}}</legend>
+    <input type="hidden" name="b{{.I}}.type" value="{{.B.Type}}">
+
+    <div class="blockbar">
+      <button class="btn small" type="submit" name="op" value="up.{{.I}}">Move Up</button>
+      <button class="btn small" type="submit" name="op" value="down.{{.I}}">Move Down</button>
+      <button class="btn small" type="submit" name="op" value="dup.{{.I}}">Duplicate</button>
+      <button class="btn small danger" type="submit" name="op" value="del.{{.I}}">Delete</button>
+    </div>
+
+    <div class="grid5">
+      <div class="field"><label for="b{{.I}}-x">X</label>
+        <input id="b{{.I}}-x" name="b{{.I}}.x" data-geom="x" data-i="{{.I}}" type="number" inputmode="numeric" value="{{.B.X}}"></div>
+      <div class="field"><label for="b{{.I}}-y">Y</label>
+        <input id="b{{.I}}-y" name="b{{.I}}.y" data-geom="y" data-i="{{.I}}" type="number" inputmode="numeric" value="{{.B.Y}}"></div>
+      <div class="field"><label for="b{{.I}}-w">Width</label>
+        <input id="b{{.I}}-w" name="b{{.I}}.w" data-geom="w" data-i="{{.I}}" type="number" inputmode="numeric" min="1" value="{{.B.W}}"></div>
+      <div class="field"><label for="b{{.I}}-h">Height</label>
+        <input id="b{{.I}}-h" name="b{{.I}}.h" data-geom="h" data-i="{{.I}}" type="number" inputmode="numeric" min="1" value="{{.B.H}}"></div>
+      <div class="field"><label for="b{{.I}}-anchor">Anchor</label>
+        <select id="b{{.I}}-anchor" name="b{{.I}}.anchor">
+          {{$a := .B.Anchor}}
+          {{range $.Anchors}}<option value="{{.}}"{{if eq . $a}} selected{{end}}>{{.}}</option>{{end}}
+        </select></div>
+    </div>
+
+    {{if eq .B.Type "text"}}
+      <div class="field wide">
+        <label for="b{{.I}}-text">Text</label>
+        <textarea id="b{{.I}}-text" name="b{{.I}}.text" rows="2" maxlength="{{$.MaxTextLen}}">{{.B.Text}}</textarea>
+      </div>
+      <div class="grid4">{{template "typectl" .}}{{template "alignctl" .}}</div>
+      <label class="check"><input type="checkbox" name="b{{.I}}.wrap" value="1"{{if .B.Wrap}} checked{{end}}> Wrap To The Block Width</label>
+      {{template "invertctl" .}}
+
+    {{else if eq .B.Type "clock"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-format">Format</label>
+          <select id="b{{.I}}-format" name="b{{.I}}.format">
+            {{$f := .B.Format}}
+            {{range $.Clocks}}<option value="{{.ID}}"{{if eq .ID $f}} selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+        </div>
+        {{template "typectl" .}}{{template "alignctl" .}}
+      </div>
+      {{template "invertctl" .}}
+      <p class="hint">A seconds format makes this screen re-render every second instead of every minute, which a battery panel will feel.</p>
+
+    {{else if eq .B.Type "date"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-format">Format</label>
+          <select id="b{{.I}}-format" name="b{{.I}}.format">
+            {{$f := .B.Format}}
+            {{range $.Dates}}<option value="{{.ID}}"{{if eq .ID $f}} selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+        </div>
+        {{template "typectl" .}}{{template "alignctl" .}}
+      </div>
+      {{template "invertctl" .}}
+
+    {{else if eq .B.Type "rows"}}
+      <table class="rows">
+        <thead><tr><th>Label</th><th>Value</th></tr></thead>
+        <tbody>
+          {{$i := .I}}
+          {{range .RowsIn}}
+          <tr>
+            <td><input name="b{{$i}}.rowlabel" type="text" maxlength="48" value="{{.Label}}"></td>
+            <td><input name="b{{$i}}.rowvalue" type="text" maxlength="48" value="{{.Value}}"></td>
+          </tr>
+          {{end}}
+          <tr>
+            <td><input name="b{{$i}}.rowlabel" type="text" maxlength="48" value="" placeholder="Bin Night"></td>
+            <td><input name="b{{$i}}.rowvalue" type="text" maxlength="48" value="" placeholder="Tuesday"></td>
+          </tr>
+          <tr>
+            <td><input name="b{{$i}}.rowlabel" type="text" maxlength="48" value=""></td>
+            <td><input name="b{{$i}}.rowvalue" type="text" maxlength="48" value=""></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="grid4">{{template "typectl" .}}</div>
+      <label class="check"><input type="checkbox" name="b{{.I}}.rules" value="1"{{if .B.Rules}} checked{{end}}> Hairline Between Rows</label>
+      {{template "invertctl" .}}
+      <p class="hint">Up to {{$.MaxRows}} rows. Blank rows are dropped on save; rows past the block height collapse into a <span class="mono">+N more</span> line.</p>
+
+    {{else if eq .B.Type "list"}}
+      <div class="field wide">
+        <label for="b{{.I}}-items">Lines</label>
+        <textarea id="b{{.I}}-items" name="b{{.I}}.items" rows="4" placeholder="One per line">{{.Items}}</textarea>
+      </div>
+      <div class="grid4">{{template "typectl" .}}{{template "alignctl" .}}</div>
+      <label class="check"><input type="checkbox" name="b{{.I}}.bullets" value="1"{{if .B.Bullets}} checked{{end}}> Bullets</label>
+      {{template "invertctl" .}}
+      <p class="hint">Up to {{$.MaxItems}} lines.</p>
+
+    {{else if eq .B.Type "divider"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-orient">Orientation</label>
+          <select id="b{{.I}}-orient" name="b{{.I}}.orient">
+            {{$o := .B.Orient}}
+            {{range $.Orients}}<option value="{{.}}"{{if eq . $o}} selected{{end}}>{{title .}}</option>{{end}}
+          </select>
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-thickness">Thickness</label>
+          <input id="b{{.I}}-thickness" name="b{{.I}}.thickness" type="number" min="1" max="64" value="{{.B.Thickness}}">
+        </div>
+      </div>
+
+    {{else if eq .B.Type "box"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-thickness">Outline Thickness</label>
+          <input id="b{{.I}}-thickness" name="b{{.I}}.thickness" type="number" min="1" max="64" value="{{.B.Thickness}}">
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" name="b{{.I}}.fill" value="1"{{if .B.Fill}} checked{{end}}> Filled (Solid Black)</label>
+      <p class="hint">A filled box is how you get a black header bar. Text drawn over it needs its own Invert, or it will be black on black.</p>
+
+    {{else if eq .B.Type "progress"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-label">Label</label>
+          <input id="b{{.I}}-label" name="b{{.I}}.label" type="text" maxlength="48" value="{{.B.Label}}">
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-value">Value (0–100)</label>
+          <input id="b{{.I}}-value" name="b{{.I}}.value" type="number" min="0" max="100" step="1" value="{{.B.Value}}">
+        </div>
+        {{template "typectl" .}}
+      </div>
+      {{template "invertctl" .}}
+
+    {{else if eq .B.Type "image"}}
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-image">Image</label>
+          <select id="b{{.I}}-image" name="b{{.I}}.image">
+            <option value="">— none —</option>
+            {{$img := .B.Image}}
+            {{range $.Images}}<option value="{{.ID}}"{{if eq .ID $img}} selected{{end}}>{{.Name}} · {{.W}}×{{.H}}</option>{{end}}
+          </select>
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-dither">Dither</label>
+          <select id="b{{.I}}-dither" name="b{{.I}}.dither">
+            {{$d := .B.Dither}}
+            {{range $.Dithers}}<option value="{{.}}"{{if eq . $d}} selected{{end}}>{{title .}}</option>{{end}}
+          </select>
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-fit">Fit</label>
+          <select id="b{{.I}}-fit" name="b{{.I}}.fit">
+            {{$ft := .B.Fit}}
+            {{range $.Fits}}<option value="{{.}}"{{if eq . $ft}} selected{{end}}>{{title .}}</option>{{end}}
+          </select>
+        </div>
+      </div>
+      <p class="hint">Floyd–Steinberg keeps gradients; Atkinson keeps contrast and open highlights, which usually suits a scan; Threshold is a hard cut for line art.</p>
+
+    {{else if eq .B.Type "data"}}
+      <div class="field wide">
+        <label for="b{{.I}}-url">JSON URL</label>
+        <input id="b{{.I}}-url" name="b{{.I}}.url" type="url" maxlength="512" value="{{.B.URL}}" placeholder="https://wttr.in/Melbourne?format=j1">
+      </div>
+      <div class="grid4">
+        <div class="field">
+          <label for="b{{.I}}-path">Path</label>
+          <input id="b{{.I}}-path" name="b{{.I}}.path" type="text" maxlength="128" value="{{.B.Path}}" placeholder="current.temp_c">
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-text">Template</label>
+          <input id="b{{.I}}-text" name="b{{.I}}.text" type="text" maxlength="64" value="{{.B.Text}}" placeholder="{{`{{v}}`}}°C">
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-fallback">Fallback</label>
+          <input id="b{{.I}}-fallback" name="b{{.I}}.fallback" type="text" maxlength="48" value="{{.B.Fallback}}">
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-interval">Every (s)</label>
+          <input id="b{{.I}}-interval" name="b{{.I}}.interval" type="number" min="30" max="86400" value="{{.B.Interval}}">
+        </div>
+        <div class="field">
+          <label for="b{{.I}}-timeout">Timeout (s)</label>
+          <input id="b{{.I}}-timeout" name="b{{.I}}.timeout" type="number" min="1" max="15" value="{{.B.Timeout}}">
+        </div>
+        {{template "typectl" .}}{{template "alignctl" .}}
+      </div>
+      {{template "invertctl" .}}
+      <p class="hint">
+        {{if .Status.OK}}Last value <span class="mono">{{.Status.Text}}</span>.{{else if .Status.Err}}Last fetch failed: <span class="mono">{{.Status.Err}}</span>{{else}}Not fetched yet.{{end}}
+        Fetched server-side on a schedule; a render never waits on the network and a stale reading is drawn with a trailing <span class="mono">·</span>. Public http/https only — private and loopback addresses are refused.
+      </p>
+    {{end}}
+  </fieldset>
+  {{end}}
+
+  <div class="blockbar addbar">
+    <select name="addtype" aria-label="Block type to add">
+      {{$tn := .TypeName}}
+      {{range .Types}}<option value="{{.}}">{{index $tn .}}</option>{{end}}
+    </select>
+    <button class="btn" type="submit" name="op" value="add">Add Block</button>
+    <button class="btn primary" type="submit" name="op" value="save" id="save">Save Changes</button>
+  </div>
+</form>
+
+<h2>Images</h2>
+<form method="post" action="/images?s={{.Screen.Name}}" enctype="multipart/form-data" class="rowforms">
+  <input type="hidden" name="s" value="{{.Screen.Name}}">
+  <input type="file" name="file" accept="image/png,image/jpeg,image/gif" required aria-label="Image file">
+  <button class="btn" type="submit">Upload Image</button>
+</form>
+<p class="note">PNG, JPEG or GIF, up to {{.MaxImageMiB}} MiB, {{.MaxImages}} stored. Converted to greyscale on upload and dithered to 1 bit per block, so the dither mode stays changeable without re-uploading.</p>
+{{if .Images}}
+<div class="thumbs">
+  {{range .Images}}
+  <div class="thumb">
+    <img src="/images/{{.ID}}/pic.png" alt="{{.Name}}" loading="lazy">
+    <div class="thumb-meta mono">{{.Name}}<br>{{.W}}×{{.H}}</div>
+    <form method="post" action="/images/delete">
+      <input type="hidden" name="s" value="{{$.Screen.Name}}">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <button class="btn small danger" type="submit">Delete</button>
+    </form>
+  </div>
+  {{end}}
+</div>
+{{else}}
+<p class="empty">0 images.</p>
+{{end}}
+
+<h2>Edit Layout JSON</h2>
+<p class="note">The whole document, every screen. Pasting replaces everything; validation names the offending block and field before anything is written. Device keys are matched back by screen name so a flashed device URL survives a paste. Also at <a class="mono" href="/layout.json">/layout.json</a>.</p>
+<form method="post" action="/layout" class="editor">
+  <input type="hidden" name="s" value="{{.Screen.Name}}">
+  <textarea name="json" rows="18" spellcheck="false" class="code">{{.JSON}}</textarea>
+  <button class="btn primary" type="submit">Replace Layout</button>
 </form>
 
 <h2>Device Key</h2>
-<p class="note">Devices fetch <span class="mono">/screen.png</span> and <span class="mono">/screen.bin</span> with <span class="mono">?k=</span> this key, or an <span class="mono">Authorization: Bearer</span> header. It is a 128-bit random capability, not a password — rotating it kills every URL already flashed onto a device.</p>
-<p class="keyline mono">{{.DeviceKey}}</p>
-<form method="post" action="/key/rotate"><button class="btn danger" type="submit">Rotate Key</button></form>
+<p class="note">Devices fetch this screen with <span class="mono">?k=</span> this key, or an <span class="mono">Authorization: Bearer</span> header. It is a 128-bit random capability, not a password — rotating it kills every URL already flashed onto a device for this screen.</p>
+<p class="keyline mono">{{.Screen.DeviceKey}}</p>
+<form method="post" action="/key/rotate">
+  <input type="hidden" name="s" value="{{.Screen.Name}}">
+  <button class="btn danger" type="submit">Rotate Key</button>
+</form>
+
+<script type="application/json" id="font-rules">{{.FontRules}}</script>
 
 {{end}}

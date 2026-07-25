@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -94,6 +95,63 @@ func (a *Auth) ClearSessionCookie(w http.ResponseWriter) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
+}
+
+// sameSiteRequest is the CSRF check for state-changing requests.
+//
+// Sec-Fetch-Site is consulted FIRST and trusted absolutely: browsers set it,
+// page script cannot, and a cross-site page has no way to forge it. Only when
+// it is absent (an old browser, or curl) do we fall back to Origin and then
+// Referer.
+//
+// The order matters, and so does Referrer-Policy: same-origin, which is set on
+// every response. Under Referrer-Policy: no-referrer Chrome sends
+// "Origin: null" on same-origin form posts, so an Origin-first check rejects
+// the app's own forms. That exact combination broke two sibling apps; it is not
+// getting reintroduced here.
+//
+// A request carrying none of the three is not a browser (curl, a script, a
+// device) and is allowed: the token is still required, and the session cookie
+// is SameSite=Lax, so a cross-site browser POST would not carry credentials
+// anyway. This is defence in depth, not the only lock on the door.
+func sameSiteRequest(r *http.Request) bool {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin", "none":
+		return true
+	case "same-site", "cross-site":
+		return false
+	}
+
+	if o := r.Header.Get("Origin"); o != "" && o != "null" {
+		u, err := url.Parse(o)
+		if err != nil {
+			return false
+		}
+		return hostMatches(u.Host, r)
+	}
+
+	if ref := r.Header.Get("Referer"); ref != "" {
+		u, err := url.Parse(ref)
+		if err != nil {
+			return false
+		}
+		return hostMatches(u.Host, r)
+	}
+
+	return true
+}
+
+// hostMatches compares a URL host against the one this request was addressed
+// to, honouring the single trusted proxy hop in front of the app.
+func hostMatches(host string, r *http.Request) bool {
+	want := r.Host
+	if fh := r.Header.Get("X-Forwarded-Host"); fh != "" {
+		if i := strings.IndexByte(fh, ','); i >= 0 {
+			fh = fh[:i]
+		}
+		want = strings.TrimSpace(fh)
+	}
+	return strings.EqualFold(host, want) || strings.EqualFold(host, r.Host)
 }
 
 // limiter counts failures per client IP inside a fixed window.

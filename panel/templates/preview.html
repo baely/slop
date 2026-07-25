@@ -2,8 +2,16 @@
 {{define "content"}}
 
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Err}}<p class="flash bad">{{.Err}}</p>{{end}}
+
+<p class="screens">
+  {{$cur := .Screen.Name}}
+  {{range .Screens}}<a class="chip{{if eq .Name $cur}} on{{end}}" href="/?s={{.Name}}">{{.Name}} · {{.W}}×{{.H}}</a> {{end}}
+  <a class="chip" href="/edit?s={{$cur}}">Edit This Screen</a>
+</p>
 
 <form class="params" method="get" action="/">
+  <input type="hidden" name="s" value="{{.Screen.Name}}">
   <div class="field">
     <label for="w">Width</label>
     <input id="w" name="w" type="number" inputmode="numeric" min="64" max="{{.MaxDim}}" value="{{.Params.W}}">
@@ -32,12 +40,12 @@
   <button class="btn primary" type="submit">Render</button>
 </form>
 
-<p class="presets">
-  {{range .Presets}}<a class="chip" href="/?w={{.W}}&amp;h={{.H}}">{{.Name}} · {{.Note}}</a> {{end}}
-</p>
+{{if .Mismatch}}
+<p class="note warn">This screen is laid out on a {{.Screen.W}}×{{.Screen.H}} canvas and you asked for {{.Params.W}}×{{.Params.H}}. Blocks keep their pixel coordinates, so anything past the edge is cropped. Change the canvas size on the Edit page to move the blocks with it.</p>
+{{end}}
 
 <div class="screen">
-  <img src="{{.PNGURL}}" width="{{.Params.W}}" height="{{.Params.H}}" alt="Rendered panel, {{.Params.W}} by {{.Params.H}} pixels, 1 bit">
+  <img src="{{.PNGURL}}" width="{{.Params.OutW}}" height="{{.Params.OutH}}" alt="Rendered panel, {{.Params.OutW}} by {{.Params.OutH}} pixels, 1 bit">
 </div>
 
 <div class="stats">
@@ -49,17 +57,17 @@
   <div class="stat">
     <div class="stat-label">Bin Bytes</div>
     <div class="stat-value num">{{.BinBytes}}</div>
-    <div class="stat-context">{{.Stride}} bytes per row × {{.Params.H}} rows</div>
+    <div class="stat-context">{{.Stride}} bytes per row × {{.Params.OutH}} rows</div>
   </div>
   <div class="stat">
-    <div class="stat-label">Rows Configured</div>
-    <div class="stat-value num">{{len .Config.Rows}}</div>
-    <div class="stat-context">cap {{.MaxRows}}{{if .SavedAgo}} · saved {{.SavedAgo}}{{end}}</div>
+    <div class="stat-label">Blocks</div>
+    <div class="stat-value num">{{.Blocks}}</div>
+    <div class="stat-context">on {{.Screen.Name}}{{if .SavedAgo}} · saved {{.SavedAgo}}{{end}}</div>
   </div>
   <div class="stat">
     <div class="stat-label">Panel Clock</div>
     <div class="stat-value num">{{.Now}}</div>
-    <div class="stat-context">{{.NowDate}} · Australia/Melbourne, to the minute</div>
+    <div class="stat-context">{{.NowDate}} · Australia/Melbourne</div>
   </div>
 </div>
 
@@ -73,11 +81,11 @@
     <tr><td><a class="mono" href="{{.BinURL}}">{{.BinURL}}</a></td><td class="mono">{{.BinETag}}</td><td class="num">{{.BinBytes}}</td></tr>
   </tbody>
 </table>
-<p class="note">Both endpoints answer <span class="mono">If-None-Match</span> with <span class="mono">304</span> while the content and the minute are unchanged. The device key <span class="mono">{{.DeviceKey}}</span> is what makes those URLs work without the app token; rotate it on the Edit page.</p>
+<p class="note">Both endpoints answer <span class="mono">If-None-Match</span> with <span class="mono">304</span> while the content and the minute are unchanged. The first screen is also served at <span class="mono">/screen.png</span> and <span class="mono">/screen.bin</span> without the <span class="mono">/s/{name}/</span> prefix, so anything already flashed onto a device keeps working. Each screen has its own device key; rotate it on the Edit page.</p>
 
 <h2>Packing</h2>
 <p class="note">
-  <span class="mono">/screen.bin</span> is 1 bit per pixel, MSB first, row-major, each row padded to a whole byte —
+  <span class="mono">screen.bin</span> is 1 bit per pixel, MSB first, row-major, each row padded to a whole byte —
   <span class="mono">framebuf.MONO_HLSB</span> exactly. Byte index is
   <span class="mono">y*{{.Stride}} + x/8</span>, bit is <span class="mono">0x80 &gt;&gt; (x%8)</span>,
   and a set bit means a <strong>white</strong> pixel. Length is always
