@@ -1,0 +1,107 @@
+{{define "content"}}
+<p class="crumb"><a href="/">All Links</a></p>
+<h1>{{.Link.Slug}}</h1>
+
+<p class="short-url mono">{{.Link.ShortURL}}</p>
+<p class="hint mono">→ <a href="{{.Link.Target}}" rel="noreferrer nofollow noopener" title="{{.Link.Target}}">{{.Link.TargetShort}}</a></p>
+
+<div class="row-actions top-actions">
+  <button type="button" class="btn copy" data-copy="{{.Link.ShortURL}}" hidden>Copy</button>
+  <form method="post" action="/admin/state" class="inline">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="slug" value="{{.Link.Slug}}">
+    <input type="hidden" name="disabled" value="{{if .Link.Disabled}}0{{else}}1{{end}}">
+    <button type="submit" class="btn">{{if .Link.Disabled}}Enable{{else}}Disable{{end}}</button>
+  </form>
+  <form method="post" action="/admin/delete" class="inline" data-confirm="Delete {{.Link.Slug}}? Click history goes with it.">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="slug" value="{{.Link.Slug}}">
+    <button type="submit" class="btn danger">Delete</button>
+  </form>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-label">Clicks</div>
+    <div class="stat-value mono">{{.Link.Human}}</div>
+    <div class="stat-context">human and unclassified</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Unique-ish</div>
+    <div class="stat-value mono">{{.Link.Uniques}}</div>
+    <div class="stat-context">{{if .Capped}}capped, undercounts{{else}}distinct salted IP+UA{{end}}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Bots</div>
+    <div class="stat-value mono">{{.Link.Bots}}</div>
+    <div class="stat-context">{{.BotShare}}% of {{.Link.Clicks}} total</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">First Click</div>
+    <div class="stat-value small mono">{{if .First}}{{humanize .First}}{{else}}—{{end}}</div>
+    <div class="stat-context">{{if .First}}{{exact .First}}{{else}}never followed{{end}}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Last Click</div>
+    <div class="stat-value small mono">{{if .Last}}{{humanize .Last}}{{else}}—{{end}}</div>
+    <div class="stat-context">{{if .Last}}{{exact .Last}}{{else}}never followed{{end}}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">State</div>
+    <div class="stat-value small">{{.Link.State}}</div>
+    <div class="stat-context">
+      {{if .Link.Remaining}}{{.Link.Remaining}}{{else if .Link.Expires}}expires {{.Link.ExpiresHum}}{{else}}no limits set{{end}}
+    </div>
+  </div>
+</div>
+
+<section class="card chart-card">
+  <div class="card-title">Clicks Per Day — Last 30 Days</div>
+  {{with .Chart}}
+  <svg class="chart" viewBox="0 0 {{.Width}} {{.Height}}" role="img"
+       aria-label="Bar chart of daily clicks for the last 30 days. {{.Total}} clicks total, peak {{.Max}} in one day.">
+    <line class="axis" x1="{{.LeftPad}}" y1="{{.Baseline}}" x2="{{.Width}}" y2="{{.Baseline}}"></line>
+    <text class="ytick" x="{{.LeftPad}}" y="{{.TopTickY}}" dx="-6" text-anchor="end">{{.Max}}</text>
+    <text class="ytick" x="{{.LeftPad}}" y="{{.ZeroTickY}}" dx="-6" text-anchor="end">0</text>
+    {{range .Bars}}{{if .Count}}<rect class="bar" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}"><title>{{.Label}}: {{.Count}}</title></rect>{{end}}{{end}}
+    <text class="xtick" x="{{.LeftPad}}" y="{{.XTickY}}">{{.FromLabel}}</text>
+    <text class="xtick" x="{{.Width}}" y="{{.XTickY}}" text-anchor="end">{{.ToLabel}}</text>
+  </svg>
+  {{end}}
+  {{if .Chart.Empty}}<p class="empty">0 clicks in the last 30 days.</p>{{end}}
+  <p class="hint">{{.Chart.Total}} clicks in the window. Bot and prefetch traffic is excluded from this chart{{if .BotDays}} ({{.BotDays}} such clicks in the same period were recorded separately){{end}}.</p>
+</section>
+
+<section class="card">
+  <div class="card-title">Referrers</div>
+  {{if .Refs}}
+  <table>
+    <thead><tr><th>Origin</th><th class="num">Clicks</th><th class="num">Share</th></tr></thead>
+    <tbody>
+      {{range .Refs}}
+      <tr>
+        <td class="mono">{{.Origin}}</td>
+        <td class="num">{{.Count}}</td>
+        <td class="num">{{.Pct}}%</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  <p class="hint">Origins only — paths and query strings are discarded on the way in. Bot traffic is not counted here.</p>
+  {{else}}
+  <p class="empty">0 rows.</p>
+  {{end}}
+</section>
+
+<section class="card">
+  <div class="card-title">Record</div>
+  <dl class="meta">
+    <dt>Created</dt><dd class="mono" title="{{exact .Link.Created}}">{{humanize .Link.Created}}</dd>
+    <dt>Target</dt><dd class="mono break">{{.Link.Target}}</dd>
+    <dt>Expiry</dt><dd class="mono">{{if .Link.Expires}}{{.Link.Expires}}{{else}}none{{end}}</dd>
+    <dt>Max Clicks</dt><dd class="mono">{{if .Link.MaxClicks}}{{.Link.MaxClicks}}{{else}}unlimited{{end}}</dd>
+    <dt>Total Clicks</dt><dd class="mono">{{.Link.Clicks}} = {{.Link.Human}} human/unclassified + {{.Link.Bots}} bot</dd>
+  </dl>
+  <p class="hint">No IP address or User-Agent is stored. Uniqueness is a truncated HMAC of IP+User-Agent keyed by a random per-install salt.</p>
+</section>
+{{end}}
