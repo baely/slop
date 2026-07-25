@@ -47,6 +47,15 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Pick, advance, pick again — fast repeat taps shouldn't read as
+   double-tap-to-zoom. Pinch zoom stays available. */
+html { touch-action: manipulation; }
+.btn, .mode, .film, .linkish {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 body {
   font-family: var(--font-body);
   font-size: 14.5px;
