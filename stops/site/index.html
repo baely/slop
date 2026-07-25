@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stops</title>
+<meta name="description" content="An exposure calculator for shooting film. Pick a scene, move one setting, watch the others compensate.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">stops</span>
+  <span class="nav-note" id="nav-ev"></span>
+</nav>
+
+<main>
+  <header class="intro">
+    <h1 id="scene-name">Bright Sun</h1>
+    <p class="sub" id="scene-sub"></p>
+  </header>
+
+  <section>
+    <h2 class="section-label">Scene</h2>
+    <div class="presets" id="presets" role="group" aria-label="Scene"></div>
+  </section>
+
+  <section class="dials" id="dials">
+    <div class="dial" data-key="aperture">
+      <div class="dial-label">Aperture</div>
+      <div class="dial-value" id="value-aperture"></div>
+      <div class="dial-btns">
+        <button class="btn" type="button" data-key="aperture" data-dir="-1">Wider</button>
+        <button class="btn" type="button" data-key="aperture" data-dir="1">Narrower</button>
+      </div>
+    </div>
+    <div class="dial" data-key="shutter">
+      <div class="dial-label">Shutter</div>
+      <div class="dial-value" id="value-shutter"></div>
+      <div class="dial-btns">
+        <button class="btn" type="button" data-key="shutter" data-dir="-1">Faster</button>
+        <button class="btn" type="button" data-key="shutter" data-dir="1">Slower</button>
+      </div>
+    </div>
+    <div class="dial" data-key="iso">
+      <div class="dial-label">Film Speed</div>
+      <div class="dial-value" id="value-iso"></div>
+      <div class="dial-btns">
+        <button class="btn" type="button" data-key="iso" data-dir="-1">Slower</button>
+        <button class="btn" type="button" data-key="iso" data-dir="1">Faster</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="warning" id="warning" role="status" aria-live="polite"></p>
+
+  <section>
+    <h2 class="section-label">Compensate With</h2>
+    <div class="presets" id="compensators" role="group" aria-label="Compensate with">
+      <button class="preset" type="button" data-comp="shutter" aria-pressed="true">Shutter</button>
+      <button class="preset" type="button" data-comp="aperture" aria-pressed="false">Aperture</button>
+      <button class="preset" type="button" data-comp="iso" aria-pressed="false">Film Speed</button>
+    </div>
+    <p class="hint" id="comp-hint"></p>
+  </section>
+
+  <section>
+    <h2>Equivalent Exposures</h2>
+    <p class="sub" id="equiv-sub"></p>
+    <table id="equiv">
+      <thead><tr><th>Aperture</th><th class="num">Shutter</th><th class="num">Deviation</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="recip-section" hidden>
+    <h2>Reciprocity</h2>
+    <p class="sub" id="recip-sub"></p>
+    <table id="recip">
+      <thead><tr><th>Stock</th><th class="num">Corrected</th><th class="num">Added</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="hint">Approximations from published datasheets and the Schwarzschild model. Bracket anything critical.</p>
+  </section>
+
+  <p class="colophon">EV100 = log2(N² / t) − log2(ISO / 100). Sunny 16 anchors at EV 15.</p>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
