@@ -1,0 +1,39 @@
+{{define "content"}}
+<h1>Targets</h1>
+<p class="lede"><span class="num">{{len .Targets}}</span> of <span class="num">{{.Caps.Targets}}</span> configured.</p>
+
+{{if .Targets}}
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Name</th><th>URL</th><th>State</th><th class="num">Every</th><th>Expect</th><th>Keyword</th><th>Actions</th></tr></thead>
+  <tbody>
+  {{range .Targets}}
+    <tr>
+      <td><a href="/t/{{.ID}}">{{.Name}}</a></td>
+      <td class="mono trunc">{{.Method}} {{.URL}}</td>
+      <td><span class="state {{.StateKey}}">{{.State}}</span></td>
+      <td class="num">{{.Interval}}s</td>
+      <td class="num">{{.Expect}}</td>
+      <td class="mono trunc">{{if .Keyword}}{{.Keyword}}{{else}}—{{end}}</td>
+      <td class="actions">
+        <form class="inline" method="post" action="/admin/targets/{{.ID}}/check"><button class="btn" type="submit">Check Now</button></form>
+        <form class="inline" method="post" action="/admin/targets/{{.ID}}/delete"><button class="btn danger" type="submit">Delete</button></form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}
+<p class="empty">0 targets.</p>
+{{end}}
+
+<h2 class="sec">Add Target</h2>
+<form class="card form" method="post" action="/admin/targets">
+  {{template "targetform" .Form}}
+  <p><button class="btn primary" type="submit">Add Target</button></p>
+</form>
+
+<p class="fineprint">Defaults: interval <span class="num">60s</span>, timeout <span class="num">10s</span>, expected status <span class="num">2xx</span>. Expected status accepts a class (<span class="mono">2xx</span>), a code (<span class="mono">204</span>) or a list (<span class="mono">200,301</span>). Any http or https URL is allowed, private addresses included — the bound is the timeout. Keyword matching reads at most the first <span class="num">256</span> KiB of the body and needs method GET.</p>
+<p class="fineprint">Retention: the last <span class="num">{{.Caps.Checks}}</span> checks per target, a rolled-up daily summary for <span class="num">{{.Caps.Days}}</span> days, and the last <span class="num">{{.Caps.Incidents}}</span> incidents per target.</p>
+{{end}}
