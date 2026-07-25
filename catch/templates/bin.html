@@ -1,0 +1,51 @@
+{{define "title"}}catch — {{if .Bin.Label}}{{.Bin.Label}}{{else}}{{.Bin.ID}}{{end}}{{end}}
+
+{{define "content"}}
+<h1>{{if .Bin.Label}}{{.Bin.Label}}{{else}}Unlabelled Bin{{end}}</h1>
+
+<section class="card urlcard">
+  <div class="stat-label">Capture URL</div>
+  <p class="mono url" id="bin-url">{{.URL}}</p>
+  <button class="btn" type="button" data-copy="#bin-url">Copy URL</button>
+  <p class="note">Any method, any path below it, any content type. Sub-paths are recorded: <span class="mono">{{.URL}}/anything/here</span>. Replies <span class="mono">{{.Bin.Status}}</span>.</p>
+</section>
+
+<section class="card">
+  <h2 class="card-title">Settings</h2>
+  <form class="form-row" method="post" action="/bin/{{.BinID}}/settings">
+    <div class="field grow">
+      <label for="label">Label</label>
+      <input type="text" id="label" name="label" maxlength="80" value="{{.Bin.Label}}" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="status">Reply Status</label>
+      <select id="status" name="status">
+        {{range .Statuses}}<option value="{{.}}"{{if eq . $.Bin.Status}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <button class="btn primary" type="submit">Save</button>
+  </form>
+  <div class="actions">
+    <form method="post" action="/bin/{{.BinID}}/clear"><button class="btn" type="submit" data-confirm="Clear every captured request in this bin?">Clear Requests</button></form>
+    <form method="post" action="/bin/{{.BinID}}/delete"><button class="btn danger" type="submit" data-confirm="Delete this bin and everything in it?">Delete Bin</button></form>
+  </div>
+</section>
+
+<div class="reqs-head">
+  <h2>Requests</h2>
+  <p class="req-count">
+    <span class="mono">{{len .Bin.Requests}}</span> held ·
+    created <time title="{{exact .Bin.Created}}">{{since .Bin.Created}}</time> ·
+    expires <time title="{{exact .Bin.Expires}}">{{until .Bin.Expires}}</time>
+  </p>
+  <button class="btn" type="button" id="live-toggle" hidden>Pause Live</button>
+</div>
+
+<div id="reqs" data-rows="/bin/{{.BinID}}/rows">
+{{template "rows" .}}
+</div>
+
+<p class="note">Newest first. The newest {{.MaxReqs}} requests are kept; bodies are capped at 64 KB. This bin is deleted {{.TTLDays}} days after it is last written to or viewed. Raw bodies download as plain text, never rendered.</p>
+
+<script src="/static/app.js" defer></script>
+{{end}}

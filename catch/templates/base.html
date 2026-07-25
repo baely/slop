@@ -1,0 +1,29 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{block "title" .}}catch{{end}}</title>
+<link rel="icon" href="{{favicon}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="wordmark" href="/">catch</a>
+  {{if ne .Nav.Active "login"}}
+  <span class="nav-links">
+    <a href="/"{{if eq .Nav.Active "bins"}} aria-current="page"{{end}}>Bins</a>
+    <form method="post" action="/logout"><button class="linkish" type="submit">Sign Out</button></form>
+  </span>
+  {{end}}
+</nav>
+<main class="wrap">
+{{block "content" .}}{{end}}
+</main>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+</body>
+</html>
+{{end}}

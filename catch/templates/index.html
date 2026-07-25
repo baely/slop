@@ -1,0 +1,65 @@
+{{define "title"}}catch — bins{{end}}
+
+{{define "content"}}
+<h1>catch</h1>
+<p class="lede">A webhook and request inspector. Point a sender at a bin URL, then read exactly what it sent — method, path, headers, body, byte for byte.</p>
+
+<section class="stats">
+  <div class="stat">
+    <div class="stat-label">Bins</div>
+    <div class="stat-value num">{{.NumBins}}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Requests Held</div>
+    <div class="stat-value num">{{.NumReqs}}</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 class="card-title">New Bin</h2>
+  <form class="form-row" method="post" action="/bins">
+    <div class="field grow">
+      <label for="label">Label</label>
+      <input type="text" id="label" name="label" maxlength="80" placeholder="bssid-reporter" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="status">Reply Status</label>
+      <select id="status" name="status">
+        {{range .Statuses}}<option value="{{.}}"{{if eq . 200}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <button class="btn primary" type="submit">Create Bin</button>
+  </form>
+</section>
+
+{{if .Bins}}
+<table class="bins">
+  <thead>
+    <tr>
+      <th>Label</th>
+      <th>Bin</th>
+      <th class="num">Requests</th>
+      <th>Last Seen</th>
+      <th>Created</th>
+      <th>Expires</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Bins}}
+    <tr>
+      <td><a href="/bin/{{.ID}}">{{if .Label}}{{.Label}}{{else}}Unlabelled{{end}}</a></td>
+      <td class="mono">{{.ID}}</td>
+      <td class="num">{{len .Requests}}</td>
+      <td><time title="{{exact .LastSeen}}">{{since .LastSeen}}</time></td>
+      <td><time title="{{exact .Created}}">{{since .Created}}</time></td>
+      <td><time title="{{exact .Expires}}">{{until .Expires}}</time></td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">0 bins.</p>
+{{end}}
+
+<p class="note">Retention: the newest {{.MaxReqs}} requests per bin, bodies capped at 64 KB. A bin is deleted {{.TTLDays}} days after it is last written to or viewed.</p>
+{{end}}
