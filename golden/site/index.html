@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>golden — when the light is good</title>
+<meta name="description" content="Sunrise, sunset, golden hour and blue hour for any coordinate and date. NOAA solar position, computed offline in the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">golden</span>
+  <a href="https://stops.baileys.dev">Exposure Calculator</a>
+</nav>
+
+<main class="wrap">
+
+  <h1>When the light is good</h1>
+  <p class="lede">Sun times for a place and a date. NOAA solar position, computed in this tab — no network, no lookups.</p>
+
+  <section class="card" aria-labelledby="h-where">
+    <h2 class="card-title" id="h-where">Where and when</h2>
+
+    <div class="presets" id="presets" role="group" aria-label="Location Presets"></div>
+
+    <div class="fields">
+      <div class="field">
+        <label for="lat">Latitude</label>
+        <input id="lat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="-37.8136">
+      </div>
+      <div class="field">
+        <label for="lon">Longitude</label>
+        <input id="lon" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="144.9631">
+      </div>
+      <div class="field">
+        <label for="date">Date</label>
+        <input id="date" type="date">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="geo" type="button">Use My Location</button>
+      <button class="btn" id="today" type="button">Today</button>
+      <button class="btn" id="prev" type="button">Previous Day</button>
+      <button class="btn" id="next" type="button">Next Day</button>
+    </div>
+
+    <p class="status" id="status" role="status" aria-live="polite">Melbourne. Today.</p>
+  </section>
+
+  <p class="now" id="now" aria-live="polite">&nbsp;</p>
+
+  <section class="hero" aria-labelledby="h-golden">
+    <h2 class="card-title" id="h-golden">Golden hour</h2>
+    <div class="hero-grid">
+      <div class="hero-cell">
+        <div class="stat-label">Morning</div>
+        <div class="hero-val num" id="goldenAm">—</div>
+        <div class="hero-sub" id="goldenAmSub">&nbsp;</div>
+      </div>
+      <div class="hero-cell">
+        <div class="stat-label">Evening</div>
+        <div class="hero-val num" id="goldenPm">—</div>
+        <div class="hero-sub" id="goldenPmSub">&nbsp;</div>
+      </div>
+    </div>
+    <p class="hero-note" id="goldenNote">&nbsp;</p>
+  </section>
+
+  <section class="stats" aria-label="Key Times">
+    <div class="stat">
+      <div class="stat-label">Sunrise</div>
+      <div class="stat-value num" id="sunrise">—</div>
+      <div class="stat-context" id="sunriseSub">&nbsp;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Solar Noon</div>
+      <div class="stat-value num" id="noon">—</div>
+      <div class="stat-context" id="noonSub">&nbsp;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Sunset</div>
+      <div class="stat-value num" id="sunset">—</div>
+      <div class="stat-context" id="sunsetSub">&nbsp;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Day Length</div>
+      <div class="stat-value num" id="daylen">—</div>
+      <div class="stat-context" id="daylenSub">&nbsp;</div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-timeline">
+    <h2 class="card-title" id="h-timeline">The day, end to end</h2>
+    <p class="sub" id="barSpan">&nbsp;</p>
+    <div class="bar-frame">
+      <div class="bar" id="bar"></div>
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-phases">
+    <h2 class="card-title" id="h-phases">Phases</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Phase</th><th scope="col" class="num">Start</th><th scope="col" class="num">End</th><th scope="col" class="num">Duration</th></tr>
+        </thead>
+        <tbody id="phases"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-twilight">
+    <h2 class="card-title" id="h-twilight">Twilight</h2>
+    <p class="sub">The classical definitions, which cut across the bands above — civil twilight contains all of blue hour and part of golden.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Twilight</th><th scope="col" class="num">Sun</th><th scope="col" class="num">Dawn</th><th scope="col" class="num">Dusk</th></tr>
+        </thead>
+        <tbody id="twilight"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-tz">
+    <h2 class="card-title" id="h-tz">Time base</h2>
+    <div class="seg" role="group" aria-label="Time Base">
+      <button class="btn seg-btn" id="tzClock" type="button" aria-pressed="true">Your Clock</button>
+      <button class="btn seg-btn" id="tzSolar" type="button" aria-pressed="false">Mean Solar</button>
+    </div>
+    <p class="note" id="tzNote">&nbsp;</p>
+    <p class="note warn" id="tzWarn">&nbsp;</p>
+  </section>
+
+  <p class="note foot">
+    Sun altitudes are geometric; sunrise and sunset use the −0.833° convention (upper limb, mean refraction).
+    Golden hour is −4° to +6°, blue hour −6° to −4°. Seconds are the model's precision, not the sky's — expect
+    around a minute of disagreement with published tables, more above 60° latitude.
+  </p>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+<script src="app.js"></script>
+</body>
+</html>
