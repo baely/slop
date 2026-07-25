@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dither — 1-bit image converter</title>
+<meta name="description" content="Convert a photo to a 1-bit dithered image for e-ink panels and zines. Floyd–Steinberg, Atkinson, Bayer. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">dither</span>
+  <span class="nav-note">Everything runs in this tab. No image is uploaded.</span>
+</nav>
+
+<main class="wrap">
+
+  <section class="card" id="sourceCard">
+    <h2 class="card-title">Source</h2>
+    <div class="row">
+      <button class="btn" type="button" id="pick">Choose File</button>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+    <p class="note">Drop an image anywhere on the page, or paste one from the clipboard.</p>
+    <dl class="kv">
+      <dt>File</dt><dd class="mono" id="srcName">—</dd>
+      <dt>Source</dt><dd class="mono" id="srcDims">—</dd>
+    </dl>
+    <p class="status" id="status" aria-live="polite">Nothing loaded yet.</p>
+  </section>
+
+  <section class="card" id="outputCard">
+    <div class="card-head">
+      <h2 class="card-title">Output</h2>
+      <div class="seg" id="zoom" role="group" aria-label="Zoom">
+        <button class="seg-btn" type="button" data-zoom="one" aria-pressed="true">1:1</button>
+        <button class="seg-btn" type="button" data-zoom="fit" aria-pressed="false">Fit</button>
+      </div>
+    </div>
+    <p class="dims mono" id="dims"></p>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas" width="1" height="1" hidden></canvas>
+      <p class="empty" id="empty">Nothing loaded yet.</p>
+    </div>
+  </section>
+
+  <section class="card" id="controlsCard">
+    <h2 class="card-title">Controls</h2>
+
+    <div class="field">
+      <span class="lbl" id="algoLabel">Algorithm</span>
+      <div class="seg col" id="algo" role="group" aria-labelledby="algoLabel">
+        <button class="seg-btn" type="button" data-algo="fs" aria-pressed="true">Floyd–Steinberg</button>
+        <button class="seg-btn" type="button" data-algo="atkinson" aria-pressed="false">Atkinson</button>
+        <button class="seg-btn" type="button" data-algo="bayer4" aria-pressed="false">Bayer 4×4</button>
+        <button class="seg-btn" type="button" data-algo="bayer8" aria-pressed="false">Bayer 8×8</button>
+        <button class="seg-btn" type="button" data-algo="threshold" aria-pressed="false">Threshold</button>
+      </div>
+      <p class="note" id="algoNote">Floyd–Steinberg diffuses 16/16 of the error to 4 neighbours.</p>
+    </div>
+
+    <div class="field">
+      <span class="lbl" id="presetLabel">Target Width</span>
+      <div class="seg" id="preset" role="group" aria-labelledby="presetLabel">
+        <button class="seg-btn" type="button" data-w="800" aria-pressed="true">800×480</button>
+        <button class="seg-btn" type="button" data-w="400" aria-pressed="false">400×300</button>
+        <button class="seg-btn" type="button" data-w="1872" aria-pressed="false">1872×1404</button>
+        <button class="seg-btn" type="button" data-w="orig" aria-pressed="false">Original</button>
+      </div>
+      <div class="lbl-row tight">
+        <label class="lbl" for="width">Width In Pixels</label>
+        <input type="number" id="width" min="8" max="4096" step="1" value="800" inputmode="numeric">
+      </div>
+      <p class="note">Presets set width only — aspect ratio is preserved. Capped at 4096 px and 6 MP.</p>
+    </div>
+
+    <div class="field">
+      <div class="lbl-row"><label class="lbl" for="brightness">Brightness</label><span class="mono val" id="brightnessVal">+0.00</span></div>
+      <input type="range" id="brightness" min="-0.5" max="0.5" step="0.01" value="0">
+    </div>
+
+    <div class="field">
+      <div class="lbl-row"><label class="lbl" for="contrast">Contrast</label><span class="mono val" id="contrastVal">1.00×</span></div>
+      <input type="range" id="contrast" min="0.2" max="3" step="0.05" value="1">
+    </div>
+
+    <div class="field">
+      <div class="lbl-row"><label class="lbl" for="gamma">Gamma</label><span class="mono val" id="gammaVal">1.00</span></div>
+      <input type="range" id="gamma" min="0.4" max="2.5" step="0.05" value="1">
+    </div>
+
+    <div class="field">
+      <div class="lbl-row"><label class="lbl" for="threshold">Threshold</label><span class="mono val" id="thresholdVal">0.50</span></div>
+      <input type="range" id="threshold" min="0.05" max="0.95" step="0.01" value="0.5">
+    </div>
+
+    <div class="row">
+      <button class="btn" type="button" id="invert" aria-pressed="false">Invert</button>
+      <button class="btn" type="button" id="reset">Reset Tone</button>
+    </div>
+  </section>
+
+  <section class="card" id="exportCard">
+    <h2 class="card-title">Export</h2>
+    <div class="row">
+      <button class="btn primary" type="button" id="png">Download PNG</button>
+      <button class="btn" type="button" id="copy">Copy Bytes</button>
+    </div>
+
+    <div class="field">
+      <span class="lbl" id="fmtLabel">Byte Format</span>
+      <div class="seg" id="fmt" role="group" aria-labelledby="fmtLabel">
+        <button class="seg-btn" type="button" data-fmt="c" aria-pressed="true">C Array</button>
+        <button class="seg-btn" type="button" data-fmt="py" aria-pressed="false">MicroPython</button>
+      </div>
+    </div>
+
+    <p class="note">Packing: 1 bit per pixel, MSB first, row-major, each row padded to a whole
+      number of bytes. Bit 1 = black, matching the preview above (Invert flips both). This is
+      <span class="mono">framebuf.MONO_HLSB</span> layout.</p>
+
+    <p class="mono meta" id="bytesMeta">—</p>
+    <pre class="mono" id="bytes">Nothing loaded yet.</pre>
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
