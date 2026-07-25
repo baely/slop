@@ -1,0 +1,7 @@
+{{define "title"}}catch — {{.Heading}}{{end}}
+
+{{define "content"}}
+<h1>{{.Heading}}</h1>
+<p class="lede">{{.Body}}</p>
+{{if .Back}}<p><a href="{{.Back}}">Back</a></p>{{end}}
+{{end}}

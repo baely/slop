@@ -1,0 +1,48 @@
+{{define "rows"}}
+{{if not .Rows}}
+<p class="empty">0 requests. Send one to the URL above.</p>
+{{end}}
+{{range .Rows}}
+<article class="req">
+  <h3 class="req-head"><span class="chip">{{.Req.Method}}</span> <span class="mono">{{if .Req.SubPath}}{{.Req.SubPath}}{{else}}/{{end}}{{if .Req.Query}}?{{.Req.Query}}{{end}}</span></h3>
+  <p class="req-meta">
+    <time title="{{exact .Req.At}}">{{since .Req.At}}</time>
+    <span class="sep">·</span>
+    <span class="mono">{{size .Req.BodySize}}</span>
+    <span class="sep">·</span>
+    <span class="mono">{{.Req.RemoteIP}}</span>
+    {{if .Req.ContentType}}<span class="sep">·</span><span class="mono">{{.Req.ContentType}}</span>{{end}}
+  </p>
+  <p class="req-path mono">{{.Req.Path}}{{if .Req.Query}}?{{.Req.Query}}{{end}}</p>
+
+  <details class="block">
+    <summary>Headers ({{len .Req.Headers}})</summary>
+    <table class="kv">
+      <thead><tr><th>Name</th><th>Value</th></tr></thead>
+      <tbody>
+        {{range .Req.Headers}}
+        <tr><td class="mono k">{{.Name}}</td><td class="mono v">{{range $i, $v := .Values}}{{if $i}}<br>{{end}}{{$v}}{{end}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </details>
+
+  {{with .Body}}
+  {{range .Notes}}<p class="note">{{.}}</p>{{end}}
+  {{if eq .Kind "empty"}}
+    <p class="empty">No body.</p>
+  {{else if eq .Kind "form"}}
+    <table class="kv">
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>{{range .Pairs}}<tr><td class="mono k">{{.Key}}</td><td class="mono v">{{.Value}}</td></tr>{{end}}</tbody>
+    </table>
+    <details class="block"><summary>Raw Body</summary><pre class="body">{{.Text}}</pre></details>
+  {{else}}
+    <pre class="body">{{.Text}}</pre>
+  {{end}}
+  {{end}}
+
+  <p class="req-foot"><a href="/bin/{{$.BinID}}/r/{{.Req.ID}}/raw">Download Raw Body</a> <span class="sep">·</span> <span class="mono id">{{.Req.ID}}</span></p>
+</article>
+{{end}}
+{{end}}
