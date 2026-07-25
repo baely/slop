@@ -1,0 +1,27 @@
+{{define "main"}}
+<h1 class="paste-title">{{.Heading}}</h1>
+
+<p class="meta">
+  <span class="mono">{{.Size}}</span>
+  · <time class="mono" title="{{.CreatedExact}}">{{.Created}}</time>
+  · {{.Expiry}}
+</p>
+
+<div class="row controls">
+  <button class="btn primary" type="button" data-copy-target="#code" hidden>Copy</button>
+  <button class="btn" type="button" data-wrap-toggle aria-pressed="false" hidden>Soft Wrap</button>
+  {{if .Burn}}
+    <span class="chip">Burned</span>
+  {{else}}
+    <a class="btn" href="{{.RawURL}}">Raw</a>
+  {{end}}
+</div>
+
+{{if .Burn}}<p class="alert">This paste burned after reading. It is gone from the server. This page is the only copy.</p>{{end}}
+
+<div class="code" id="code">
+  <ol class="lines">{{range .Lines}}<li><span class="l">{{.}}</span></li>{{end}}</ol>
+</div>
+
+<p class="notes hint">No syntax highlighting, on purpose. <span class="mono">{{.Slug}}</span></p>
+{{end}}

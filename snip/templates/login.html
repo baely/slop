@@ -1,0 +1,22 @@
+{{define "main"}}
+<h1>snip</h1>
+<p class="lede">A pastebin. Making a paste needs the token. Reading one needs only its link.</p>
+
+{{if .Err}}<p class="alert">{{.Err}}</p>{{end}}
+
+<form class="stack card" method="post" action="/login">
+  <input type="hidden" name="next" value="{{.Next}}">
+  <div class="field">
+    <label for="token">Token</label>
+    <input id="token" name="token" type="password" autocomplete="current-password" autofocus required>
+  </div>
+  <div class="row">
+    <button class="btn primary" type="submit">Log In</button>
+  </div>
+</form>
+
+<section class="notes">
+  <p>Pastes are plain text, up to 1.00 MB. Expiry runs from 10 minutes to never, and a paste can be set to burn on its first read.</p>
+  <p>There is no syntax highlighting, on purpose. Text is text.</p>
+</section>
+{{end}}

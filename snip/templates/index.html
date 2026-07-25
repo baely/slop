@@ -1,0 +1,40 @@
+{{define "main"}}
+<h1>Pastes</h1>
+<p class="meta"><span class="mono">{{.Count}}</span> live · cap <span class="mono">{{.Cap}}</span></p>
+
+{{if .Rows}}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Slug</th>
+      <th>Title</th>
+      <th class="num">Size</th>
+      <th>Created</th>
+      <th>Expiry</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Rows}}
+    <tr>
+      <td><a class="mono" href="{{.URL}}">{{.Slug}}</a></td>
+      <td>{{if .PasteTitle}}{{.PasteTitle}}{{else}}<span class="hint">Untitled</span>{{end}}</td>
+      <td class="num">{{.Size}}</td>
+      <td><time title="{{.CreatedExact}}">{{.Created}}</time></td>
+      <td>{{.Expiry}}</td>
+      <td class="right">
+        <form class="inline" method="post" action="/pastes/delete">
+          <input type="hidden" name="slug" value="{{.Slug}}">
+          <button class="btn danger small" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}
+<p class="empty">0 rows.</p>
+{{end}}
+{{end}}

@@ -1,0 +1,17 @@
+{{define "main"}}
+<h1>Saved.</h1>
+
+<div class="card stack">
+  {{if .PasteTitle}}<p class="card-title">{{.PasteTitle}}</p>{{end}}
+  <p class="url mono" id="paste-url">{{.URL}}</p>
+  <div class="row">
+    <button class="btn primary" type="button" data-copy-target="#paste-url" hidden>Copy Link</button>
+    {{if .Burn}}<span class="chip">Burns After Reading</span>{{else}}<a class="btn" href="{{.RawURL}}">Raw</a>{{end}}
+  </div>
+  <p class="meta"><span class="mono">{{.Size}}</span> · {{.Expiry}}</p>
+</div>
+
+{{if .Burn}}<p class="notes">Opening that link serves the paste once and destroys it. Copy the link before you follow it.</p>{{end}}
+
+<p class="notes"><a href="/">New Paste</a> · <a href="/pastes">All Pastes</a></p>
+{{end}}
