@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>plot — generative 1-bit patterns</title>
+<meta name="description" content="Seeded generative 1-bit patterns for e-ink screens, note templates and pen plotters. Exports SVG and PNG.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <h1 class="wordmark">plot</h1>
+</nav>
+
+<main class="wrap">
+  <p class="lede">Seeded 1-bit pattern generator for e-ink screens, note templates and pen plotters. Same seed and same parameters give the same image, every time.</p>
+
+  <div class="layout">
+
+    <section class="controls" aria-label="Controls">
+
+      <div class="tabs" role="group" aria-label="Generator">
+        <button type="button" class="tab" id="tab-flow" data-gen="flow" aria-pressed="true">Flow Field</button>
+        <button type="button" class="tab" id="tab-contours" data-gen="contours" aria-pressed="false">Contours</button>
+        <button type="button" class="tab" id="tab-truchet" data-gen="truchet" aria-pressed="false">Truchet</button>
+        <button type="button" class="tab" id="tab-hatch" data-gen="hatch" aria-pressed="false">Hatching</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Seed</div>
+        <div class="row">
+          <input type="text" id="seed" class="mono" spellcheck="false" autocomplete="off" aria-label="Seed">
+          <button type="button" class="btn" id="newSeed">New Seed</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Canvas</div>
+        <div class="ctl">
+          <label for="preset">Preset</label>
+          <select id="preset">
+            <option value="1404x1872">Supernote — 1404 × 1872</option>
+            <option value="800x480">E-ink panel — 800 × 480</option>
+            <option value="2480x3508">A4 at 300 dpi — 2480 × 3508</option>
+            <option value="1000x1000">Square — 1000 × 1000</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="ctl grid2">
+          <div>
+            <label for="width">Width</label>
+            <input type="number" id="width" class="mono" min="100" max="6000" step="1">
+          </div>
+          <div>
+            <label for="height">Height</label>
+            <input type="number" id="height" class="mono" min="100" max="6000" step="1">
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="swap">Swap W/H</button>
+          <button type="button" class="btn" id="invert" aria-pressed="false">Invert</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Ink</div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="weight">Line Weight</label><output class="mono" id="weightVal" for="weight"></output></div>
+          <input type="range" id="weight" min="0.2" max="4" step="0.05">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="density">Density</label><output class="mono" id="densityVal" for="density"></output></div>
+          <input type="range" id="density" min="0.25" max="3" step="0.05">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="margin">Margin</label><output class="mono" id="marginVal" for="margin"></output></div>
+          <input type="range" id="margin" min="0" max="300" step="5">
+        </div>
+      </div>
+
+      <div class="card panel" id="panel-flow">
+        <div class="card-title">Flow Field</div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowParticles">Particles</label><output class="mono" id="flowParticlesVal" for="flowParticles"></output></div>
+          <input type="range" id="flowParticles" min="100" max="20000" step="100">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowSteps">Max Steps</label><output class="mono" id="flowStepsVal" for="flowSteps"></output></div>
+          <input type="range" id="flowSteps" min="20" max="800" step="10">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowStep">Step Length</label><output class="mono" id="flowStepVal" for="flowStep"></output></div>
+          <input type="range" id="flowStep" min="1" max="20" step="0.5">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowScale">Field Scale</label><output class="mono" id="flowScaleVal" for="flowScale"></output></div>
+          <input type="range" id="flowScale" min="0.2" max="10" step="0.1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowOctaves">Octaves</label><output class="mono" id="flowOctavesVal" for="flowOctaves"></output></div>
+          <input type="range" id="flowOctaves" min="1" max="6" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowCurl">Turn Rate</label><output class="mono" id="flowCurlVal" for="flowCurl"></output></div>
+          <input type="range" id="flowCurl" min="0.1" max="4" step="0.05">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="flowSep">Separation</label><output class="mono" id="flowSepVal" for="flowSep"></output></div>
+          <input type="range" id="flowSep" min="0" max="24" step="1">
+        </div>
+      </div>
+
+      <div class="card panel" id="panel-contours" hidden>
+        <div class="card-title">Contours</div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="ctrRes">Grid Resolution</label><output class="mono" id="ctrResVal" for="ctrRes"></output></div>
+          <input type="range" id="ctrRes" min="40" max="1200" step="10">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="ctrLevels">Bands</label><output class="mono" id="ctrLevelsVal" for="ctrLevels"></output></div>
+          <input type="range" id="ctrLevels" min="1" max="80" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="ctrScale">Field Scale</label><output class="mono" id="ctrScaleVal" for="ctrScale"></output></div>
+          <input type="range" id="ctrScale" min="0.2" max="10" step="0.1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="ctrOctaves">Octaves</label><output class="mono" id="ctrOctavesVal" for="ctrOctaves"></output></div>
+          <input type="range" id="ctrOctaves" min="1" max="6" step="1">
+        </div>
+      </div>
+
+      <div class="card panel" id="panel-truchet" hidden>
+        <div class="card-title">Truchet</div>
+        <div class="ctl">
+          <label for="truVariant">Variant</label>
+          <select id="truVariant">
+            <option value="arcs">Quarter Arcs</option>
+            <option value="chords">Diagonals</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="truTile">Tile Size</label><output class="mono" id="truTileVal" for="truTile"></output></div>
+          <input type="range" id="truTile" min="10" max="300" step="2">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="truLines">Lines Per Tile</label><output class="mono" id="truLinesVal" for="truLines"></output></div>
+          <input type="range" id="truLines" min="1" max="6" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="truFill">Fill</label><output class="mono" id="truFillVal" for="truFill"></output></div>
+          <input type="range" id="truFill" min="10" max="100" step="1">
+        </div>
+      </div>
+
+      <div class="card panel" id="panel-hatch" hidden>
+        <div class="card-title">Hatching</div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatAngle">Angle</label><output class="mono" id="hatAngleVal" for="hatAngle"></output></div>
+          <input type="range" id="hatAngle" min="0" max="180" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatSpacing">Spacing</label><output class="mono" id="hatSpacingVal" for="hatSpacing"></output></div>
+          <input type="range" id="hatSpacing" min="1" max="60" step="0.5">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatJitter">Jitter</label><output class="mono" id="hatJitterVal" for="hatJitter"></output></div>
+          <input type="range" id="hatJitter" min="0" max="100" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatPasses">Passes</label><output class="mono" id="hatPassesVal" for="hatPasses"></output></div>
+          <input type="range" id="hatPasses" min="1" max="4" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatCross">Cross Angle</label><output class="mono" id="hatCrossVal" for="hatCross"></output></div>
+          <input type="range" id="hatCross" min="0" max="180" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatMask">Noise Mask</label><output class="mono" id="hatMaskVal" for="hatMask"></output></div>
+          <input type="range" id="hatMask" min="0" max="100" step="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hatScale">Mask Scale</label><output class="mono" id="hatScaleVal" for="hatScale"></output></div>
+          <input type="range" id="hatScale" min="0.2" max="10" step="0.1">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Export</div>
+        <div class="row">
+          <button type="button" class="btn primary" id="exportSVG">Export SVG</button>
+          <button type="button" class="btn" id="exportPNG">Export PNG</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="reset">Reset Defaults</button>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="output" aria-label="Output">
+      <div class="meta">
+        <div class="stat"><div class="stat-label">Paths</div><div class="stat-value mono" id="statPaths">0</div></div>
+        <div class="stat"><div class="stat-label">Elements</div><div class="stat-value mono" id="statEls">0</div></div>
+        <div class="stat"><div class="stat-label">Render</div><div class="stat-value mono" id="statMs">0 ms</div></div>
+        <div class="stat"><div class="stat-label">Size</div><div class="stat-value mono" id="statSize">0 KB</div></div>
+      </div>
+      <p class="status mono" id="status" aria-live="polite">Nothing rendered yet.</p>
+      <p class="notes" id="notes" aria-live="polite"></p>
+      <div class="preview" id="preview"></div>
+    </section>
+
+  </div>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
