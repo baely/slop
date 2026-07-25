@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cron — what your expression actually means</title>
+<meta name="description" content="Parse a 5-field cron expression, read it in plain English, and see the next 10 times it actually fires in your local timezone.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">cron</span>
+  <span class="tz mono" id="tz">—</span>
+</nav>
+
+<main>
+
+  <section class="entry">
+    <label for="expr">Cron Expression</label>
+    <input id="expr" class="expr mono" type="text" value="*/15 * * * *"
+           spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+           aria-describedby="hint status">
+    <p class="hint mono" id="hint">min &nbsp;hour &nbsp;dom &nbsp;mon &nbsp;dow</p>
+    <div class="presets" id="presets"></div>
+    <p class="status" id="status" role="status"></p>
+  </section>
+
+  <section class="verdict">
+    <p class="sentence" id="sentence" aria-live="polite"></p>
+  </section>
+
+  <div class="grid">
+
+    <section class="card" aria-labelledby="fieldsTitle">
+      <h2 class="card-title" id="fieldsTitle">Fields</h2>
+      <table>
+        <thead>
+          <tr><th scope="col">Field</th><th scope="col">Value</th><th scope="col">Resolves To</th></tr>
+        </thead>
+        <tbody id="fieldsBody"></tbody>
+      </table>
+      <p class="note" id="orNote"></p>
+    </section>
+
+    <section class="card runs" aria-labelledby="runsTitle">
+      <div class="card-head">
+        <h2 class="card-title" id="runsTitle">Next 10 fire times</h2>
+        <div class="stat">
+          <span class="stat-label">Time Until Next</span>
+          <span class="stat-value mono" id="countdown">—</span>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th scope="col">Fire Time</th><th scope="col">Relative</th></tr>
+        </thead>
+        <tbody id="runsBody"></tbody>
+      </table>
+      <p class="note" id="runsNote"></p>
+    </section>
+
+  </div>
+
+  <section class="ref">
+    <h2>Syntax</h2>
+    <dl>
+      <dt class="mono">*</dt><dd>Every value.</dd>
+      <dt class="mono">*/n</dt><dd>Every nth value, starting at the field minimum.</dd>
+      <dt class="mono">a-b</dt><dd>The inclusive range a through b.</dd>
+      <dt class="mono">a-b/n</dt><dd>Every nth value within the range.</dd>
+      <dt class="mono">a,b,c</dt><dd>A list. Items may themselves be ranges or steps.</dd>
+      <dt class="mono">JAN-DEC</dt><dd>Month names, in the month field, case-insensitive.</dd>
+      <dt class="mono">SUN-SAT</dt><dd>Day names, in the day-of-week field. 0 and 7 both mean Sunday.</dd>
+      <dt class="mono">@daily</dt><dd>Also @hourly, @weekly, @monthly, @yearly, @midnight.</dd>
+    </dl>
+    <p>When day-of-month and day-of-week are <em>both</em> restricted, cron fires when
+       either one matches — <span class="mono">0 0 13 * FRI</span> runs on every Friday
+       and on the 13th of every month, not only on Friday the 13th. Fire times are
+       computed in your browser's local timezone by stepping a real calendar forward;
+       nothing is sent anywhere.</p>
+  </section>
+
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
