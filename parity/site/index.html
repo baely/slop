@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>parity</title>
+<meta name="description" content="RAID price optimiser — the cheapest way to the usable terabytes you need.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230891b2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <span class="wordmark">parity</span>
+</nav>
+
+<main>
+  <header class="intro">
+    <h1>How many drives?</h1>
+    <p class="sub">Set a usable target, put in the prices you can actually get, and read off the cheapest layout that survives what you want it to survive.</p>
+  </header>
+
+  <section>
+    <h2 class="section-label">Target</h2>
+    <div class="controls">
+      <div class="field">
+        <label for="target">Usable Capacity (TB)</label>
+        <input id="target" type="number" min="1" step="1" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="bays">Max Bays</label>
+        <input id="bays" type="number" min="1" max="24" step="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="tol">Must Survive</label>
+        <select id="tol">
+          <option value="0">Nothing</option>
+          <option value="1">1 Drive</option>
+          <option value="2">2 Drives</option>
+          <option value="3">3 Drives</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-label">Layouts</h2>
+    <div class="presets" id="configs" role="group" aria-label="Layouts"></div>
+  </section>
+
+  <section>
+    <div class="row-head">
+      <h2 class="section-label">Drives</h2>
+      <div class="row-actions">
+        <button class="btn btn-sm" type="button" id="add-drive">Add Drive</button>
+        <button class="btn btn-sm" type="button" id="reset-drives">Reset Prices</button>
+      </div>
+    </div>
+    <div class="table-scroll"><table id="drives">
+      <thead><tr><th class="num">Capacity (TB)</th><th class="num">Price</th><th class="num">Per TB</th><th class="num"></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="hint">Placeholder prices — put in what your suppliers actually charge. Everything persists in this browser.</p>
+  </section>
+
+  <section>
+    <h2>Options</h2>
+    <p class="sub" id="summary"></p>
+    <div class="stats" id="best"></div>
+    <div class="row-head">
+      <span class="section-label">Sort By</span>
+      <div class="presets" id="sort" role="group" aria-label="Sort by">
+        <button class="preset" type="button" data-sort="total">Total Price</button>
+        <button class="preset" type="button" data-sort="perTB">Price Per TB</button>
+      </div>
+    </div>
+    <div class="table-scroll"><table id="results">
+      <thead><tr>
+        <th>Layout</th><th class="num">Drives</th><th class="num">Usable</th>
+        <th class="num">Total</th><th class="num">Per Usable TB</th><th class="num">Survives</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <p class="colophon">Geometry only. Filesystems take their own cut on top — ZFS a few percent, plus any hot spare you set aside.</p>
+</main>
+
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+
+<script src="app.js"></script>
+</body>
+</html>
