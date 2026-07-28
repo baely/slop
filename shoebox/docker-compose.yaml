@@ -1,0 +1,24 @@
+# Local/dev reference. Production runs from baely/infra
+# (docker/github.com_baely_slop_shoebox/deploy.yaml).
+services:
+  shoebox:
+    build: .
+    image: registry.baileys.dev/shoebox:latest
+    restart: unless-stopped
+    environment:
+      ADDR: ":8080"
+      SMTP_ADDR: ":2525"
+      DATA_DIR: "/data"
+      SMTP_DOMAIN: "shoebox.baileys.dev"
+      INGEST_ADDR: "tax@baileys.dev"
+      TZ: "Australia/Melbourne"
+      # Empty = open UI; set it anywhere the UI is reachable.
+      AUTH_PASSWORD: "${AUTH_PASSWORD:-}"
+    ports:
+      - "8080:8080"
+      - "2525:2525"
+    volumes:
+      - shoebox-data:/data
+
+volumes:
+  shoebox-data:

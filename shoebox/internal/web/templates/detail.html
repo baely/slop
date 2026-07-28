@@ -1,0 +1,63 @@
+{{define "title"}}{{.R.Subject}} — shoebox{{end}}
+{{define "content"}}
+<p class="crumb"><a href="/">All Receipts</a></p>
+<h1 class="subject">{{.R.Subject}}</h1>
+
+<div class="meta card">
+  <div class="meta-grid">
+    <div class="k">From</div><div>{{if .R.FromName}}{{.R.FromName}} {{end}}{{if .R.From}}<span class="mono">&lt;{{.R.From}}&gt;</span>{{end}}</div>
+    {{if .R.To}}<div class="k">To</div><div class="mono">{{.R.To}}</div>{{end}}
+    <div class="k">Date</div><div><time title="received {{exact .R.ReceivedAt}}">{{exact .R.Date}}</time> <span class="hint-inline">{{rel .R.Date}}</span></div>
+  </div>
+  <form class="amount-form" method="post" action="/r/{{.R.ID}}">
+    <label for="amount">Amount</label>
+    <input id="amount" name="amount" inputmode="decimal" placeholder="0.00" value="{{.Amount}}">
+    {{if .R.AmountAuto}}<span class="chip" title="Detected from the email text — check it against the receipt">Auto-Detected</span>{{end}}
+    <label for="notes">Notes</label>
+    <input id="notes" name="notes" value="{{.R.Notes}}">
+    <button class="btn primary" type="submit">Save</button>
+  </form>
+  <div class="actions">
+    {{if .R.HasRaw}}<a class="btn" href="/r/{{.R.ID}}/raw">Download Raw</a>{{end}}
+    <form method="post" action="/r/{{.R.ID}}/delete" onsubmit="return confirm('Delete this receipt?')">
+      <button class="btn danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="panes{{if .TwoPane}} two{{end}}">
+  {{if .HasBody}}
+  <section class="pane">
+    <div class="pane-title">Email</div>
+    <iframe class="frame" src="/r/{{.R.ID}}/body" sandbox="" title="Email body"></iframe>
+  </section>
+  {{end}}
+  {{if .Tabs}}
+  <section class="pane">
+    <div class="pane-title">
+      <span>Attachment{{if gt (len .Tabs) 1}}s{{end}}</span>
+      {{if gt (len .Tabs) 1}}
+      <span class="tabs">
+        {{$id := .R.ID}}{{$sel := .Sel}}
+        {{range $i, $a := .Tabs}}<a class="tab{{if eq $i $sel}} sel{{end}}" href="/r/{{$id}}?att={{$i}}">{{$a.Name}}</a>{{end}}
+      </span>
+      {{else}}
+      <span class="mono">{{.SelAtt.Name}}, {{size .SelAtt.Size}}</span>
+      {{end}}
+    </div>
+    {{if eq .Kind "pdf"}}
+    <iframe class="frame" src="/r/{{.R.ID}}/att/{{.SelAtt.File}}" title="{{.SelAtt.Name}}"></iframe>
+    {{else if eq .Kind "image"}}
+    <a href="/r/{{.R.ID}}/att/{{.SelAtt.File}}"><img class="att-img" src="/r/{{.R.ID}}/att/{{.SelAtt.File}}" alt="{{.SelAtt.Name}}"></a>
+    {{else}}
+    <div class="card dl">
+      <span class="mono">{{.SelAtt.Name}}</span>
+      <span class="muted mono">{{.SelAtt.ContentType}}, {{size .SelAtt.Size}}</span>
+      <a class="btn" href="/r/{{.R.ID}}/att/{{.SelAtt.File}}">Download</a>
+    </div>
+    {{end}}
+  </section>
+  {{end}}
+  {{if and (not .HasBody) (not .Tabs)}}<p class="empty">No content.</p>{{end}}
+</div>
+{{end}}
