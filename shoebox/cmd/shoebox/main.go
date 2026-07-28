@@ -46,11 +46,21 @@ func main() {
 		}
 	}()
 
-	// Older receipts may predate the generated email.pdf feature.
+	// Stored receipts may predate walk-back fixes or the generated email.pdf:
+	// re-derive headers from raw.eml, then (re)build missing snapshots.
 	go func() {
 		for _, r := range st.List() {
-			if err := ingest.BackfillPDF(st, r); err != nil {
-				log.Printf("backfill: %s: %v", r.ID, err)
+			changed, err := ingest.ReparseHeaders(st, r, loc)
+			if err != nil {
+				log.Printf("reparse: %s: %v", r.ID, err)
+			} else if changed {
+				log.Printf("reparse: %s: headers updated", r.ID)
+				st.RemoveGenerated(r.ID)
+			}
+			if r2, ok := st.Get(r.ID); ok {
+				if err := ingest.BackfillPDF(st, r2); err != nil {
+					log.Printf("backfill: %s: %v", r.ID, err)
+				}
 			}
 		}
 	}()

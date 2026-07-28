@@ -234,6 +234,57 @@ func (s *Store) Delete(id string) error {
 	return nil
 }
 
+// Headers are the walked-back identity fields of a receipt — everything
+// ReparseHeaders may rewrite; amounts and notes are deliberately excluded.
+type Headers struct {
+	From, FromName, ForwardedBy, To, Subject string
+	Date                                     time.Time
+}
+
+func (s *Store) UpdateHeaders(id string, h Headers) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.byID[id]
+	if r == nil {
+		return ErrNotFound
+	}
+	r.From, r.FromName, r.ForwardedBy = h.From, h.FromName, h.ForwardedBy
+	r.To, r.Subject, r.Date = h.To, h.Subject, h.Date
+	meta, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(s.dir(id), "meta.json"), meta, 0o644)
+}
+
+// RemoveGenerated drops our generated attachments (email.pdf) so they can be
+// rebuilt after a header change.
+func (s *Store) RemoveGenerated(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.byID[id]
+	if r == nil {
+		return ErrNotFound
+	}
+	kept := make([]Attachment, 0, len(r.Attachments))
+	for _, a := range r.Attachments {
+		if a.Generated {
+			os.Remove(filepath.Join(s.dir(id), "att", a.File))
+			continue
+		}
+		kept = append(kept, a)
+	}
+	if len(kept) == len(r.Attachments) {
+		return nil
+	}
+	r.Attachments = kept
+	meta, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(s.dir(id), "meta.json"), meta, 0o644)
+}
+
 // AddAttachment writes one more attachment payload and updates the metadata.
 func (s *Store) AddAttachment(id string, att Attachment, data []byte) error {
 	s.mu.Lock()

@@ -2,6 +2,7 @@ package ingest
 
 import (
 	nmail "net/mail"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -9,19 +10,27 @@ import (
 	"github.com/baileybutler/shoebox/internal/store"
 )
 
-// Receipts arrive forwarded, so the top-level From is (almost always) the
-// owner's own address. Walk the message back to the original sender: an
-// attached message/rfc822 is re-parsed wholesale (rfc822Attachment); inline
-// forwards are mined for the client's quoted header block below.
+// Receipts arrive forwarded, so the top-level headers are the owner's own
+// forward, not the merchant's email. Walk everything back to the original:
+// sender, recipient, subject, and date. An attached message/rfc822 is
+// re-parsed wholesale (rfc822Attachment); inline forwards are mined for the
+// client's quoted header block below.
 
 var (
 	fwdMarkerRe = regexp.MustCompile(`(?im)(-{3,}\s*Forwarded message\s*-{3,}|^\s*Begin forwarded message:|-+\s*Original Message\s*-+)`)
 	fwdSubjRe   = regexp.MustCompile(`(?i)^\s*(?:fwd?|fw)\s*:\s*`)
 	hFromRe     = regexp.MustCompile(`(?i)^\s*>?\s*From:\s*(.+)$`)
+	hToRe       = regexp.MustCompile(`(?i)^\s*>?\s*To:\s*(.+)$`)
 	hDateRe     = regexp.MustCompile(`(?i)^\s*>?\s*(?:Date|Sent):\s*(.+)$`)
 	hSubjRe     = regexp.MustCompile(`(?i)^\s*>?\s*Subject:\s*(.+)$`)
 	addrRe      = regexp.MustCompile(`[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}`)
+
+	// gmail writes U+202F before AM/PM; html mail is full of NBSPs. Fold
+	// every unicode space to a plain one before any matching or parsing.
+	spaceFold = strings.NewReplacer(" ", " ", " ", " ", " ", " ", " ", " ", " ", " ")
 )
+
+func normSpaces(s string) string { return spaceFold.Replace(s) }
 
 // Quoted-header date shapes seen in gmail / apple mail / outlook forwards
 // (tried after RFC 5322 parsing, in the app's timezone).
@@ -30,6 +39,7 @@ var fwdDateLayouts = []string{
 	"Mon, 2 Jan 2006 at 3:04 PM",
 	"Mon, 2 Jan 2006 at 3:04 pm",
 	"Mon, Jan 2, 2006 at 3:04 PM",
+	"Mon, Jan 2, 2006 at 3:04 pm",
 	"2 Jan 2006, 15:04",
 	"2 Jan 2006 15:04",
 	"Monday, 2 January 2006 3:04 PM",
@@ -45,34 +55,28 @@ func walkBackForward(b *store.Bundle, loc *time.Location) {
 	if text == "" {
 		return
 	}
+	text = normSpaces(text)
 
 	window := forwardWindow(text, b.Meta.Subject)
 	if window == nil {
 		return
 	}
 
-	var fromLine, dateLine, subjLine string
+	var fromLine, toLine, dateLine, subjLine string
 	for _, line := range window {
-		if fromLine == "" {
-			if m := hFromRe.FindStringSubmatch(line); m != nil {
-				fromLine = strings.TrimSpace(m[1])
-				continue
-			}
-		}
-		if dateLine == "" {
-			if m := hDateRe.FindStringSubmatch(line); m != nil {
-				dateLine = strings.TrimSpace(m[1])
-				continue
-			}
-		}
-		if subjLine == "" {
-			if m := hSubjRe.FindStringSubmatch(line); m != nil {
-				subjLine = strings.TrimSpace(m[1])
-			}
+		switch {
+		case fromLine == "" && hFromRe.MatchString(line):
+			fromLine = strings.TrimSpace(hFromRe.FindStringSubmatch(line)[1])
+		case toLine == "" && hToRe.MatchString(line):
+			toLine = strings.TrimSpace(hToRe.FindStringSubmatch(line)[1])
+		case dateLine == "" && hDateRe.MatchString(line):
+			dateLine = strings.TrimSpace(hDateRe.FindStringSubmatch(line)[1])
+		case subjLine == "" && hSubjRe.MatchString(line):
+			subjLine = strings.TrimSpace(hSubjRe.FindStringSubmatch(line)[1])
 		}
 	}
 
-	addr, name := parseFromLine(fromLine)
+	addr, name := parseAddrLine(fromLine)
 	if addr == "" || strings.EqualFold(addr, b.Meta.From) {
 		return
 	}
@@ -80,6 +84,9 @@ func walkBackForward(b *store.Bundle, loc *time.Location) {
 	b.Meta.ForwardedBy = b.Meta.From
 	b.Meta.From = addr
 	b.Meta.FromName = name
+	if to, _ := parseAddrLine(toLine); to != "" {
+		b.Meta.To = to
+	}
 	if subjLine != "" {
 		b.Meta.Subject = subjLine
 	} else {
@@ -111,9 +118,9 @@ func forwardWindow(text, subject string) []string {
 	return nil
 }
 
-// parseFromLine handles both clean RFC 5322 ("Name <a@b.c>") and the
+// parseAddrLine handles both clean RFC 5322 ("Name <a@b.c>") and the
 // tag-stripped debris html forwards leave behind ("Name  < a@b.c >").
-func parseFromLine(s string) (addr, name string) {
+func parseAddrLine(s string) (addr, name string) {
 	if s == "" {
 		return "", ""
 	}
@@ -145,4 +152,47 @@ func parseForwardDate(s string, loc *time.Location) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
+}
+
+// ReparseHeaders re-derives the walked-back header fields from the stored
+// raw.eml and persists them if they differ (amounts and notes are never
+// touched). Returns whether anything changed — callers should then drop and
+// regenerate the email.pdf, whose stamped header is stale.
+func ReparseHeaders(st *store.Store, r store.Receipt, loc *time.Location) (bool, error) {
+	if !r.HasRaw {
+		return false, nil
+	}
+	raw, err := os.ReadFile(st.RawPath(r.ID))
+	if err != nil {
+		return false, err
+	}
+	nb := &store.Bundle{Meta: store.Receipt{ReceivedAt: r.ReceivedAt, AmountCents: -1}}
+	parseInto(nb, raw)
+	if inner := rfc822Attachment(nb); inner != nil {
+		outer := nb.Meta.From
+		resetContent(nb)
+		parseInto(nb, inner)
+		nb.Meta.ForwardedBy = outer
+	} else {
+		walkBackForward(nb, loc)
+	}
+	if nb.Meta.Date.IsZero() {
+		nb.Meta.Date = r.ReceivedAt
+	}
+	if nb.Meta.Subject == "" {
+		nb.Meta.Subject = "(no subject)"
+	}
+	if nb.Meta.To == "" {
+		nb.Meta.To = r.To
+	}
+
+	h := store.Headers{
+		From: nb.Meta.From, FromName: nb.Meta.FromName, ForwardedBy: nb.Meta.ForwardedBy,
+		To: nb.Meta.To, Subject: nb.Meta.Subject, Date: nb.Meta.Date,
+	}
+	if h.From == r.From && h.FromName == r.FromName && h.ForwardedBy == r.ForwardedBy &&
+		h.To == r.To && h.Subject == r.Subject && h.Date.Equal(r.Date) {
+		return false, nil
+	}
+	return true, st.UpdateHeaders(r.ID, h)
 }

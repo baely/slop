@@ -6,9 +6,9 @@
 <div class="meta card">
   <div class="meta-grid">
     <div class="k">From</div><div>{{if .R.FromName}}{{.R.FromName}} {{end}}{{if .R.From}}<span class="mono">&lt;{{.R.From}}&gt;</span>{{end}}</div>
-    {{if .R.ForwardedBy}}<div class="k">Forwarded By</div><div class="mono">{{.R.ForwardedBy}}</div>{{end}}
     {{if .R.To}}<div class="k">To</div><div class="mono">{{.R.To}}</div>{{end}}
-    <div class="k">Date</div><div><time title="received {{exact .R.ReceivedAt}}">{{exact .R.Date}}</time> <span class="hint-inline">{{rel .R.Date}}</span></div>
+    <div class="k">Date</div><div><time>{{exact .R.Date}}</time> <span class="hint-inline">{{rel .R.Date}}</span></div>
+    {{if .R.ForwardedBy}}<div class="k">Forwarded</div><div><span class="mono">{{.R.ForwardedBy}}</span> <span class="hint-inline">{{rel .R.ReceivedAt}}</span></div>{{end}}
   </div>
   <form class="amount-form" method="post" action="/r/{{.R.ID}}">
     <label for="amount">Amount</label>

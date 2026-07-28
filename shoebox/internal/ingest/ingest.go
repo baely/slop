@@ -61,6 +61,7 @@ func FromEmail(raw []byte, rcpt string, received time.Time, loc *time.Location) 
 	if text == "" && len(b.BodyHTML) > 0 {
 		text = stripHTML(string(b.BodyHTML))
 	}
+	text = normSpaces(text)
 	if cents, ok := extractAmount(b.Meta.Subject, text); ok {
 		b.Meta.AmountCents = cents
 		b.Meta.AmountAuto = true
