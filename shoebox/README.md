@@ -72,15 +72,19 @@ docker build --platform linux/amd64 -t registry.baileys.dev/shoebox:latest --pus
 # then bump # Ref: in the infra deploy.yaml and merge
 ```
 
-Web UI: https://shoebox.baileys.dev (Traefik, port 8080).
-SMTP: published on host port **2525** — port 25 currently belongs to inbucket.
+Web UI: https://shoebox.int.xbd.au (Traefik `internal-only@file`, port 8080).
+SMTP: no host port — the service joins the external `postfix_mailnet` network
+and is reachable there as `shoebox:2525`, from the postfix mail router only.
 
 ## Mail routing (not part of this app)
 
 Nothing arrives over SMTP until mail for `tax@baileys.dev` is routed here.
-Today inbucket owns host port 25 (`25 → inbucket:2500`). The plan: a small
-rule-based SMTP router takes port 25, splits on `RCPT TO`, and relays
-`tax@baileys.dev → shoebox:2525` (both sit on the `web` docker network) with
-everything else falling through to `inbucket:2500`. Until that exists,
-receipts can be tested by SMTP to host port 2525 directly, or via upload in
-the UI.
+The postfix mail router on host port 25 (`postfix_mailnet` network) does the
+splitting; the transport entry it needs is:
+
+```
+tax@baileys.dev   smtp:[shoebox]:2525
+```
+
+with a catch-all for everything else (e.g. inbucket). Until that rule exists,
+receipts go in via the UI upload.
