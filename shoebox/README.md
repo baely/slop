@@ -13,6 +13,16 @@ server-rendered UI. No database, no JavaScript (one `confirm()` on Delete).
   `.eml`, and extracts subject/from/date, the first text and HTML bodies, and
   all attachments. Inline images keep working: `cid:` references are rewritten
   to local attachment URLs.
+- **Forward walk-back**: forwarded receipts arrive From *you*, so ingest digs
+  out the original sender: an attached `message/rfc822` is re-parsed as the
+  actual receipt, and inline forwards (gmail's `Forwarded message` block,
+  Apple Mail, Outlook) are mined for the quoted `From:` / `Date:` /
+  `Subject:`. The original date is used, so receipts land in the right FY;
+  the forwarding address is kept as `Forwarded By`.
+- **email.pdf**: every email body is snapshotted to PDF (headless chromium)
+  and attached to the receipt — the attachment set is the complete archival
+  evidence, even when the email itself is the receipt. Generated at ingest,
+  and backfilled on startup for receipts that predate the feature.
 - **Amount guess**: scans subject + body for dollar amounts; amounts on lines
   mentioning total/amount/paid win. Guesses are flagged `auto` in the UI and
   editable on the receipt page (plus a notes field).
@@ -62,7 +72,11 @@ EOF
 
 Env: `ADDR` (`:8080`), `SMTP_ADDR` (`:2525`), `DATA_DIR` (`./data`),
 `AUTH_PASSWORD` (empty = open), `SMTP_DOMAIN`, `INGEST_ADDR` (display only),
-`TZ` (`Australia/Melbourne`).
+`TZ` (`Australia/Melbourne`), `CHROMIUM_PATH` (email.pdf generation; without
+a chromium binary the feature disables itself — on a Mac point it at
+`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`). The Docker
+image ships alpine + chromium for this, so it's ~400 MB rather than
+distroless-tiny.
 
 ## Deploy
 

@@ -354,7 +354,7 @@ func (w *Web) upload(rw http.ResponseWriter, r *http.Request) {
 	if bytes.HasPrefix(data, []byte("%PDF")) || strings.HasSuffix(strings.ToLower(fh.Filename), ".pdf") {
 		bundle = ingest.FromPDF(fh.Filename, data, time.Now())
 	} else {
-		bundle = ingest.FromEmail(data, "", time.Now())
+		bundle = ingest.FromEmail(data, "", time.Now(), w.loc)
 		bundle.Meta.Source = "upload"
 	}
 	rec, err := w.st.Save(bundle)

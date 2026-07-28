@@ -13,8 +13,8 @@ import (
 	"github.com/emersion/go-smtp"
 )
 
-func ListenAndServe(addr, domain string, st *store.Store) error {
-	s := smtp.NewServer(&backend{st: st})
+func ListenAndServe(addr, domain string, st *store.Store, loc *time.Location) error {
+	s := smtp.NewServer(&backend{st: st, loc: loc})
 	s.Addr = addr
 	s.Domain = domain
 	s.ReadTimeout = 60 * time.Second
@@ -24,14 +24,18 @@ func ListenAndServe(addr, domain string, st *store.Store) error {
 	return s.ListenAndServe()
 }
 
-type backend struct{ st *store.Store }
+type backend struct {
+	st  *store.Store
+	loc *time.Location
+}
 
 func (b *backend) NewSession(_ *smtp.Conn) (smtp.Session, error) {
-	return &session{st: b.st}, nil
+	return &session{st: b.st, loc: b.loc}, nil
 }
 
 type session struct {
 	st   *store.Store
+	loc  *time.Location
 	rcpt string
 }
 
@@ -49,7 +53,7 @@ func (s *session) Data(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	rec, err := s.st.Save(ingest.FromEmail(raw, s.rcpt, time.Now()))
+	rec, err := s.st.Save(ingest.FromEmail(raw, s.rcpt, time.Now(), s.loc))
 	if err != nil {
 		log.Printf("smtp: store failed: %v", err)
 		return &smtp.SMTPError{Code: 451, EnhancedCode: smtp.EnhancedCode{4, 3, 0}, Message: "storage failure"}

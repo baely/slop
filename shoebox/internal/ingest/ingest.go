@@ -1,18 +1,23 @@
 // Package ingest turns raw emails (or bare PDFs) into storable receipt
-// bundles: headers, first text/html bodies, attachments, and a best-guess
-// dollar amount pulled from the text.
+// bundles: headers, first text/html bodies, attachments, a best-guess dollar
+// amount, the original sender walked back out of forwards, and a generated
+// email.pdf snapshot of the body.
 package ingest
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	htmlpkg "html"
 	"io"
 	"log"
 	"mime"
 	nmail "net/mail"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/baileybutler/shoebox/internal/pdfgen"
 	"github.com/baileybutler/shoebox/internal/store"
 	_ "github.com/emersion/go-message/charset"
 	"github.com/emersion/go-message/mail"
@@ -22,7 +27,7 @@ const maxPart = 25 << 20
 
 // FromEmail parses a raw RFC 5322 message. It never fails: unparseable
 // messages are kept with whatever headers could be read.
-func FromEmail(raw []byte, rcpt string, received time.Time) *store.Bundle {
+func FromEmail(raw []byte, rcpt string, received time.Time, loc *time.Location) *store.Bundle {
 	b := &store.Bundle{
 		Raw: raw,
 		Meta: store.Receipt{
@@ -33,11 +38,16 @@ func FromEmail(raw []byte, rcpt string, received time.Time) *store.Bundle {
 			HasRaw:      true,
 		},
 	}
+	parseInto(b, raw)
 
-	if mr, err := mail.CreateReader(bytes.NewReader(raw)); err == nil {
-		readParts(b, mr)
+	// Forwards: the top-level From is the owner, not the merchant.
+	if inner := rfc822Attachment(b); inner != nil {
+		outerFrom := b.Meta.From
+		resetContent(b)
+		parseInto(b, inner)
+		b.Meta.ForwardedBy = outerFrom
 	} else {
-		fallback(b, raw)
+		walkBackForward(b, loc)
 	}
 
 	if b.Meta.Date.IsZero() {
@@ -55,6 +65,8 @@ func FromEmail(raw []byte, rcpt string, received time.Time) *store.Bundle {
 		b.Meta.AmountCents = cents
 		b.Meta.AmountAuto = true
 	}
+
+	attachEmailPDF(b)
 	return b
 }
 
@@ -79,6 +91,39 @@ func FromPDF(filename string, data []byte, received time.Time) *store.Bundle {
 		},
 		Files: []store.File{{Name: file, Data: data}},
 	}
+}
+
+func parseInto(b *store.Bundle, raw []byte) {
+	if mr, err := mail.CreateReader(bytes.NewReader(raw)); err == nil {
+		readParts(b, mr)
+	} else {
+		fallback(b, raw)
+	}
+}
+
+// rfc822Attachment returns the payload of the first attached email, if any
+// (forward-as-attachment) — that inner message is the actual receipt.
+func rfc822Attachment(b *store.Bundle) []byte {
+	for _, a := range b.Meta.Attachments {
+		if a.ContentType == "message/rfc822" {
+			for _, f := range b.Files {
+				if f.Name == a.File {
+					return f.Data
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// resetContent clears everything parseInto fills, keeping envelope facts
+// (To, ReceivedAt, Source, Raw).
+func resetContent(b *store.Bundle) {
+	b.BodyHTML, b.BodyText, b.Files = nil, nil, nil
+	b.Meta.From, b.Meta.FromName, b.Meta.Subject = "", "", ""
+	b.Meta.Date = time.Time{}
+	b.Meta.HasHTML, b.Meta.HasText = false, false
+	b.Meta.Attachments = nil
 }
 
 func readParts(b *store.Bundle, mr *mail.Reader) {
@@ -194,6 +239,114 @@ func fallback(b *store.Bundle, raw []byte) {
 	}
 }
 
+// --- generated email.pdf ---
+
+// attachEmailPDF snapshots the email body as a PDF attachment so every
+// receipt's attachment set is the complete archival evidence.
+func attachEmailPDF(b *store.Bundle) {
+	if !pdfgen.Available() {
+		return
+	}
+	src := conversionHTML(b.Meta, b.BodyHTML, b.BodyText, func(file string) []byte {
+		for _, f := range b.Files {
+			if f.Name == file {
+				return f.Data
+			}
+		}
+		return nil
+	})
+	if src == nil {
+		return
+	}
+	pdf, err := pdfgen.HTMLToPDF(src)
+	if err != nil {
+		log.Printf("ingest: email pdf failed: %v", err)
+		return
+	}
+	file := fmt.Sprintf("%d_email.pdf", len(b.Meta.Attachments))
+	b.Meta.Attachments = append(b.Meta.Attachments, store.Attachment{
+		File: file, Name: "email.pdf", ContentType: "application/pdf",
+		Size: int64(len(pdf)), Generated: true,
+	})
+	b.Files = append(b.Files, store.File{Name: file, Data: pdf})
+}
+
+// BackfillPDF generates the email.pdf for an already-stored receipt that
+// predates the feature. No-op when a generated pdf exists or there's no body.
+func BackfillPDF(st *store.Store, r store.Receipt) error {
+	if !pdfgen.Available() || (!r.HasHTML && !r.HasText) {
+		return nil
+	}
+	for _, a := range r.Attachments {
+		if a.Generated || a.Name == "email.pdf" {
+			return nil
+		}
+	}
+	var html, text []byte
+	if r.HasHTML {
+		html, _ = os.ReadFile(st.BodyPath(r.ID, true))
+	}
+	if r.HasText {
+		text, _ = os.ReadFile(st.BodyPath(r.ID, false))
+	}
+	src := conversionHTML(r, html, text, func(file string) []byte {
+		data, _ := os.ReadFile(st.AttPath(r.ID, file))
+		return data
+	})
+	if src == nil {
+		return nil
+	}
+	pdf, err := pdfgen.HTMLToPDF(src)
+	if err != nil {
+		return err
+	}
+	att := store.Attachment{
+		File: fmt.Sprintf("%d_email.pdf", len(r.Attachments)), Name: "email.pdf",
+		ContentType: "application/pdf", Size: int64(len(pdf)), Generated: true,
+	}
+	return st.AddAttachment(r.ID, att, pdf)
+}
+
+// conversionHTML builds the document handed to chromium: a small archival
+// header, then the HTML body with inline cid images embedded as data: URIs
+// (the stored body references them by att/ URL, which file:// can't reach).
+func conversionHTML(m store.Receipt, html, text []byte, readFile func(file string) []byte) []byte {
+	var body []byte
+	switch {
+	case len(html) > 0:
+		body = html
+		for _, a := range m.Attachments {
+			if !a.Inline || a.ContentID == "" {
+				continue
+			}
+			if data := readFile(a.File); data != nil {
+				uri := "data:" + a.ContentType + ";base64," + base64.StdEncoding.EncodeToString(data)
+				body = bytes.ReplaceAll(body, []byte("att/"+a.File), []byte(uri))
+			}
+		}
+	case len(text) > 0:
+		body = []byte(`<pre style="font:12px/1.5 monospace;white-space:pre-wrap">` +
+			htmlpkg.EscapeString(string(text)) + `</pre>`)
+	default:
+		return nil
+	}
+	return append([]byte(headerBlock(m)), body...)
+}
+
+func headerBlock(m store.Receipt) string {
+	esc := htmlpkg.EscapeString
+	from := m.From
+	if m.FromName != "" {
+		from = m.FromName + " <" + m.From + ">"
+	}
+	fwd := ""
+	if m.ForwardedBy != "" {
+		fwd = "<br>Forwarded by: " + esc(m.ForwardedBy)
+	}
+	return fmt.Sprintf(`<div style="font:11px/1.6 monospace;color:#444;border-bottom:1px solid #ccc;padding:0 0 8px;margin:0 0 12px">From: %s<br>Subject: %s<br>Date: %s%s</div>`,
+		esc(from), esc(m.Subject), esc(m.Date.Format("Mon, 2 Jan 2006 15:04 -0700")), fwd)
+}
+
 func contentID(v string) string {
 	return strings.Trim(strings.TrimSpace(v), "<>")
 }
@@ -208,6 +361,8 @@ func extFor(ct string) string {
 		return ".jpg"
 	case "image/gif":
 		return ".gif"
+	case "message/rfc822":
+		return ".eml"
 	}
 	if exts, _ := mime.ExtensionsByType(ct); len(exts) > 0 {
 		return exts[0]

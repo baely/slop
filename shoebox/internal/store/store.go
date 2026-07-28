@@ -25,12 +25,14 @@ type Attachment struct {
 	Size        int64  `json:"size"`
 	ContentID   string `json:"content_id,omitempty"`
 	Inline      bool   `json:"inline,omitempty"`
+	Generated   bool   `json:"generated,omitempty"` // produced by us (email.pdf), not from the sender
 }
 
 type Receipt struct {
 	ID          string       `json:"id"`
 	From        string       `json:"from"`
 	FromName    string       `json:"from_name,omitempty"`
+	ForwardedBy string       `json:"forwarded_by,omitempty"` // owner address the forward came through
 	To          string       `json:"to,omitempty"`
 	Subject     string       `json:"subject"`
 	Date        time.Time    `json:"date"`
@@ -45,11 +47,12 @@ type Receipt struct {
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
-// FileCount is the number of proper (non-inline) attachments.
+// FileCount is the number of proper attachments the sender included —
+// inline images and our generated email.pdf don't count.
 func (r Receipt) FileCount() int {
 	n := 0
 	for _, a := range r.Attachments {
-		if !a.Inline {
+		if !a.Inline && !a.Generated {
 			n++
 		}
 	}
@@ -229,6 +232,28 @@ func (s *Store) Delete(id string) error {
 	}
 	delete(s.byID, id)
 	return nil
+}
+
+// AddAttachment writes one more attachment payload and updates the metadata.
+func (s *Store) AddAttachment(id string, att Attachment, data []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.byID[id]
+	if r == nil {
+		return ErrNotFound
+	}
+	if err := os.MkdirAll(filepath.Join(s.dir(id), "att"), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(s.dir(id), "att", att.File), data, 0o644); err != nil {
+		return err
+	}
+	r.Attachments = append(r.Attachments, att)
+	meta, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(s.dir(id), "meta.json"), meta, 0o644)
 }
 
 func (s *Store) RawPath(id string) string { return filepath.Join(s.dir(id), "raw.eml") }

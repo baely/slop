@@ -10,7 +10,10 @@ COPY . .
 ENV CGO_ENABLED=0 GOOS=linux
 RUN go build -trimpath -ldflags="-s -w" -o /out/shoebox ./cmd/shoebox
 
-FROM gcr.io/distroless/static-debian12:latest
+# Runtime needs chromium: every email body is snapshotted to an email.pdf
+# attachment. That makes this alpine rather than distroless.
+FROM alpine:3.20
+RUN apk add --no-cache chromium font-noto ca-certificates tzdata
 WORKDIR /app
 COPY --from=build /out/shoebox /app/shoebox
 EXPOSE 8080 2525
