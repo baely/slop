@@ -33,6 +33,10 @@ server-rendered UI. No database, no JavaScript (one `confirm()` on Delete).
   scripts, no remote loads — tracking pixels stay dead) beside the PDF
   attachment in the browser's viewer. Multiple attachments get tabs. Raw
   `.eml` is downloadable.
+- **FY export**: each financial year has an Export link producing a zip —
+  every receipt's files under `files/`, and an XLSX at the root (date, from,
+  subject, amount, notes) with relative hyperlinks to each receipt PDF and
+  email.pdf. Extract and hand the folder to your accountant.
 - **Manual upload**: drop in an `.eml` or a bare `.pdf` for receipts that
   never came through mail.
 - **Auth**: optional single password (`AUTH_PASSWORD`, 90-day cookie) for

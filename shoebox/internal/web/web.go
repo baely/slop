@@ -4,6 +4,7 @@
 package web
 
 import (
+	"archive/zip"
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -75,6 +76,7 @@ func New(st *store.Store, password, ingestAddr string, loc *time.Location) http.
 	mux.HandleFunc("GET /r/{id}/raw", w.raw)
 	mux.HandleFunc("GET /r/{id}/att/{file}", w.att)
 	mux.HandleFunc("POST /upload", w.upload)
+	mux.HandleFunc("GET /export/{fy}", w.export)
 	mux.HandleFunc("GET /healthz", func(rw http.ResponseWriter, _ *http.Request) { io.WriteString(rw, "ok") })
 	return w.auth(mux)
 }
@@ -363,6 +365,119 @@ func (w *Web) upload(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(rw, r, "/r/"+rec.ID, http.StatusSeeOther)
+}
+
+// --- export ---
+
+// export streams a zip of one FY: every receipt's files under files/, and an
+// XLSX at the root tying them together with relative hyperlinks.
+func (w *Web) export(rw http.ResponseWriter, r *http.Request) {
+	end, err := strconv.Atoi(r.PathValue("fy"))
+	if err != nil || end < 2000 || end > 2100 {
+		http.NotFound(rw, r)
+		return
+	}
+	var recs []store.Receipt
+	for _, rec := range w.st.List() {
+		if fyEnd(rec.Date.In(w.loc)) == end {
+			recs = append(recs, rec)
+		}
+	}
+	if len(recs) == 0 {
+		http.NotFound(rw, r)
+		return
+	}
+	sort.Slice(recs, func(i, j int) bool { return recs[i].Date.Before(recs[j].Date) })
+	label := fmt.Sprintf("FY%d-%02d", end-1, end%100)
+
+	rw.Header().Set("Content-Type", "application/zip")
+	rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", "shoebox-"+label+".zip"))
+	zw := zip.NewWriter(rw)
+	defer zw.Close()
+
+	var rows []xlsxRow
+	var total int64
+	for _, rec := range recs {
+		dir := fmt.Sprintf("files/%s_%s_%s", rec.Date.In(w.loc).Format("2006-01-02"), slugify(displayFrom(rec)), idShort(rec.ID))
+		row := xlsxRow{
+			Date:        rec.Date.In(w.loc).Format("2006-01-02"),
+			From:        displayFrom(rec),
+			Subject:     rec.Subject,
+			Notes:       rec.Notes,
+			AmountCents: rec.AmountCents,
+		}
+		if rec.AmountCents >= 0 {
+			total += rec.AmountCents
+		}
+		for _, a := range rec.Attachments {
+			if a.Inline {
+				continue
+			}
+			data, err := os.ReadFile(w.st.AttPath(rec.ID, a.File))
+			if err != nil {
+				log.Printf("export: %s/%s: %v", rec.ID, a.File, err)
+				continue
+			}
+			path := dir + "/" + a.File
+			f, err := zw.Create(path)
+			if err != nil {
+				return
+			}
+			f.Write(data)
+			switch {
+			case a.Generated:
+				row.EmailLink, row.EmailName = path, a.Name
+			case row.ReceiptLink == "":
+				row.ReceiptLink, row.ReceiptName = path, a.Name
+			}
+		}
+		rows = append(rows, row)
+	}
+
+	f, err := zw.Create(label + ".xlsx")
+	if err != nil {
+		return
+	}
+	f.Write(buildXLSX(label, rows, total))
+}
+
+func displayFrom(r store.Receipt) string {
+	if r.FromName != "" {
+		return r.FromName
+	}
+	return r.From
+}
+
+func idShort(id string) string {
+	if i := strings.LastIndex(id, "-"); i >= 0 {
+		return id[i+1:]
+	}
+	return id
+}
+
+func slugify(s string) string {
+	var sb strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(s) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			sb.WriteRune(r)
+			dash = false
+		default:
+			if !dash && sb.Len() > 0 {
+				sb.WriteByte('-')
+				dash = true
+			}
+		}
+	}
+	out := strings.Trim(sb.String(), "-")
+	if len(out) > 30 {
+		out = strings.Trim(out[:30], "-")
+	}
+	if out == "" {
+		out = "receipt"
+	}
+	return out
 }
 
 // --- auth ---

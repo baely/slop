@@ -6,7 +6,7 @@
 <section class="fy">
   <div class="fy-head">
     <h2>{{.Label}}</h2>
-    <div class="fy-total">{{money .Total}}<span class="fy-note">{{.Count}} receipt{{if ne .Count 1}}s{{end}}{{if .Missing}}, {{.Missing}} without amount{{end}}</span></div>
+    <div class="fy-total">{{money .Total}}<span class="fy-note">{{.Count}} receipt{{if ne .Count 1}}s{{end}}{{if .Missing}}, {{.Missing}} without amount{{end}}</span><a class="fy-export" href="/export/{{.End}}">Export</a></div>
   </div>
   <table>
     <thead><tr><th>Date</th><th>From</th><th>Subject</th><th>Files</th><th class="num">Amount</th></tr></thead>
