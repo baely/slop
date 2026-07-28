@@ -25,8 +25,10 @@ server-rendered UI. No database, no JavaScript (one `confirm()` on Delete).
   `.eml` is downloadable.
 - **Manual upload**: drop in an `.eml` or a bare `.pdf` for receipts that
   never came through mail.
-- **Auth**: single password (`AUTH_PASSWORD`), 90-day cookie. Unset = open
-  (local dev). The SMTP side is always open — routing decides what reaches it.
+- **Auth**: optional single password (`AUTH_PASSWORD`, 90-day cookie) for
+  anywhere the UI is exposed. Unset = open — which is how it deploys, since
+  the UI sits behind Traefik's internal-only middleware. The SMTP side is
+  always open — routing decides what reaches it.
 
 ## Storage
 
