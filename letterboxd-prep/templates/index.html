@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letterboxd Prep</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>letterboxd <span class="accent">prep</span></h1>
+  <span class="meta">clean · enrich · repackage</span>
+</header>
+
+<div class="container">
+  <section class="hero">
+    <h2>Drop in your Letterboxd export.<br>Get back a <em>cleaner</em> one.</h2>
+    <p>Strips deleted/orphaned entries, unifies diary &amp; ratings &amp; reviews into one row-per-watch table, and enriches each film with TMDB metadata — runtime, director, IMDb, genres, posters.</p>
+  </section>
+
+  <form id="up" action="/upload" method="POST" enctype="multipart/form-data">
+    <label class="dropzone" id="dz">
+      <strong>Drop your <code>letterboxd-*.zip</code> here</strong>
+      <div class="hint">or click to choose · max 50 MB</div>
+      <span class="file-name" id="fname"></span>
+      <input type="file" id="zip" name="zip" accept=".zip" required>
+    </label>
+    <div class="actions">
+      <button class="btn" type="submit" id="go" disabled>Process</button>
+      <span class="meta" id="status"></span>
+    </div>
+  </form>
+
+  <div class="cards">
+    <div class="card">
+      <div class="num">1</div>
+      <div class="label">Upload</div>
+      <p style="color:var(--ink-2);font-size:14px;margin:8px 0 0;">Server unzips and parses every CSV in your export.</p>
+    </div>
+    <div class="card">
+      <div class="num">2</div>
+      <div class="label">Match</div>
+      <p style="color:var(--ink-2);font-size:14px;margin:8px 0 0;">Films auto-link to TMDB on exact title + year. Anything ambiguous you resolve in-browser.</p>
+    </div>
+    <div class="card">
+      <div class="num">3</div>
+      <div class="label">Download</div>
+      <p style="color:var(--ink-2);font-size:14px;margin:8px 0 0;">A <code>-prepped.zip</code> with one watched.csv (per-watch rows) and one enriched watchlist.csv.</p>
+    </div>
+  </div>
+</div>
+
+<footer>baileys.app · vibe coded</footer>
+
+<script>
+  const dz = document.getElementById('dz');
+  const input = document.getElementById('zip');
+  const go = document.getElementById('go');
+  const fname = document.getElementById('fname');
+  const status = document.getElementById('status');
+  const form = document.getElementById('up');
+
+  function setFile(f) {
+    if (!f) return;
+    fname.textContent = f.name + ' · ' + (f.size / 1024 / 1024).toFixed(2) + ' MB';
+    go.disabled = false;
+  }
+
+  input.addEventListener('change', () => setFile(input.files[0]));
+  ['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', ev => {
+    if (ev.dataTransfer.files.length) {
+      input.files = ev.dataTransfer.files;
+      setFile(input.files[0]);
+    }
+  });
+
+  form.addEventListener('submit', () => {
+    go.disabled = true;
+    status.textContent = 'uploading…';
+  });
+</script>
+</body>
+</html>

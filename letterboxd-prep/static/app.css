@@ -1,0 +1,356 @@
+/* Letterboxd Prep — minimalist editorial */
+:root {
+  --bg: #0e1014;
+  --bg-2: #161a21;
+  --bg-3: #1d222b;
+  --line: #262c37;
+  --ink: #e8eaf0;
+  --ink-2: #a4abb9;
+  --ink-3: #6c7486;
+  --accent: #ff8000;
+  --accent-2: #00d8b3;
+  --accent-3: #f5c518;
+  --danger: #ff5c63;
+  --r: 4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-2); }
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.topbar h1 .accent { color: var(--accent); }
+.topbar .meta { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ─── Index page ─── */
+.hero {
+  padding: 48px 0 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 32px;
+}
+.hero h2 {
+  margin: 0 0 12px;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.hero h2 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.hero p {
+  color: var(--ink-2);
+  font-size: 17px;
+  max-width: 640px;
+  margin: 0;
+}
+
+.dropzone {
+  display: block;
+  position: relative;
+  border: 1.5px dashed var(--line);
+  border-radius: 8px;
+  padding: 56px 32px;
+  text-align: center;
+  background: var(--bg-2);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.dropzone:hover, .dropzone.drag {
+  border-color: var(--accent);
+  background: var(--bg-3);
+}
+.dropzone strong { font-size: 17px; }
+.dropzone .hint { color: var(--ink-3); margin-top: 8px; font-size: 13px; }
+.dropzone input { display: none; }
+.dropzone .file-name { display: block; margin-top: 16px; color: var(--accent-2); font-weight: 500; }
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: #1a1206;
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:hover { background: #ff9933; color: #1a1206; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.btn.ghost:hover { background: var(--bg-3); color: var(--ink); }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+.btn.danger:hover { background: rgba(255, 92, 99, 0.1); }
+
+.actions { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px;
+}
+.card .num { font-size: 28px; font-weight: 700; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+.card .label { color: var(--ink-3); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+
+/* ─── Job page ─── */
+.status-bar {
+  display: flex;
+  gap: 24px;
+  align-items: baseline;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.status-bar .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+}
+.status-bar .stat .n {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.status-bar .stat .l {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.status-bar .stat.auto .n { color: var(--accent-2); }
+.status-bar .stat.manual .n { color: var(--accent-3); }
+.status-bar .stat.skipped .n { color: var(--ink-3); }
+.status-bar .stat.awaiting .n { color: var(--accent); }
+.status-bar .stat.errored .n { color: var(--danger); }
+
+.progress {
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 16px 0 0;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+.section-title {
+  margin: 40px 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.empty {
+  padding: 64px 32px;
+  text-align: center;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-2);
+}
+.empty .big {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.film {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.film header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.film header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.film header .year {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.film header .lb-link {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.film header .lb-link:hover { color: var(--accent); }
+
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+  gap: 12px;
+  justify-content: start;
+}
+.candidates.empty-state {
+  display: block;
+  padding: 16px;
+  color: var(--ink-3);
+  font-style: italic;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+}
+.candidate {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.candidate:hover { border-color: var(--accent); }
+.candidate.selecting { border-color: var(--accent-2); pointer-events: none; opacity: 0.6; }
+.candidate .poster {
+  aspect-ratio: 2/3;
+  background: var(--bg-3) center/cover no-repeat;
+  position: relative;
+}
+.candidate .poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.6));
+}
+.candidate .body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.candidate .body h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.candidate .body .meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.candidate .body .ov {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.film .controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.film .controls input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+}
+.film .controls input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.banner {
+  padding: 18px 22px;
+  border-radius: 6px;
+  margin: 24px 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.banner.ready {
+  background: linear-gradient(135deg, rgba(0, 216, 179, 0.12), rgba(255, 128, 0, 0.08));
+  border: 1px solid rgba(0, 216, 179, 0.4);
+}
+.banner.error {
+  background: rgba(255, 92, 99, 0.08);
+  border: 1px solid rgba(255, 92, 99, 0.4);
+}
+.banner h3 { margin: 0 0 4px; font-size: 18px; }
+.banner p { margin: 0; color: var(--ink-2); }
+
+footer {
+  text-align: center;
+  color: var(--ink-3);
+  padding: 32px 0;
+  font-size: 12px;
+}
