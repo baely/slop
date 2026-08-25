@@ -34,8 +34,13 @@
 
     <div class="block">
       <div class="stat-label">View</div>
-      <div class="chips" id="presets"></div>
+      <div class="chips" id="views"></div>
       <div class="chips" id="toggles"></div>
+      <div class="inline-add">
+        <input type="text" id="newViewName" placeholder="Name This View" aria-label="New View Name">
+        <button class="btn tiny" id="saveView" type="button">Save View</button>
+        <button class="btn tiny" id="deleteView" type="button" hidden>Delete View</button>
+      </div>
     </div>
 
     <table class="breakdown">
@@ -52,11 +57,8 @@
       <div class="card-head">
         <h2 class="card-title">Awards</h2>
         <div class="add-row">
-          <button class="btn tiny" type="button" data-add="base">Add Base</button>
-          <button class="btn tiny" type="button" data-add="bonus">Add Bonus</button>
-          <button class="btn tiny" type="button" data-add="cash">Add Cash Grant</button>
-          <button class="btn tiny" type="button" data-add="equity">Add Equity Grant</button>
-          <button class="btn tiny" type="button" data-add="other">Add Other</button>
+          <select id="typeSelect" aria-label="Award Type"></select>
+          <button class="btn tiny" id="addAward" type="button">Add Award</button>
         </div>
       </div>
       <div id="awardList"></div>
@@ -64,7 +66,7 @@
 
     <section class="card">
       <h2 class="card-title">By Year</h2>
-      <p class="note">Components excluded by the current view are shown muted and are not counted in TC.</p>
+      <p class="note">Groups excluded by the current view are shown muted and are not counted in TC.</p>
       <div class="tbl-scroll">
         <table id="yearTable">
           <thead><tr id="yearHead"></tr></thead>
@@ -75,7 +77,7 @@
     </section>
 
     <section class="card">
-      <h2 class="card-title">Vesting Schedule</h2>
+      <h2 class="card-title">Schedule</h2>
       <p class="note">Every award, year by year, in display currency.</p>
       <div class="tbl-scroll">
         <table id="schedTable">
@@ -83,6 +85,22 @@
           <tbody id="schedBody"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Groups</h2>
+      <p class="note">Groups are the categories the view toggles switch on and off, and what a percent-of award can point at.</p>
+      <div id="groupList"></div>
+      <div class="inline-add">
+        <input type="text" id="newGroupName" placeholder="New Group Name" aria-label="New Group Name">
+        <button class="btn tiny" id="addGroup" type="button">Add Group</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Award Types</h2>
+      <p class="note">Templates that pre-fill a new award. Save any award as a type to reuse its shape.</p>
+      <div id="typeList"></div>
     </section>
 
     <section class="card">
@@ -94,7 +112,7 @@
         </div>
         <div class="field">
           <label for="setHorizon">Years Shown</label>
-          <input type="number" id="setHorizon" min="1" max="10" step="1">
+          <input type="number" id="setHorizon" min="1" max="12" step="1">
         </div>
         <div class="field">
           <label for="setSuperRate">Super Rate %</label>
@@ -108,7 +126,7 @@
       <div class="chips settings-toggles">
         <label class="toggle"><input type="checkbox" id="setCapOn"><span>Cap At Maximum Contribution Base</span></label>
       </div>
-      <p class="note">Super is calculated on super-eligible components and added on top. The cap applies the maximum contribution base (AUD 250,000 p.a. for FY2025-26) before the rate.</p>
+      <p class="note">Super is calculated on the visible awards marked <span class="mono">Super Applies</span> and added on top. The cap applies the maximum contribution base (AUD 250,000 p.a. for FY2025-26) before the rate.</p>
 
       <h3 class="sub-title">Exchange Rates</h3>
       <p class="note">Live rates convert everything to AUD first. Override any rate to model a different assumption.</p>

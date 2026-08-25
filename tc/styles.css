@@ -124,6 +124,7 @@ a { color: var(--accent-text); text-decoration: underline; text-underline-offset
 }
 .btn:hover { background-color: var(--surface-2); }
 .btn.tiny { font-size: 12.5px; padding: 6px 10px; min-height: 32px; }
+.btn[hidden] { display: none; } /* .btn's display would otherwise beat [hidden] */
 .nav .btn { background-color: color-mix(in srgb, var(--text) 8%, transparent); }
 .nav .btn:hover { background-color: color-mix(in srgb, var(--text) 14%, transparent); }
 /* a button has to step off whatever surface it sits on */
@@ -241,7 +242,8 @@ label { font-size: 12px; font-weight: 600; color: var(--text-2); }
   gap: 8px;
   margin-bottom: 12px;
 }
-.add-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.add-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.add-row select { width: auto; max-width: 220px; min-height: 32px; padding: 6px 8px; font-size: 12.5px; background: var(--surface-2); }
 .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
 .note { font-size: 12px; color: var(--text-2); margin: 4px 0 12px; }
 
@@ -306,12 +308,41 @@ td.total, th.total { font-weight: 700; color: var(--text); }
   padding: 4px 7px;
   white-space: nowrap;
 }
+.award-head .group-select { flex: 0 1 130px; width: auto; min-width: 90px; }
 .award-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
 }
 .award-grid .field.wide { grid-column: span 2; }
+.award-row { display: grid; gap: 8px; }
+.award-row + .award-grid { margin-top: 8px; }
+.of-groups { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.of-groups .stat-label { flex: none; }
+
+/* group and type management rows */
+.row-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border-radius: var(--r-card);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.row-item .row-name { flex: 0 1 180px; min-width: 120px; background: var(--surface); }
+.row-item .toggle { background: var(--surface); }
+.row-item .toggle:has(input:checked) { background: var(--surface); color: var(--text); }
+.row-item .btn { background-color: var(--surface); }
+.row-item .btn:hover { background-color: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+.row-tag.grow { flex: 1 1 200px; min-width: 0; }
+
+.inline-add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.inline-add input[type="text"] { flex: 0 1 200px; min-width: 140px; }
+
+.warn { color: #b45309; }
+td.warn { font-size: 12px; }
 .award-foot {
   display: flex;
   flex-wrap: wrap;
