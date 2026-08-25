@@ -35,6 +35,9 @@ const SCHEDULES = [
 let cfg = null;
 let fx = { rates: { AUD: 1 }, source: null, fetched: null, date: null, error: null };
 let seq = 1;
+// disclosure state is session-only, so the page always opens calm
+const expanded = new Set();
+const openSections = new Set();
 const uid = p => `${p}-${seq++}-${Math.round(performance.now() * 1000) % 100000}`;
 
 function defaultConfig() {
@@ -278,7 +281,8 @@ function renderFxLine() {
     return;
   }
   const manual = Object.keys(cfg.overrides).some(k => cfg.overrides[k] > 0);
-  el.textContent = `1 USD = ${audPerUnit('USD').toFixed(4)} AUD · ${manual ? 'manual override active' : fx.source} · ${ago(fx.fetched)}`;
+  el.textContent = `USD→AUD ${audPerUnit('USD').toFixed(4)}${manual ? ' manual' : ''}`;
+  el.title = `${manual ? 'Manual override active' : 'Source: ' + fx.source} · fetched ${ago(fx.fetched)}`;
   if (Date.now() - (fx.fetched || 0) > FX_MAX_AGE) el.classList.add('stale');
 }
 
@@ -456,6 +460,25 @@ function groupOptions(selected) {
   ).join('');
 }
 
+/** Compact one-line description of an award's shape, for the collapsed row. */
+function awardSpecLine(a) {
+  const v = a.value, s = a.schedule;
+  const amount = v.mode === 'percent'
+    ? `${v.pct || 0}% of ${(v.ofGroups || []).map(groupName).join(' + ') || '—'}`
+    : moneyIn(v.amount || 0, v.currency || 'AUD');
+  let when;
+  if (s.type === 'once') when = `${s.startYear}`;
+  else if (s.type === 'recurring') {
+    when = s.years > 0 ? `${s.startYear}–${s.startYear + s.years - 1}` : `${s.startYear} ongoing`;
+    if (s.growth) when += ` +${s.growth}%/yr`;
+  } else {
+    const n = scheduleSpan(a);
+    when = `over ${n}y from ${s.startYear}`;
+    if (splitWeights(a, n).custom) when += ` ${s.split}`;
+  }
+  return `${amount} · ${when}`;
+}
+
 function renderAwards() {
   const host = $('#awardList');
   if (!cfg.awards.length) {
@@ -465,6 +488,7 @@ function renderAwards() {
 
   host.innerHTML = cfg.awards.map(a => {
     const v = a.value, s = a.schedule;
+    const open = expanded.has(a.id);
     const num = (path, f, label, opts = {}) => {
       const obj = path === 'value' ? v : s;
       const val = obj[f];
@@ -476,12 +500,27 @@ function renderAwards() {
     };
 
     return `<div class="award${a.enabled ? '' : ' off'}" data-id="${a.id}">
-      <div class="award-head">
-        <label class="toggle"><input type="checkbox" data-id="${a.id}" data-path="root" data-f="enabled" ${a.enabled ? 'checked' : ''}><span>Include</span></label>
-        <input class="label-input" type="text" data-id="${a.id}" data-path="root" data-f="label" value="${esc(a.label)}" aria-label="Award Name">
-        <select class="group-select" data-id="${a.id}" data-path="root" data-f="groupId" aria-label="Group">${groupOptions(a.groupId)}</select>
-        <button class="btn tiny" type="button" data-savetype="${a.id}">Save As Type</button>
-        <button class="btn tiny" type="button" data-remove="${a.id}">Remove</button>
+      <div class="award-summary">
+        <label class="toggle bare" title="Include In Total">
+          <input type="checkbox" data-id="${a.id}" data-path="root" data-f="enabled" ${a.enabled ? 'checked' : ''}>
+          <span class="sr-only">Include ${esc(a.label)}</span></label>
+        <button class="award-open" type="button" aria-expanded="${open}" aria-controls="body-${a.id}" data-open="${a.id}">
+          <span class="a-name" id="sum-name-${a.id}">${esc(a.label)}</span>
+          <span class="mono a-group" id="sum-group-${a.id}">${esc(groupName(a.groupId))}</span>
+          <span class="mono a-spec" id="sum-spec-${a.id}">${esc(awardSpecLine(a))}</span>
+          <span class="num a-value" id="sum-val-${a.id}"></span>
+          <span class="disclose"></span>
+        </button>
+      </div>
+
+      <div class="award-body" id="body-${a.id}"${open ? '' : ' hidden'}>
+      <div class="award-grid">
+        <div class="field wide">
+          <label for="f-${a.id}-root-label">Name</label>
+          <input type="text" id="f-${a.id}-root-label" data-id="${a.id}" data-path="root" data-f="label" value="${esc(a.label)}"></div>
+        <div class="field">
+          <label for="f-${a.id}-root-groupId">Group</label>
+          <select id="f-${a.id}-root-groupId" data-id="${a.id}" data-path="root" data-f="groupId">${groupOptions(a.groupId)}</select></div>
       </div>
 
       <div class="award-row">
@@ -527,6 +566,12 @@ function renderAwards() {
       <div class="award-foot">
         <label class="toggle"><input type="checkbox" data-id="${a.id}" data-path="root" data-f="superApplies" ${a.superApplies ? 'checked' : ''}><span>Super Applies</span></label>
         <span class="award-sched" id="sched-${a.id}"></span>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn tiny" type="button" data-savetype="${a.id}">Save As Type</button>
+        <button class="btn tiny" type="button" data-remove="${a.id}">Remove</button>
+      </div>
       </div>
     </div>`;
   }).join('');
@@ -577,8 +622,10 @@ function syncChips() {
   const av = activeView();
   $$('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(!!av && b.dataset.view === av.id)));
   $$('[data-show]').forEach(c => { c.checked = !!cfg.show[c.dataset.show]; });
-  const del = $('#deleteView');
-  del.hidden = !(av && !av.builtin);
+  // offer to save only when the toggles are something not already named,
+  // and to delete only when a saved view is the one showing
+  $('#viewSaveRow').hidden = !!av;
+  $('#viewDeleteRow').hidden = !(av && !av.builtin);
 }
 
 /* ---------- render: groups & types ---------- */
@@ -691,6 +738,27 @@ function renderOutputs() {
       `<tr><td colspan="${years.length + 2}" class="warn">Circular percent-of reference in ${all.cycles.map(groupName).map(esc).join(', ')} — treated as 0.</td></tr>`);
   }
 
+  // collapsed award rows carry the same figures, so they stay useful closed
+  const pick = id => {
+    if (cfg.selYear === 'total') return all.sum.perAward[id] || 0;
+    if (cfg.selYear === 'avg') return (all.sum.perAward[id] || 0) / Math.max(1, all.rows.length);
+    const r = byYear[Number(cfg.selYear)] || all.rows[0];
+    return r ? (r.perAward[id] || 0) : 0;
+  };
+  for (const a of cfg.awards) {
+    const nm = $('#sum-name-' + a.id);
+    if (!nm) continue;
+    nm.textContent = a.label;
+    $('#sum-group-' + a.id).textContent = groupName(a.groupId);
+    $('#sum-spec-' + a.id).textContent = awardSpecLine(a);
+    $('#sum-val-' + a.id).textContent = money(pick(a.id));
+  }
+
+  $('#schedHint').textContent = `${cfg.awards.length} award${cfg.awards.length === 1 ? '' : 's'} × ${cfg.horizon} years`;
+  $('#groupHint').textContent = cfg.groups.map(g => g.name).join(' · ');
+  $('#typeHint').textContent = `${cfg.types.length} template${cfg.types.length === 1 ? '' : 's'}`;
+  $('#setHint').textContent = `super ${cfg.superRate}%${cfg.superCapOn ? ' capped' : ''} · from ${cfg.startYear} · ${cfg.display}`;
+
   renderAwardScheds();
   syncChips();
   renderFxLine();
@@ -795,6 +863,16 @@ function bindEvents() {
   list.addEventListener('input', e => onAwardField(e, false));
   list.addEventListener('change', e => onAwardField(e, true));
   list.addEventListener('click', e => {
+    const op = e.target.closest('[data-open]');
+    if (op) {
+      const id = op.dataset.open;
+      const body = $('#body-' + id);
+      const nowOpen = !expanded.has(id);
+      if (nowOpen) expanded.add(id); else expanded.delete(id);
+      body.hidden = !nowOpen;
+      op.setAttribute('aria-expanded', String(nowOpen));
+      return;
+    }
     const rm = e.target.closest('[data-remove]');
     if (rm) {
       cfg.awards = cfg.awards.filter(a => a.id !== rm.dataset.remove);
@@ -806,6 +884,18 @@ function bindEvents() {
   });
 
   $('#addAward').addEventListener('click', () => addAwardFromType($('#typeSelect').value));
+
+  // collapsible section cards
+  $$('.collapsible .card-head-btn').forEach(btn => {
+    const section = btn.closest('.collapsible').dataset.section;
+    btn.addEventListener('click', () => {
+      const body = $('#' + btn.getAttribute('aria-controls'));
+      const nowOpen = !openSections.has(section);
+      if (nowOpen) openSections.add(section); else openSections.delete(section);
+      body.hidden = !nowOpen;
+      btn.setAttribute('aria-expanded', String(nowOpen));
+    });
+  });
 
   // groups
   const gl = $('#groupList');
@@ -971,6 +1061,7 @@ function addAwardFromType(typeId) {
     schedule: spec.schedule,
   };
   cfg.awards.push(a);
+  expanded.add(a.id); // a new award is empty, so open it ready to fill in
   renderAwards(); renderGroups(); renderRates(); renderOutputs();
   const first = $(`#f-${a.id}-value-${a.value.mode === 'percent' ? 'pct' : 'amount'}`);
   if (first) { first.focus(); first.select(); }

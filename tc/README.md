@@ -7,6 +7,11 @@ of "TC".
 
 Static page, no build step, no backend. State lives in `localStorage`.
 
+The model underneath is general, so the page keeps it folded away: each award
+is one line showing its shape and what it contributes, and opens only when you
+edit it. Groups, types, settings and the full schedule sit behind their own
+disclosures, each captioned with what's inside.
+
 ## The model
 
 There is no fixed list of award kinds. An award is **composed** from three
