@@ -1,0 +1,353 @@
+/* tc — total comp calculator. bailey house style v1 tokens. */
+
+/* ---------- tokens ---------- */
+
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+  /* light */
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #212126;
+    --text: #f2f2f4;
+    --text-2: #a3a3ad;
+    --muted: #5b5b66;
+    --line: #26262c;
+    --accent-text: #3aa8c4;
+    --accent-soft: #0c2229;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #17171a;
+  --surface-2: #212126;
+  --text: #f2f2f4;
+  --text-2: #a3a3ad;
+  --muted: #5b5b66;
+  --line: #26262c;
+  --accent-text: #3aa8c4;
+  --accent-soft: #0c2229;
+}
+
+/* ---------- base ---------- */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  padding-bottom: 48px;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+.mono, .num { font-family: var(--font-mono); font-size: 0.93em; }
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- nav ---------- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: var(--accent-soft);
+}
+.nav .wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 18px;
+  color: var(--text);
+}
+.nav-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fx-line { color: var(--text-2); font-size: 12px; }
+.fx-line.stale { color: var(--muted); }
+.fx-line.bad { color: #b45309; }
+
+/* ---------- controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--surface);
+  border: none;
+  border-radius: var(--r-ctl);
+  padding: 9px 16px;
+  min-height: 38px;
+  cursor: pointer;
+}
+.btn:hover { background-color: var(--surface-2); }
+.btn.tiny { font-size: 12.5px; padding: 6px 10px; min-height: 32px; }
+.nav .btn { background-color: color-mix(in srgb, var(--text) 8%, transparent); }
+.nav .btn:hover { background-color: color-mix(in srgb, var(--text) 14%, transparent); }
+/* a button has to step off whatever surface it sits on */
+.card .btn { background-color: var(--surface-2); }
+.card .btn:hover { background-color: color-mix(in srgb, var(--text) 8%, var(--surface-2)); }
+.award .btn { background-color: var(--surface); }
+.award .btn:hover { background-color: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+
+input[type="text"], input[type="number"], select {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: none;
+  border-radius: var(--r-ctl);
+  padding: 8px 10px;
+  min-height: 36px;
+  width: 100%;
+}
+.card input[type="text"], .card input[type="number"], .card select { background: var(--surface-2); }
+/* awards sit on --surface-2, so their fields step back to --surface */
+.award input[type="text"], .award input[type="number"], .award select { background: var(--surface); }
+/* per-award toggles stay neutral — the square carries the state, so teal is
+   reserved for the view controls that actually change the headline number */
+.award .toggle { background: var(--surface); }
+.award .toggle:has(input:checked) { background: var(--surface); color: var(--text); }
+input[type="number"] { font-family: var(--font-mono); font-size: 13px; }
+.nav select { width: auto; min-height: 32px; padding: 5px 8px; font-size: 12.5px; font-weight: 600; background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+/* ---------- chips & toggles ---------- */
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.toggle, .chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 32px;
+  border: none;
+  border-radius: var(--r-ctl);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+/* flat state marker — fill colour alone is too subtle between the light tokens */
+.toggle::before {
+  content: '';
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--muted);
+}
+.toggle:has(input:checked) { background: var(--accent-soft); color: var(--accent-text); }
+.toggle:has(input:checked)::before { background: var(--accent); }
+.toggle:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip-btn[aria-pressed="true"] {
+  background-color: var(--accent);
+  background-image: var(--sheen);
+  color: var(--accent-ink);
+}
+@media (pointer: coarse) {
+  .toggle, .chip-btn, .btn.tiny { min-height: 44px; }
+  .btn { min-height: 44px; }
+}
+
+/* ---------- layout ---------- */
+
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+.main-col { display: grid; gap: 16px; min-width: 0; }
+
+@media (min-width: 980px) {
+  .wrap { grid-template-columns: minmax(0, 1fr) 380px; }
+  .results { grid-column: 2; grid-row: 1; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .main-col { grid-column: 1; grid-row: 1; }
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 16px;
+  min-width: 0;
+}
+.card .card-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 15px;
+}
+.card .sub-title { font-size: 13px; margin-top: 20px; }
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.add-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.note { font-size: 12px; color: var(--text-2); margin: 4px 0 12px; }
+
+/* ---------- results ---------- */
+
+.results { display: grid; gap: 12px; }
+.headline { padding: 4px 0; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: clamp(34px, 7vw, 44px);
+  line-height: 1.05;
+}
+.stat-context { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.block { display: grid; gap: 6px; }
+
+/* ---------- tables ---------- */
+
+.tbl-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+td.num, th.num { font-family: var(--font-mono); font-size: 0.93em; text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+tbody tr:last-child td { border-bottom: none; }
+tfoot td { border-bottom: none; border-top: 1px solid var(--line); font-weight: 700; }
+tfoot td.num { font-weight: 700; }
+tr.selected td { background: var(--accent-soft); }
+td.off, th.off, tr.off td { color: var(--muted); }
+td.total, th.total { font-weight: 700; color: var(--text); }
+.breakdown { margin-top: 4px; }
+
+/* ---------- awards ---------- */
+
+.award {
+  background: var(--surface-2);
+  border-radius: var(--r-card);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.award.off { opacity: .55; }
+.award-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.award-head .label-input { flex: 1 1 160px; min-width: 0; font-weight: 600; }
+.award .kind-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface);
+  border-radius: var(--r-ctl);
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+.award-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+.award-grid .field.wide { grid-column: span 2; }
+.award-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.award-sched { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-2); flex: 1 1 200px; min-width: 0; }
+.row-tag { color: var(--muted); }
+.award-sched .warn { color: #b45309; }
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.settings-toggles { margin-bottom: 4px; }
+.rate-input { max-width: 110px; margin-left: auto; }
+.empty { color: var(--text-2); font-size: 14px; padding: 8px 0; }
+
+/* ---------- signature ---------- */
+
+.b-glyph {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 90;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-2);
+  background: var(--surface);
+  border-radius: var(--r-ctl);
+  padding: 6px 8px;
+  text-decoration: none;
+}
+.b-glyph:hover { color: var(--accent-text); }
