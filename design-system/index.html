@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>slop design system</title>
+<style>
+/* ========================================
+   RESET
+   ======================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ========================================
+   BASE
+   ======================================== */
+html { scroll-behavior: smooth; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========================================
+   APP SHELL
+   ======================================== */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ========================================
+   SIDEBAR
+   ======================================== */
+#sidebar {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+  background: #fafafa;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-header { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+
+.sidebar-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+}
+
+.sidebar-subtitle {
+  font-size: 11px;
+  color: #bbb;
+  margin-top: 2px;
+  font-family: 'Courier New', monospace;
+}
+
+.sidebar-nav { flex: 1; padding: 8px 0; }
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bbb;
+  padding: 12px 12px 4px;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: #555;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+.sidebar-link:hover { background: #f0f0f0; color: #111; }
+.sidebar-link.active { border-left-color: #111; background: #f0f0f0; font-weight: 600; color: #111; }
+
+.sidebar-footer {
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: #bbb;
+}
+
+/* ========================================
+   MAIN PANEL
+   ======================================== */
+#main-panel {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* Editor-style toolbar for the main panel */
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.panel-toolbar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+}
+
+.panel-toolbar-right {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bbb;
+  font-family: 'Courier New', monospace;
+}
+
+.content {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+  width: 100%;
+}
+
+/* ========================================
+   HERO
+   ======================================== */
+.hero {
+  padding-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 48px;
+}
+
+.hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.hero p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.65;
+  max-width: 500px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 10px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'Courier New', monospace;
+}
+
+/* ========================================
+   SECTIONS
+   ======================================== */
+.section { margin-bottom: 56px; }
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section-desc {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.65;
+}
+
+.subsection { margin-bottom: 28px; }
+
+.subsection-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+  margin-bottom: 10px;
+}
+
+/* ========================================
+   PREVIEW BOX
+   ======================================== */
+.preview {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 24px;
+  margin-bottom: 10px;
+}
+
+.preview-dark {
+  background: #f5f5f5;
+}
+
+.preview-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bbb;
+  margin-bottom: 6px;
+}
+
+/* ========================================
+   CODE BLOCK
+   ======================================== */
+.code-block {
+  background: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #555;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.6;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.code-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  cursor: pointer;
+}
+.code-copy:hover { border-color: #999; color: #111; }
+.code-copy.copied { color: #111; border-color: #111; }
+
+/* ========================================
+   COLOR PALETTE
+   ======================================== */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.color-swatch {
+  border: 1px solid #e0e0e0;
+}
+
+.color-chip {
+  height: 48px;
+}
+
+.color-info {
+  padding: 6px 8px;
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.color-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #111;
+}
+
+.color-value {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #888;
+}
+
+.color-desc {
+  font-size: 10px;
+  color: #aaa;
+}
+
+/* ========================================
+   TYPE SCALE
+   ======================================== */
+.type-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.type-row:last-child { border-bottom: none; }
+
+.type-meta {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.type-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #bbb;
+  font-family: 'Courier New', monospace;
+}
+
+.type-desc { font-size: 10px; color: #aaa; }
+
+.type-specimen { flex: 1; color: #111; }
+
+/* ========================================
+   SPACING SCALE
+   ======================================== */
+.spacing-grid { display: flex; flex-direction: column; gap: 6px; }
+
+.spacing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spacing-bar-wrap { flex: 1; height: 16px; display: flex; align-items: center; }
+
+.spacing-bar {
+  height: 10px;
+  background: #111;
+}
+
+.spacing-meta {
+  width: 160px;
+  flex-shrink: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #888;
+}
+
+/* ========================================
+   COMPONENT DEMOS — matching provided CSS
+   ======================================== */
+
+/* Buttons */
+.btn-primary {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.btn-primary:hover:not(:disabled) { background: #333; border-color: #333; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary.block { display: block; width: 100%; text-align: center; margin-top: 6px; }
+
+.btn-secondary-outline {
+  padding: 6px 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-size: 12px;
+  font-family: inherit;
+  color: #555;
+  cursor: pointer;
+}
+.btn-secondary-outline:hover { border-color: #999; color: #111; }
+
+.btn-danger {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #f5c0c0;
+  color: #c00;
+  font-size: 11px;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.btn-danger:hover { background: #fff8f8; }
+
+.btn-sidebar-demo {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-size: 12px;
+  font-family: inherit;
+  color: #111;
+  cursor: pointer;
+  text-align: left;
+}
+.btn-sidebar-demo:hover { background: #f5f5f5; }
+
+.btn-back-demo {
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid #ddd;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.btn-back-demo:hover { border-color: #999; color: #111; }
+
+.mode-toggle-demo { display: inline-flex; border: 1px solid #ddd; }
+
+.mode-btn-demo {
+  padding: 3px 10px;
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  cursor: pointer;
+}
+.mode-btn-demo + .mode-btn-demo { border-left: 1px solid #ddd; }
+.mode-btn-demo.active { background: #111; color: #fff; }
+
+/* Forms */
+.form-group-demo { margin-bottom: 12px; }
+
+.form-group-demo label {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-group-demo input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111;
+  outline: none;
+  background: #fff;
+}
+.form-group-demo input:focus { border-color: #111; }
+
+.error-msg-demo {
+  font-size: 12px;
+  color: #c00;
+  border: 1px solid #f5c0c0;
+  background: #fff8f8;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+/* Overlay card demo */
+.overlay-demo {
+  position: relative;
+  background: #f5f5f5;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.overlay-card-demo {
+  width: 300px;
+  padding: 28px;
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+.diary-title-demo { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.overlay-subtitle-demo { color: #666; margin-bottom: 20px; font-size: 12px; }
+
+/* Modal demo */
+.modal-card-demo {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 28px;
+  width: 100%;
+  max-width: 360px;
+}
+.modal-title-demo { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+.modal-actions-demo { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+/* Note list demo */
+.note-list-demo { list-style: none; border: 1px solid #e0e0e0; background: #fafafa; }
+
+.note-item-demo {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  margin-bottom: 1px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.note-item-demo:hover { background: #f5f5f5; }
+.note-item-demo.active { border-left-color: #111; background: #f0f0f0; font-weight: 600; }
+
+.note-item-title-demo {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-item-date-demo {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Folder tree demo */
+.folder-item-demo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #555;
+  user-select: none;
+  border-left: 2px solid transparent;
+}
+.folder-item-demo:hover { background: #f0f0f0; }
+
+.folder-arrow-demo { font-size: 8px; color: #aaa; flex-shrink: 0; width: 10px; text-align: center; }
+.folder-name-demo { font-weight: 600; color: #444; }
+
+/* Stats bar demo */
+.stats-bar-demo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  background: #fafafa;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: #999;
+  letter-spacing: 0.02em;
+}
+.stats-sep-demo { color: #ddd; }
+
+/* Editor toolbar demo */
+.editor-toolbar-demo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+/* Progress msg demo */
+.progress-msg-demo { font-size: 12px; color: #888; font-style: italic; text-align: center; padding: 8px 0; }
+
+/* Scrollbar note */
+.scrollbar-demo {
+  height: 100px;
+  overflow-y: scroll;
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.8;
+}
+.scrollbar-demo::-webkit-scrollbar { width: 4px; }
+.scrollbar-demo::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-demo::-webkit-scrollbar-thumb { background: #ddd; }
+
+/* Button row */
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ========================================
+   SCROLLBARS (global)
+   ======================================== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; }
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 640px) {
+  .app { display: block; height: auto; overflow: auto; }
+  #sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid #e0e0e0; overflow: visible; }
+  #main-panel { overflow: visible; }
+  .content { padding: 24px 16px 60px; }
+  .panel-toolbar { position: static; }
+  .color-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">slop design system</div>
+      <div class="sidebar-subtitle">v1.1</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Foundation</div>
+      <a class="sidebar-link" href="#colors">Colors</a>
+      <a class="sidebar-link" href="#typography">Typography</a>
+      <a class="sidebar-link" href="#spacing">Spacing</a>
+
+      <div class="sidebar-section-label">Layout</div>
+      <a class="sidebar-link" href="#app-shell">App Shell</a>
+      <a class="sidebar-link" href="#sidebar-pattern">Sidebar</a>
+      <a class="sidebar-link" href="#editor-panel">Editor Panel</a>
+
+      <div class="sidebar-section-label">Components</div>
+      <a class="sidebar-link" href="#buttons">Buttons</a>
+      <a class="sidebar-link" href="#forms">Forms</a>
+      <a class="sidebar-link" href="#overlays">Overlays</a>
+      <a class="sidebar-link" href="#modals">Modals</a>
+      <a class="sidebar-link" href="#note-list">Note List</a>
+      <a class="sidebar-link" href="#folder-tree">Folder Tree</a>
+      <a class="sidebar-link" href="#mode-toggle">Mode Toggle</a>
+      <a class="sidebar-link" href="#stats-bar">Stats Bar</a>
+      <a class="sidebar-link" href="#scrollbars">Scrollbars</a>
+      <a class="sidebar-link" href="#responsive">Responsive</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      slop / design-system
+    </div>
+  </div>
+
+  <!-- MAIN PANEL -->
+  <div id="main-panel">
+    <div class="panel-toolbar">
+      <span class="panel-toolbar-title">Design Reference</span>
+      <span class="panel-toolbar-right">v1.1 &mdash; 2026</span>
+    </div>
+
+    <div class="content">
+
+      <!-- HERO -->
+      <div class="hero">
+        <h1>slop design system</h1>
+        <p>A shared visual language across slop projects. Flat, minimal, monochromatic. No rounded corners. No dark mode. Just clean grays, a single black accent, and tight type.</p>
+        <div class="hero-meta">
+          <span>Version 1.1</span>
+          <span>Light only</span>
+          <span>No radius</span>
+          <span>system-ui 13px</span>
+        </div>
+      </div>
+
+      <!-- ======================================== -->
+      <!-- COLORS -->
+      <!-- ======================================== -->
+      <section class="section" id="colors">
+        <h2 class="section-title">Colors</h2>
+        <p class="section-desc">A strictly monochromatic palette. No accent hues except danger red. All text and UI elements live in the black-to-white range with #ddd as the primary border color.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Primary</div>
+          <div class="color-grid">
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#111;"></div>
+              <div class="color-info">
+                <div class="color-name">Text / Primary</div>
+                <div class="color-value">#111</div>
+                <div class="color-desc">Body text, active borders, primary btn bg</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#fff; border-bottom:1px solid #eee;"></div>
+              <div class="color-info">
+                <div class="color-name">Background</div>
+                <div class="color-value">#fff</div>
+                <div class="color-desc">Page bg, cards, editor panes</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#fafafa;"></div>
+              <div class="color-info">
+                <div class="color-name">Surface 1</div>
+                <div class="color-value">#fafafa</div>
+                <div class="color-desc">Sidebar bg, stats bar bg</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#f5f5f5;"></div>
+              <div class="color-info">
+                <div class="color-name">Surface 2</div>
+                <div class="color-value">#f5f5f5</div>
+                <div class="color-desc">Code bg, btn sidebar hover, active items</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#f0f0f0;"></div>
+              <div class="color-info">
+                <div class="color-name">Surface 3</div>
+                <div class="color-value">#f0f0f0</div>
+                <div class="color-desc">Active note items, folder hover</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#333;"></div>
+              <div class="color-info">
+                <div class="color-name">Primary Hover</div>
+                <div class="color-value">#333</div>
+                <div class="color-desc">Primary button hover state</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Borders &amp; Dividers</div>
+          <div class="color-grid">
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#e0e0e0;"></div>
+              <div class="color-info">
+                <div class="color-name">Border</div>
+                <div class="color-value">#e0e0e0</div>
+                <div class="color-desc">Sidebar border, toolbar separators</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#ddd;"></div>
+              <div class="color-info">
+                <div class="color-name">Border Light</div>
+                <div class="color-value">#ddd</div>
+                <div class="color-desc">Input borders, card borders, scrollbar</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#e8e8e8;"></div>
+              <div class="color-info">
+                <div class="color-name">Border Subtle</div>
+                <div class="color-value">#e8e8e8</div>
+                <div class="color-desc">Code block border</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Text Scale</div>
+          <div class="color-grid">
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#555;"></div>
+              <div class="color-info">
+                <div class="color-name">Secondary</div>
+                <div class="color-value">#555</div>
+                <div class="color-desc">Secondary btn text, sidebar links</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#666;"></div>
+              <div class="color-info">
+                <div class="color-name">Muted</div>
+                <div class="color-value">#666</div>
+                <div class="color-desc">Subtitles, blockquote text</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#888;"></div>
+              <div class="color-info">
+                <div class="color-name">Faint</div>
+                <div class="color-value">#888</div>
+                <div class="color-desc">Progress msgs, status faint</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#999;"></div>
+              <div class="color-info">
+                <div class="color-name">Placeholder</div>
+                <div class="color-value">#999</div>
+                <div class="color-desc">Form labels, sidebar section labels</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#aaa;"></div>
+              <div class="color-info">
+                <div class="color-name">Dim</div>
+                <div class="color-value">#aaa</div>
+                <div class="color-desc">Note dates, empty list hints</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#bbb;"></div>
+              <div class="color-info">
+                <div class="color-name">Ghost</div>
+                <div class="color-value">#bbb</div>
+                <div class="color-desc">Empty state, status label</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#ccc;"></div>
+              <div class="color-info">
+                <div class="color-name">Ghost 2</div>
+                <div class="color-value">#ccc</div>
+                <div class="color-desc">Markdown syntax markers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Danger</div>
+          <div class="color-grid">
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#c00;"></div>
+              <div class="color-info">
+                <div class="color-name">Danger</div>
+                <div class="color-value">#c00</div>
+                <div class="color-desc">Error text, danger btn text</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#f5c0c0;"></div>
+              <div class="color-info">
+                <div class="color-name">Danger Border</div>
+                <div class="color-value">#f5c0c0</div>
+                <div class="color-desc">Error border, danger btn border</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-chip" style="background:#fff8f8; border-bottom:1px solid #eee;"></div>
+              <div class="color-info">
+                <div class="color-name">Danger Surface</div>
+                <div class="color-value">#fff8f8</div>
+                <div class="color-desc">Error message background</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-colors">/* Core palette */
+--color-text:         #111;
+--color-bg:           #fff;
+--color-surface-1:    #fafafa;  /* sidebar, stats bar */
+--color-surface-2:    #f5f5f5;  /* code blocks, hovers */
+--color-surface-3:    #f0f0f0;  /* active items */
+--color-border:       #e0e0e0;  /* layout borders */
+--color-border-light: #ddd;     /* inputs, cards */
+--color-muted:        #999;     /* labels, section titles */
+--color-dim:          #666;     /* subtitles, descriptions */
+--color-faint:        #bbb;     /* empty states */
+
+/* Danger */
+--color-danger:       #c00;
+--color-danger-border:#f5c0c0;
+--color-danger-bg:    #fff8f8;</div>
+        <button class="code-copy" onclick="copyCode('code-colors', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- TYPOGRAPHY -->
+      <!-- ======================================== -->
+      <section class="section" id="typography">
+        <h2 class="section-title">Typography</h2>
+        <p class="section-desc">System font stack at 13px base. Labels are uppercase with letter-spacing. Dates and metadata use Courier New monospace. No web fonts — fast and consistent cross-platform.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Font Stacks</div>
+          <div class="preview">
+            <div class="type-row">
+              <div class="type-meta">
+                <div class="type-label">UI / Body</div>
+                <div class="type-desc">system-ui, -apple-system, sans-serif</div>
+              </div>
+              <div class="type-specimen" style="font-family: system-ui,-apple-system,sans-serif; font-size:13px;">The quick brown fox jumps over the lazy dog</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta">
+                <div class="type-label">Mono</div>
+                <div class="type-desc">'Courier New', monospace</div>
+              </div>
+              <div class="type-specimen" style="font-family:'Courier New',monospace; font-size:12px;">2024-01-15 &nbsp; 142 words &nbsp; 3.2 kb</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Size Scale</div>
+          <div class="preview">
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">10px</div><div class="type-desc">Section labels, status, version</div></div>
+              <div class="type-specimen" style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#999;">SECTION LABEL</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">11px</div><div class="type-desc">Form labels, btn-danger, hints</div></div>
+              <div class="type-specimen" style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#999;">EMAIL ADDRESS</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">12px</div><div class="type-desc">Secondary buttons, note titles, btn-primary</div></div>
+              <div class="type-specimen" style="font-size:12px;">Note title or button label</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">13px</div><div class="type-desc">Body, inputs, empty state</div></div>
+              <div class="type-specimen" style="font-size:13px;">Body copy and input text at base size</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">15px</div><div class="type-desc">Modal titles, editor/preview body</div></div>
+              <div class="type-specimen" style="font-size:15px; font-weight:600;">Modal or editor heading</div>
+            </div>
+            <div class="type-row">
+              <div class="type-meta"><div class="type-label">18px</div><div class="type-desc">Overlay / page title</div></div>
+              <div class="type-specimen" style="font-size:18px; font-weight:600;">Page Title</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Content Typography (Editor / Preview)</div>
+          <div class="preview">
+            <div style="font-family:system-ui,-apple-system,sans-serif; font-size:15px; line-height:1.65; color:#111; max-width:500px;">
+              <div style="font-size:1.55rem; font-weight:700; line-height:1.3; margin-bottom:8px;">Heading 1 &mdash; 1.55rem 700</div>
+              <div style="font-size:1.2rem; font-weight:700; line-height:1.4; margin-bottom:8px;">Heading 2 &mdash; 1.2rem 700</div>
+              <div style="font-size:1rem; font-weight:700; margin-bottom:8px;">Heading 3 &mdash; 1rem 700</div>
+              <p style="margin-bottom:10px;">Body text at 15px, line-height 1.65 for the editor. Comfortable for long-form reading.</p>
+              <blockquote style="border-left:3px solid #ddd; padding-left:12px; color:#666; margin:10px 0;">A blockquote uses a 3px left border in #ddd and #666 text.</blockquote>
+              <p style="margin-bottom:10px;">Inline <code style="font-family:'Courier New',monospace; font-size:0.875em; background:#f5f5f5; border:1px solid #e8e8e8; padding:1px 4px;">code</code> with #f5f5f5 bg and a 1px #e8e8e8 border.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-type">/* Font stacks */
+font-family: system-ui, -apple-system, sans-serif; /* UI */
+font-family: 'Courier New', monospace;              /* meta/mono */
+
+/* Base */
+font-size: 13px;
+line-height: 1.6;
+color: #111;
+
+/* Editor / preview body */
+font-size: 15px;
+line-height: 1.65; /* editor */
+line-height: 1.7;  /* preview */
+
+/* Labels — always uppercase + letter-spacing */
+font-size: 11px;
+font-weight: 600-700;
+text-transform: uppercase;
+letter-spacing: 0.05em – 0.1em;
+color: #999;</div>
+        <button class="code-copy" onclick="copyCode('code-type', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- SPACING -->
+      <!-- ======================================== -->
+      <section class="section" id="spacing">
+        <h2 class="section-title">Spacing</h2>
+        <p class="section-desc">Compact spacing. Common values: 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40px. No CSS custom properties required — use pixel values directly.</p>
+
+        <div class="preview">
+          <div class="spacing-grid">
+            <div class="spacing-row">
+              <div class="spacing-meta">4px &mdash; tight</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:4px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">6px &mdash; compact</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:6px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">8px &mdash; small</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:8px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">10px &mdash; base</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:10px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">12px &mdash; medium</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:12px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">16px &mdash; comfortable</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:16px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">20px &mdash; section gap</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:20px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">28px &mdash; card padding</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:28px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">32px &mdash; overlay padding</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:32px;"></div></div>
+            </div>
+            <div class="spacing-row">
+              <div class="spacing-meta">40px &mdash; editor top pad</div>
+              <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:40px;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection" style="margin-top:20px;">
+          <div class="subsection-title">No Border Radius</div>
+          <p class="section-desc">All elements are sharp-cornered. <code style="font-family:'Courier New',monospace; font-size:0.875em; background:#f5f5f5; border:1px solid #e8e8e8; padding:1px 4px;">border-radius</code> is never used. Cards, inputs, buttons, modals — all square.</p>
+        </div>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- APP SHELL -->
+      <!-- ======================================== -->
+      <section class="section" id="app-shell">
+        <h2 class="section-title">App Shell</h2>
+        <p class="section-desc">The standard layout is a flex row filling 100vh. The sidebar is a fixed 220px column; the editor panel takes the remaining space. Both panels manage their own scroll.</p>
+
+        <div class="preview preview-dark" style="padding:0; min-height:160px; position:relative; overflow:hidden;">
+          <div style="display:flex; height:160px;">
+            <div style="width:120px; flex-shrink:0; background:#fafafa; border-right:1px solid #e0e0e0; display:flex; flex-direction:column;">
+              <div style="padding:8px; border-bottom:1px solid #e0e0e0;">
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#999;">slop app</div>
+              </div>
+              <div style="padding:4px 0; flex:1;">
+                <div style="padding:4px 8px; font-size:9px; color:#555; border-left:2px solid #111; background:#f0f0f0; font-weight:600;">Note 1</div>
+                <div style="padding:4px 8px; font-size:9px; color:#555;">Note 2</div>
+                <div style="padding:4px 8px; font-size:9px; color:#555;">Note 3</div>
+              </div>
+              <div style="padding:6px 8px; border-top:1px solid #e0e0e0; font-size:8px; font-family:'Courier New',monospace; color:#bbb;">footer</div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column;">
+              <div style="padding:5px 10px; border-bottom:1px solid #e0e0e0; display:flex; align-items:center; gap:6px;">
+                <div style="display:inline-flex; border:1px solid #ddd;">
+                  <div style="padding:2px 7px; font-size:8px; font-weight:700; text-transform:uppercase; background:#111; color:#fff;">Edit</div>
+                  <div style="padding:2px 7px; font-size:8px; font-weight:700; text-transform:uppercase; color:#999; border-left:1px solid #ddd;">Preview</div>
+                </div>
+                <div style="margin-left:auto; font-size:8px; font-weight:700; text-transform:uppercase; color:#bbb; font-family:'Courier New',monospace;">Saved</div>
+              </div>
+              <div style="flex:1; padding:12px 16px; font-size:10px; color:#666; line-height:1.6;">
+                Editor content area&hellip;
+              </div>
+              <div style="padding:3px 10px; border-top:1px solid #e0e0e0; background:#fafafa; font-size:9px; font-family:'Courier New',monospace; color:#999; display:flex; gap:6px;">
+                <span>142 words</span><span style="color:#ddd;">|</span><span>3.2 kb</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-appshell">/* App shell */
+.app { display: flex; height: 100vh; }
+
+/* Sidebar */
+#sidebar {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+/* Editor panel */
+#editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Prevent iOS overflow on body */
+html, body { height: 100%; overflow: hidden; }</div>
+        <button class="code-copy" onclick="copyCode('code-appshell', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- SIDEBAR PATTERN -->
+      <!-- ======================================== -->
+      <section class="section" id="sidebar-pattern">
+        <h2 class="section-title">Sidebar</h2>
+        <p class="section-desc">220px fixed-width column with #fafafa background. Header, scrollable content area, and footer separated by 1px #e0e0e0 borders. Action buttons stack in the sidebar-actions area.</p>
+
+        <div class="preview preview-dark" style="padding:0;">
+          <div style="display:flex; height:280px;">
+            <div style="width:180px; background:#fafafa; border-right:1px solid #e0e0e0; display:flex; flex-direction:column;">
+              <div style="padding:12px; border-bottom:1px solid #e0e0e0;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#999;">My Notes</div>
+              </div>
+              <div style="padding:8px; border-bottom:1px solid #e0e0e0; display:flex; flex-direction:column; gap:4px;">
+                <button class="btn-sidebar-demo" style="font-size:11px; padding:5px 7px;">+ New Note</button>
+                <button class="btn-sidebar-demo" style="font-size:11px; padding:5px 7px; color:#777;">&#128274; Lock</button>
+              </div>
+              <ul style="list-style:none; flex:1; overflow-y:auto; padding:4px;">
+                <li class="note-item-demo active">
+                  <span class="note-item-title-demo">Meeting notes</span>
+                  <span class="note-item-date-demo">2024-01-15</span>
+                </li>
+                <li class="note-item-demo">
+                  <span class="note-item-title-demo">Project ideas</span>
+                  <span class="note-item-date-demo">2024-01-12</span>
+                </li>
+                <li class="note-item-demo">
+                  <span class="note-item-title-demo">Weekly review</span>
+                  <span class="note-item-date-demo">2024-01-08</span>
+                </li>
+              </ul>
+              <div style="padding:8px; border-top:1px solid #e0e0e0; display:flex; flex-direction:column; gap:4px;">
+                <button class="btn-sidebar-demo" style="font-size:11px; padding:5px 7px; color:#777;">Settings</button>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px;">
+              editor panel
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-sidebar">/* Sidebar structure */
+.sidebar-header { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+.sidebar-title {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: #999;
+}
+.sidebar-actions { padding: 8px; border-bottom: 1px solid #e0e0e0; }
+.note-list { list-style: none; flex: 1; overflow-y: auto; padding: 4px; }
+.note-list-empty { padding: 12px 8px; font-size: 12px; color: #aaa; }
+.sidebar-footer {
+  padding: 8px; border-top: 1px solid #e0e0e0;
+  display: flex; flex-direction: column; gap: 4px;
+}</div>
+        <button class="code-copy" onclick="copyCode('code-sidebar', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- EDITOR PANEL -->
+      <!-- ======================================== -->
+      <section class="section" id="editor-panel">
+        <h2 class="section-title">Editor Panel</h2>
+        <p class="section-desc">The main content area. Contains a toolbar, a pane switcher, content panes, and an optional stats bar. Scrolling is managed per-pane, not on the panel itself.</p>
+
+        <div class="preview" style="padding:0; border-color:#ddd;">
+          <div class="editor-toolbar-demo">
+            <button class="btn-back-demo">&#8592; Back</button>
+            <div class="mode-toggle-demo">
+              <button class="mode-btn-demo active">Edit</button>
+              <button class="mode-btn-demo">Preview</button>
+            </div>
+            <button style="padding:3px 8px; background:transparent; border:1px solid #e0e0e0; font-size:11px; font-family:'Courier New',monospace; color:#888; cursor:pointer;">/inbox</button>
+            <span style="margin-left:auto; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#bbb; font-family:'Courier New',monospace;">Saved</span>
+          </div>
+          <div style="padding:20px 24px; font-size:15px; line-height:1.65; color:#111; min-height:80px;">
+            Editor content&hellip;
+          </div>
+        </div>
+        <div class="stats-bar-demo">
+          <span>142 words</span>
+          <span class="stats-sep-demo">|</span>
+          <span>3.2 kb</span>
+          <span class="stats-sep-demo">|</span>
+          <span>7 lines</span>
+        </div>
+
+        <div class="code-block" id="code-editor" style="margin-top:12px;">/* Editor panel */
+#editor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; color: #bbb; font-size: 13px; gap: 6px;
+}
+.note-editor { display: flex; flex-direction: column; height: 100%; }
+
+/* Toolbar */
+.editor-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+}
+
+/* Panes */
+.editor-panes { flex: 1; overflow: hidden; position: relative; }
+.editor-pane { position: absolute; inset: 0; overflow-y: auto; background: #fff; }
+
+/* Editor textarea (contenteditable div) */
+#note-textarea {
+  display: block; width: 100%; min-height: 100%;
+  max-width: 700px; margin: 0 auto; padding: 40px 32px;
+  outline: none; background: transparent;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px; line-height: 1.65; color: #111;
+}
+
+/* Preview */
+.note-preview {
+  max-width: 700px; margin: 0 auto; padding: 40px 32px;
+  font-size: 15px; line-height: 1.7; color: #111;
+}
+
+/* Status */
+#note-status {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;
+}
+.note-status.unsaved { color: #111; }</div>
+        <button class="code-copy" onclick="copyCode('code-editor', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- BUTTONS -->
+      <!-- ======================================== -->
+      <section class="section" id="buttons">
+        <h2 class="section-title">Buttons</h2>
+        <p class="section-desc">All buttons are square (no border-radius). Three semantic variants plus sidebar and navigation helpers. No icon-only buttons — labels are always text.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Primary</div>
+          <p class="section-desc">Black background, white text. Full-width in forms. Uppercase 12px with tight letter-spacing.</p>
+          <div class="preview">
+            <div class="btn-row">
+              <button class="btn-primary" style="display:inline-block; width:auto; margin-top:0;">Save Note</button>
+              <button class="btn-primary" style="display:inline-block; width:auto; margin-top:0;" disabled>Disabled</button>
+            </div>
+            <div style="max-width:200px; margin-top:12px;">
+              <button class="btn-primary block">Full-Width Button</button>
+            </div>
+          </div>
+          <div class="code-block" id="code-btn-primary">.btn-primary {
+  display: block; width: 100%; padding: 8px;
+  background: #111; color: #fff; border: 1px solid #111;
+  font-size: 12px; font-family: inherit; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  cursor: pointer; margin-top: 6px;
+}
+.btn-primary:hover:not(:disabled) { background: #333; border-color: #333; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }</div>
+          <button class="code-copy" onclick="copyCode('code-btn-primary', this)">Copy</button>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Secondary Outline</div>
+          <p class="section-desc">White bg, light border. Used for secondary actions alongside a primary button.</p>
+          <div class="preview">
+            <div class="btn-row">
+              <button class="btn-secondary-outline">Cancel</button>
+              <button class="btn-secondary-outline">Export</button>
+            </div>
+          </div>
+          <div class="code-block" id="code-btn-secondary">.btn-secondary-outline {
+  padding: 6px 14px; background: #fff; border: 1px solid #ddd;
+  font-size: 12px; font-family: inherit; color: #555; cursor: pointer;
+}
+.btn-secondary-outline:hover { border-color: #999; color: #111; }</div>
+          <button class="code-copy" onclick="copyCode('code-btn-secondary', this)">Copy</button>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Danger</div>
+          <p class="section-desc">Transparent bg with red border. Small, used for destructive actions like delete.</p>
+          <div class="preview">
+            <div class="btn-row">
+              <button class="btn-danger">Delete</button>
+              <button class="btn-danger">Remove</button>
+            </div>
+          </div>
+          <div class="code-block" id="code-btn-danger">.btn-danger {
+  padding: 4px 10px; background: transparent;
+  border: 1px solid #f5c0c0; color: #c00;
+  font-size: 11px; font-family: inherit;
+  text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
+}
+.btn-danger:hover { background: #fff8f8; }</div>
+          <button class="code-copy" onclick="copyCode('code-btn-danger', this)">Copy</button>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Sidebar Button</div>
+          <p class="section-desc">Full-width, left-aligned. Used for actions in the sidebar actions area.</p>
+          <div class="preview" style="max-width:200px;">
+            <button class="btn-sidebar-demo">+ New Note</button>
+            <div style="height:4px;"></div>
+            <button class="btn-sidebar-demo" style="color:#777;">&#128274; Lock</button>
+          </div>
+          <div class="code-block" id="code-btn-sidebar">.btn-sidebar {
+  display: block; width: 100%; padding: 6px 8px;
+  background: #fff; border: 1px solid #ddd;
+  font-size: 12px; font-family: inherit; color: #111;
+  cursor: pointer; text-align: left;
+}
+.btn-sidebar:hover { background: #f5f5f5; }
+.btn-secondary, .btn-lock { color: #777; }</div>
+          <button class="code-copy" onclick="copyCode('code-btn-sidebar', this)">Copy</button>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Back Button</div>
+          <p class="section-desc">Hidden on desktop. Shown in mobile view to navigate back to the sidebar. Lives in the editor toolbar.</p>
+          <div class="preview">
+            <button class="btn-back-demo">&#8592; Back</button>
+          </div>
+          <div class="code-block" id="code-btn-back">.btn-back {
+  display: none; padding: 3px 8px;
+  background: transparent; border: 1px solid #ddd;
+  font-size: 11px; font-family: inherit; font-weight: 600;
+  color: #555; cursor: pointer; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+}
+.btn-back:hover { border-color: #999; color: #111; }
+
+@media (max-width: 640px) {
+  .btn-back { display: block; }
+}</div>
+          <button class="code-copy" onclick="copyCode('code-btn-back', this)">Copy</button>
+        </div>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- FORMS -->
+      <!-- ======================================== -->
+      <section class="section" id="forms">
+        <h2 class="section-title">Forms</h2>
+        <p class="section-desc">Compact form fields with uppercase labels. Inputs are full-width within their container, 1px #ddd border, focus state switches to #111. No border-radius.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Form Group</div>
+          <div class="preview" style="max-width:320px;">
+            <div class="form-group-demo">
+              <label>Email Address</label>
+              <input type="text" placeholder="hello@example.com">
+            </div>
+            <div class="form-group-demo">
+              <label>Password</label>
+              <input type="password" placeholder="••••••••">
+            </div>
+            <div class="error-msg-demo">Invalid email or password.</div>
+            <button class="btn-primary">Sign In</button>
+          </div>
+          <div class="code-block" id="code-forms">.form-group { margin-bottom: 12px; }
+
+.form-group label {
+  display: block; font-size: 11px; color: #999;
+  margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.form-group input {
+  width: 100%; padding: 7px 9px; border: 1px solid #ddd;
+  font-size: 13px; font-family: inherit; color: #111; outline: none;
+}
+.form-group input:focus { border-color: #111; }
+
+.error-msg {
+  font-size: 12px; color: #c00;
+  border: 1px solid #f5c0c0; background: #fff8f8;
+  padding: 6px 10px; margin-bottom: 10px;
+}</div>
+          <button class="code-copy" onclick="copyCode('code-forms', this)">Copy</button>
+        </div>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- OVERLAYS -->
+      <!-- ======================================== -->
+      <section class="section" id="overlays">
+        <h2 class="section-title">Overlays</h2>
+        <p class="section-desc">Full-screen white overlay used for login / unlock screens. Centered card on desktop. On mobile (&le;640px), the card appears as a bottom sheet.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Overlay Card</div>
+          <div class="overlay-demo">
+            <div class="overlay-card-demo">
+              <div class="diary-title-demo">My Diary</div>
+              <div class="overlay-subtitle-demo">Enter your passphrase to continue</div>
+              <div class="form-group-demo">
+                <label>Passphrase</label>
+                <input type="password" placeholder="••••••••">
+              </div>
+              <button class="btn-primary">Unlock</button>
+            </div>
+          </div>
+          <div class="code-block" id="code-overlay">.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+}
+.overlay-card { width: 340px; padding: 32px; border: 1px solid #ddd; }
+.diary-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.overlay-subtitle { color: #666; margin-bottom: 20px; font-size: 12px; }
+
+/* Mobile — bottom sheet */
+@media (max-width: 640px) {
+  .overlay { align-items: flex-end; }
+  .overlay-card {
+    width: 100%; border-left: none; border-right: none; border-bottom: none;
+    padding: 28px 20px 40px;
+  }
+}</div>
+          <button class="code-copy" onclick="copyCode('code-overlay', this)">Copy</button>
+        </div>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- MODALS -->
+      <!-- ======================================== -->
+      <section class="section" id="modals">
+        <h2 class="section-title">Modals</h2>
+        <p class="section-desc">25% opaque black scrim over content. White card, 1px #ddd border, no border-radius. Confirm/cancel actions right-aligned in the footer.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">Modal Card</div>
+          <div class="preview preview-dark" style="display:flex; align-items:center; justify-content:center; min-height:200px;">
+            <div class="modal-card-demo">
+              <div class="modal-title-demo">Move to folder</div>
+              <div class="form-group-demo">
+                <label>Folder path</label>
+                <input type="text" placeholder="/inbox">
+              </div>
+              <div style="font-size:11px; color:#999; margin-bottom:12px;">Use <code style="font-family:'Courier New',monospace; background:#f5f5f5; padding:1px 3px;">/</code> to create subfolders</div>
+              <div class="progress-msg-demo">Moving note&hellip;</div>
+              <div class="modal-actions-demo">
+                <button class="btn-secondary-outline">Cancel</button>
+                <button class="btn-primary" style="display:inline-block; width:auto; margin-top:0;">Move</button>
+              </div>
+            </div>
+          </div>
+          <div class="code-block" id="code-modal">.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.25);
+}
+.modal-card { background: #fff; border: 1px solid #ddd; padding: 28px; width: 360px; }
+.modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.modal-actions .btn-primary { width: auto; margin-top: 0; }
+.progress-msg { font-size: 12px; color: #888; font-style: italic; margin-bottom: 8px; text-align: center; }
+.modal-hint { font-size: 11px; color: #999; margin-bottom: 12px; }
+.modal-hint code { font-family: 'Courier New', monospace; background: #f5f5f5; padding: 1px 3px; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .modal-card { width: calc(100% - 24px); padding: 24px 20px; }
+}</div>
+          <button class="code-copy" onclick="copyCode('code-modal', this)">Copy</button>
+        </div>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- NOTE LIST -->
+      <!-- ======================================== -->
+      <section class="section" id="note-list">
+        <h2 class="section-title">Note List</h2>
+        <p class="section-desc">Sidebar list of notes. Active item gets a 2px black left border and #f0f0f0 background. Each item shows a title and a monospace date.</p>
+
+        <div class="preview" style="padding:0; max-width:280px;">
+          <ul class="note-list-demo">
+            <li class="note-item-demo active">
+              <span class="note-item-title-demo">Weekly standup notes</span>
+              <span class="note-item-date-demo">2024-01-15</span>
+            </li>
+            <li class="note-item-demo">
+              <span class="note-item-title-demo">Project ideas &amp; sketches</span>
+              <span class="note-item-date-demo">2024-01-12</span>
+            </li>
+            <li class="note-item-demo">
+              <span class="note-item-title-demo">Quarterly review draft</span>
+              <span class="note-item-date-demo">2024-01-08</span>
+            </li>
+            <li class="note-item-demo" style="color:#aaa; font-size:12px; padding:12px 8px;">No more notes</li>
+          </ul>
+        </div>
+
+        <div class="code-block" id="code-notelist" style="margin-top:12px;">.note-list { list-style: none; flex: 1; overflow-y: auto; padding: 4px; }
+.note-list-empty { padding: 12px 8px; font-size: 12px; color: #aaa; }
+
+.note-item {
+  padding: 6px 8px; cursor: pointer;
+  border-left: 2px solid transparent; margin-bottom: 1px;
+}
+.note-item:hover { background: #f5f5f5; }
+.note-item.active { border-left-color: #111; background: #f0f0f0; font-weight: 600; }
+
+.note-item-title {
+  display: block; font-size: 12px; font-weight: 500; color: #111;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.note-item-date {
+  display: block; font-family: 'Courier New', monospace;
+  font-size: 10px; color: #aaa; margin-top: 2px;
+}
+
+/* Mobile larger touch targets */
+@media (max-width: 640px) {
+  .note-item { padding: 11px 8px; }
+}</div>
+        <button class="code-copy" onclick="copyCode('code-notelist', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- FOLDER TREE -->
+      <!-- ======================================== -->
+      <section class="section" id="folder-tree">
+        <h2 class="section-title">Folder Tree</h2>
+        <p class="section-desc">Collapsible folder navigation inside the sidebar. Arrow indicator, bold folder name. Indented to show hierarchy.</p>
+
+        <div class="preview" style="padding:0; max-width:240px;">
+          <div class="folder-item-demo">
+            <span class="folder-arrow-demo">▼</span>
+            <span class="folder-name-demo">inbox</span>
+          </div>
+          <div class="folder-item-demo" style="padding-left:20px;">
+            <span class="folder-arrow-demo">▶</span>
+            <span class="folder-name-demo">work</span>
+          </div>
+          <div class="folder-item-demo" style="padding-left:20px;">
+            <span class="folder-arrow-demo">&nbsp;</span>
+            <span class="folder-name-demo" style="font-weight:400; color:#555;">personal</span>
+          </div>
+          <div class="folder-item-demo">
+            <span class="folder-arrow-demo">▶</span>
+            <span class="folder-name-demo">archive</span>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-folder" style="margin-top:12px;">.folder-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 8px; cursor: pointer; font-size: 12px;
+  color: #555; user-select: none; border-left: 2px solid transparent;
+}
+.folder-item:hover { background: #f0f0f0; }
+.folder-arrow { font-size: 8px; color: #aaa; flex-shrink: 0; width: 10px; text-align: center; }
+.folder-name { font-weight: 600; color: #444; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }</div>
+        <button class="code-copy" onclick="copyCode('code-folder', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- MODE TOGGLE -->
+      <!-- ======================================== -->
+      <section class="section" id="mode-toggle">
+        <h2 class="section-title">Mode Toggle</h2>
+        <p class="section-desc">Segmented control for switching between edit and preview modes. Joined border group. Active segment is black/white inverted.</p>
+
+        <div class="preview">
+          <div class="btn-row">
+            <div class="mode-toggle-demo">
+              <button class="mode-btn-demo active" onclick="setMode(this)">Edit</button>
+              <button class="mode-btn-demo" onclick="setMode(this)">Preview</button>
+            </div>
+            <div class="mode-toggle-demo">
+              <button class="mode-btn-demo active" onclick="setMode(this)">Write</button>
+              <button class="mode-btn-demo" onclick="setMode(this)">Read</button>
+              <button class="mode-btn-demo" onclick="setMode(this)">Split</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-modetoggle">.mode-toggle { display: flex; border: 1px solid #ddd; }
+
+.mode-btn {
+  padding: 3px 10px; border: none; background: transparent;
+  font-size: 11px; font-family: inherit; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: #999; cursor: pointer;
+}
+.mode-btn + .mode-btn { border-left: 1px solid #ddd; }
+.mode-btn.active { background: #111; color: #fff; }</div>
+        <button class="code-copy" onclick="copyCode('code-modetoggle', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- STATS BAR -->
+      <!-- ======================================== -->
+      <section class="section" id="stats-bar">
+        <h2 class="section-title">Stats Bar</h2>
+        <p class="section-desc">Compact status footer at the bottom of the editor. Monospace font, #fafafa background, pipe-separated values.</p>
+
+        <div class="preview" style="padding:0;">
+          <div style="padding:16px 12px; font-size:13px; color:#aaa;">Editor content area</div>
+          <div class="stats-bar-demo">
+            <span>142 words</span>
+            <span class="stats-sep-demo">|</span>
+            <span>874 chars</span>
+            <span class="stats-sep-demo">|</span>
+            <span>3.2 kb</span>
+            <span class="stats-sep-demo">|</span>
+            <span>7 lines</span>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-stats" style="margin-top:12px;">.editor-stats {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-top: 1px solid #e0e0e0;
+  background: #fafafa; flex-shrink: 0;
+  font-size: 11px; font-family: 'Courier New', monospace;
+  color: #999; letter-spacing: 0.02em;
+}
+.stats-sep { color: #ddd; }</div>
+        <button class="code-copy" onclick="copyCode('code-stats', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- SCROLLBARS -->
+      <!-- ======================================== -->
+      <section class="section" id="scrollbars">
+        <h2 class="section-title">Scrollbars</h2>
+        <p class="section-desc">4px-wide scrollbars, transparent track, #ddd thumb. Applied globally. Appears only in WebKit/Blink browsers; Firefox shows native slim scrollbars.</p>
+
+        <div class="preview">
+          <div class="scrollbar-demo">
+            <p>Scroll me to see the custom scrollbar.</p>
+            <p>Line 2 of scrollable content</p>
+            <p>Line 3 of scrollable content</p>
+            <p>Line 4 of scrollable content</p>
+            <p>Line 5 of scrollable content</p>
+            <p>Line 6 of scrollable content</p>
+            <p>Line 7 of scrollable content</p>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-scroll">::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; }</div>
+        <button class="code-copy" onclick="copyCode('code-scroll', this)">Copy</button>
+      </section>
+
+      <!-- ======================================== -->
+      <!-- RESPONSIVE -->
+      <!-- ======================================== -->
+      <section class="section" id="responsive">
+        <h2 class="section-title">Responsive</h2>
+        <p class="section-desc">Single breakpoint at 640px. On mobile, the sidebar and editor panel are never both visible — the sidebar fills the screen, and the editor overlays it when a note is open. Overlays become bottom sheets. Inputs grow to 16px to prevent iOS auto-zoom.</p>
+
+        <div class="subsection">
+          <div class="subsection-title">640px Breakpoint Rules</div>
+          <div class="preview">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="border-bottom:1px solid #e0e0e0;">
+                  <th style="text-align:left; padding:6px 0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#999;">Element</th>
+                  <th style="text-align:left; padding:6px 0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#999;">Desktop</th>
+                  <th style="text-align:left; padding:6px 0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#999;">Mobile (&le;640px)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">#sidebar</td>
+                  <td style="padding:7px 0; color:#555;">220px fixed</td>
+                  <td style="padding:7px 0; color:#555;">100% width</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">#editor-panel</td>
+                  <td style="padding:7px 0; color:#555;">flex:1, always visible</td>
+                  <td style="padding:7px 0; color:#555;">Hidden unless .mobile-note-open</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">.btn-back</td>
+                  <td style="padding:7px 0; color:#555;">display:none</td>
+                  <td style="padding:7px 0; color:#555;">display:block</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">.overlay-card</td>
+                  <td style="padding:7px 0; color:#555;">Centered, 340px</td>
+                  <td style="padding:7px 0; color:#555;">Bottom sheet, full-width</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">.modal-card</td>
+                  <td style="padding:7px 0; color:#555;">360px centered</td>
+                  <td style="padding:7px 0; color:#555;">calc(100% - 24px)</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">input font-size</td>
+                  <td style="padding:7px 0; color:#555;">13px</td>
+                  <td style="padding:7px 0; color:#555;">16px (no iOS zoom)</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <td style="padding:7px 0; color:#555;">.note-item</td>
+                  <td style="padding:7px 0; color:#555;">padding: 6px 8px</td>
+                  <td style="padding:7px 0; color:#555;">padding: 11px 8px</td>
+                </tr>
+                <tr>
+                  <td style="padding:7px 0; color:#555;">Editor padding</td>
+                  <td style="padding:7px 0; color:#555;">40px 32px</td>
+                  <td style="padding:7px 0; color:#555;">20px 16px</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="code-block" id="code-responsive">@media (max-width: 640px) {
+  /* Sidebar fills the viewport */
+  #sidebar { width: 100%; min-width: unset; border-right: none; }
+
+  /* One panel visible at a time */
+  .app:not(.mobile-note-open) #editor-panel { display: none; }
+  .app.mobile-note-open #sidebar { display: none; }
+
+  /* Back button */
+  .btn-back { display: block; }
+
+  /* Overlays as bottom sheets */
+  .overlay { align-items: flex-end; }
+  .overlay-card {
+    width: 100%; border-left: none; border-right: none; border-bottom: none;
+    padding: 28px 20px 40px;
+  }
+
+  /* Modal */
+  .modal-card { width: calc(100% - 24px); padding: 24px 20px; }
+
+  /* Prevent iOS auto-zoom on input focus */
+  .form-group input { font-size: 16px; }
+
+  /* Larger touch targets */
+  .note-item { padding: 11px 8px; }
+  .btn-sidebar { padding: 11px 8px; font-size: 13px; }
+  .btn-primary { padding: 13px; font-size: 13px; }
+
+  /* Comfortable editor padding */
+  #note-textarea { padding: 20px 16px; font-size: 16px; }
+  .note-preview { padding: 20px 16px; font-size: 16px; }
+}</div>
+        <button class="code-copy" onclick="copyCode('code-responsive', this)">Copy</button>
+      </section>
+
+    </div><!-- /content -->
+  </div><!-- /main-panel -->
+</div><!-- /app -->
+
+<script>
+// Active sidebar link highlighting
+const links = document.querySelectorAll('.sidebar-link');
+const sections = document.querySelectorAll('.section');
+const panel = document.getElementById('main-panel');
+
+function updateActive() {
+  let current = '';
+  sections.forEach(s => {
+    const top = s.offsetTop - 80;
+    if (panel.scrollTop >= top) current = s.id;
+  });
+  links.forEach(l => {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+  });
+}
+
+panel.addEventListener('scroll', updateActive);
+updateActive();
+
+// Mode toggle demo
+function setMode(btn) {
+  const group = btn.closest('.mode-toggle-demo');
+  group.querySelectorAll('.mode-btn-demo').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Copy code
+function copyCode(id, btn) {
+  const text = document.getElementById(id).innerText
+    .replace(/^Copy$/m, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+</script>
+</body>
+</html>
