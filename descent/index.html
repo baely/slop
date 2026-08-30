@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>DESCENT — an idle expedition</title>
+<meta name="description" content="An idle deep-sea expedition. Sink. Observe. Resurface. Repeat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@600;700;900&family=Fraunces:ital,opsz,wght@1,9..144,300..500&family=Spline+Sans+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%23021019'/><circle cx='50' cy='58' r='7' fill='%235ff2d6'/></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="ocean">
+  <div id="rays"></div>
+  <canvas id="snow"></canvas>
+  <div id="creatures"></div>
+  <div id="pings"></div>
+</div>
+
+<main id="hud">
+  <div id="gauge">
+    <div id="depth">0<span class="unit">m</span></div>
+    <div id="zoneline"><span id="zone">SUNLIT ZONE</span><span id="status">descending · 1.2 m/s</span></div>
+  </div>
+</main>
+
+<aside id="panel">
+  <div id="research"><span id="res-amt">0</span><span id="res-rate">+0.2/s</span></div>
+  <div id="upgrades"></div>
+</aside>
+
+<nav id="dock">
+  <button id="btn-log">log</button>
+  <button id="btn-dock">dry dock</button>
+  <button id="btn-surface" disabled>resurface</button>
+  <button id="btn-sound" aria-label="toggle sound">◌</button>
+</nav>
+
+<div id="toasts"></div>
+
+<div id="modal" class="hidden">
+  <div id="modal-card">
+    <button id="modal-close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<svg id="defs" width="0" height="0" aria-hidden="true"><defs id="shape-defs"></defs></svg>
+
+<script src="creatures.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
