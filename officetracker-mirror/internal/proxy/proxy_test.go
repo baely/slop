@@ -112,6 +112,42 @@ func TestMetaEndpoint(t *testing.T) {
 	}
 }
 
+func TestCORSHeaders(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Upstream sends its own (restrictive) CORS policy, which we must override.
+		w.Header().Set("Access-Control-Allow-Origin", "https://officetracker.com.au")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer upstream.Close()
+	u, _ := url.Parse(upstream.URL)
+	h := New(Config{Upstream: u, Token: "t"})
+
+	// Proxied GET: upstream's origin is replaced with the wildcard (exactly once).
+	resp := do(t, h, http.MethodGet, "/api/v1/state/2026")
+	if vals := resp.Header.Values("Access-Control-Allow-Origin"); len(vals) != 1 || vals[0] != "*" {
+		t.Errorf("proxied Access-Control-Allow-Origin = %v, want [*]", vals)
+	}
+
+	// Preflight: 204 with the allowed methods advertised.
+	pre := do(t, h, http.MethodOptions, "/api/v1/state/2026")
+	if pre.StatusCode != http.StatusNoContent {
+		t.Errorf("OPTIONS status = %d, want 204", pre.StatusCode)
+	}
+	if got := pre.Header.Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Errorf("OPTIONS Access-Control-Allow-Origin = %q, want *", got)
+	}
+	if got := pre.Header.Get("Access-Control-Allow-Methods"); !strings.Contains(got, "GET") {
+		t.Errorf("OPTIONS Access-Control-Allow-Methods = %q, want GET listed", got)
+	}
+
+	// Local meta endpoint also carries CORS.
+	meta := do(t, h, http.MethodGet, "/api/v1/meta")
+	if got := meta.Header.Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Errorf("meta Access-Control-Allow-Origin = %q, want *", got)
+	}
+}
+
 func TestReadPathsAllowed(t *testing.T) {
 	for _, p := range []string{"/", "/2026-06", "/settings", "/api/v1/state/2026", "/api/v1/note/2026", "/api/v1/settings/", "/static/themes.css"} {
 		if isDenied(p) {
