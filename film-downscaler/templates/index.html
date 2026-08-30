@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Film Downscaler</title>
+<style>
+  :root {
+    --bg: #0f0f10;
+    --panel: #18181b;
+    --line: #2a2a2e;
+    --fg: #ededed;
+    --muted: #8a8a90;
+    --accent: #e8c468;
+    --accent-fg: #1a1a1a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .dir { color: var(--muted); font-size: 12px; word-break: break-all; margin-bottom: 36px; }
+
+  .field { margin-bottom: 28px; }
+  .field > label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+
+  .seg { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .seg button {
+    flex: 1; border: 0; background: transparent; color: var(--muted);
+    padding: 9px 8px; border-radius: 7px; font-size: 13px; cursor: pointer; transition: .12s;
+  }
+  .seg button.on { background: var(--fg); color: var(--bg); font-weight: 600; }
+
+  .row { display: flex; align-items: center; gap: 14px; }
+  input[type=number] {
+    width: 110px; background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+    border-radius: 9px; padding: 10px 12px; font-size: 15px; font-variant-numeric: tabular-nums;
+  }
+  .unit { color: var(--muted); font-size: 13px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .qval { width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Rolls */
+  .rollbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .rollbar .mini {
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+    font-size: 12px; padding: 6px 11px; border-radius: 8px; cursor: pointer;
+  }
+  .rollbar .mini:hover { border-color: var(--muted); }
+  .selnote { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+  .batch { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
+  .roll { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin-bottom: 8px; transition: opacity .12s; }
+  .roll.off { opacity: .42; }
+  .rollhead { display: flex; align-items: center; gap: 11px; cursor: pointer; user-select: none; }
+  .rollhead input { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
+  .rollname { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag { font-size: 10px; color: var(--accent); border: 1px solid var(--accent); border-radius: 5px; padding: 0 5px; flex: 0 0 auto; opacity: .85; }
+  .rollcount { color: var(--muted); font-size: 12px; margin-left: auto; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .thumbs { display: flex; gap: 6px; margin-top: 11px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .thumbs img, .thumbs .ph {
+    height: 62px; width: 93px; border-radius: 5px; flex: 0 0 auto; object-fit: cover;
+    background: var(--line); border: 0; display: block;
+  }
+  .thumbs img { opacity: 0; transition: opacity .25s; }
+  .thumbs img.loaded { opacity: 1; }
+
+  .estimate {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px; margin: 8px 0 28px;
+  }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+  .stat .k { color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+  .stat .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .stat .v small { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .bar { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 18px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+  .barnote { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .loading { color: var(--muted); font-size: 13px; }
+
+  button.go {
+    width: 100%; border: 0; background: var(--accent); color: var(--accent-fg);
+    font-size: 15px; font-weight: 600; padding: 14px; border-radius: 11px; cursor: pointer;
+  }
+  button.go:disabled { opacity: .5; cursor: default; }
+
+  .export { margin-top: 22px; display: none; }
+  .export.show { display: block; }
+  .pbar { height: 8px; background: var(--line); border-radius: 5px; overflow: hidden; }
+  .pbar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  .pnote { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  a.dl {
+    display: inline-block; margin-top: 14px; background: var(--fg); color: var(--bg);
+    text-decoration: none; font-weight: 600; font-size: 14px; padding: 11px 16px; border-radius: 10px;
+  }
+  .path { font-size: 12px; color: var(--muted); margin-top: 10px; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Film Downscaler</h1>
+  <div class="dir">{{ film_dir }}</div>
+
+  <div class="field">
+    <label>Downscale by</label>
+    <div class="seg" id="seg">
+      <button data-mode="longest" class="on">Longest edge</button>
+      <button data-mode="width">Max width</button>
+      <button data-mode="percent">Percentage</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label id="valLabel">Maximum longest edge</label>
+    <div class="row">
+      <input type="number" id="value" value="2000" min="1" step="50">
+      <span class="unit" id="unit">px</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>JPEG quality</label>
+    <div class="row">
+      <input type="range" id="quality" min="1" max="100" value="85">
+      <span class="qval" id="qval">85</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Rolls</label>
+    <div class="rollbar">
+      <button class="mini" data-act="all">Select all</button>
+      <button class="mini" data-act="none">None</button>
+      <button class="mini" data-act="noresized">Exclude resized</button>
+      <span class="selnote" id="selnote">Loading…</span>
+    </div>
+    <div id="rolls"></div>
+  </div>
+
+  <div class="estimate" id="estimate">
+    <div class="loading">Estimating…</div>
+  </div>
+
+  <button class="go" id="go">Export to zip</button>
+
+  <div class="export" id="exportBox">
+    <div class="pbar"><i id="pfill"></i></div>
+    <div class="pnote" id="pnote"></div>
+    <a class="dl" id="dl" style="display:none">Download zip</a>
+    <div class="path" id="path"></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { mode: "longest", value: 2000, quality: 85 };
+const labels = {
+  longest: { label: "Maximum longest edge", unit: "px", def: 2000, step: 50, max: 12000 },
+  width:   { label: "Maximum width",        unit: "px", def: 2000, step: 50, max: 12000 },
+  percent: { label: "Scale",                unit: "%",  def: 50,   step: 1,  max: 100 },
+};
+
+let rolls = [];                 // [{id,name,batch,count,resized,thumbs[]}]
+const selected = new Set();     // selected roll ids
+
+function fmtBytes(n) {
+  if (!n) return "0 B";
+  const u = ["B","KB","MB","GB","TB"];
+  let i = 0, v = n;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return v.toFixed(v >= 100 || i === 0 ? 0 : 1) + " " + u[i];
+}
+function payload() { return { ...state, rolls: [...selected] }; }
+
+// ---- Mode + size + quality controls ----
+$("#seg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.mode = b.dataset.mode;
+  [...$("#seg").children].forEach(c => c.classList.toggle("on", c === b));
+  const cfg = labels[state.mode];
+  $("#valLabel").textContent = cfg.label;
+  $("#unit").textContent = cfg.unit;
+  const inp = $("#value");
+  inp.step = cfg.step; inp.max = cfg.max; inp.value = cfg.def; state.value = cfg.def;
+  scheduleEstimate();
+});
+$("#value").addEventListener("input", e => { state.value = +e.target.value || 0; scheduleEstimate(); });
+$("#quality").addEventListener("input", e => { state.quality = +e.target.value; $("#qval").textContent = e.target.value; scheduleEstimate(); });
+
+// ---- Rolls ----
+const thumbObserver = new IntersectionObserver((entries, obs) => {
+  for (const en of entries) {
+    if (!en.isIntersecting) continue;
+    en.target.querySelectorAll("img[data-src]").forEach(img => {
+      img.src = img.dataset.src;
+      img.removeAttribute("data-src");
+      img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+      img.addEventListener("error", () => img.classList.add("loaded"), { once: true });
+    });
+    obs.unobserve(en.target);
+  }
+}, { rootMargin: "300px" });
+
+async function loadRolls() {
+  const d = await (await fetch("/api/rolls")).json();
+  rolls = d.rolls;
+  rolls.forEach(r => { if (!r.resized) selected.add(r.id); });
+  renderRolls();
+  updateSelNote();
+  scheduleEstimate();
+}
+
+function renderRolls() {
+  const host = $("#rolls");
+  host.innerHTML = "";
+  let lastBatch = null;
+  for (const r of rolls) {
+    if (r.batch !== lastBatch) {
+      lastBatch = r.batch;
+      const h = document.createElement("div");
+      h.className = "batch";
+      h.textContent = r.batch;
+      host.appendChild(h);
+    }
+    const card = document.createElement("div");
+    card.className = "roll" + (selected.has(r.id) ? "" : " off");
+    card.dataset.id = r.id;
+    const thumbs = r.thumbs.map(t =>
+      `<img class="ph" data-src="/api/thumb?path=${encodeURIComponent(t)}" alt="">`
+    ).join("");
+    card.innerHTML = `
+      <label class="rollhead">
+        <input type="checkbox" ${selected.has(r.id) ? "checked" : ""}>
+        <span class="rollname">${r.name}</span>
+        ${r.resized ? '<span class="tag">resized</span>' : ""}
+        <span class="rollcount">${r.count}</span>
+      </label>
+      <div class="thumbs">${thumbs}</div>`;
+    card.querySelector("input").addEventListener("change", e => {
+      if (e.target.checked) selected.add(r.id); else selected.delete(r.id);
+      card.classList.toggle("off", !e.target.checked);
+      updateSelNote();
+      scheduleEstimate();
+    });
+    host.appendChild(card);
+    thumbObserver.observe(card);
+  }
+}
+
+function updateSelNote() {
+  const imgs = rolls.filter(r => selected.has(r.id)).reduce((s, r) => s + r.count, 0);
+  $("#selnote").textContent = `${selected.size} of ${rolls.length} rolls · ${imgs} images`;
+}
+
+$(".rollbar").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const act = b.dataset.act;
+  selected.clear();
+  if (act === "all") rolls.forEach(r => selected.add(r.id));
+  else if (act === "noresized") rolls.forEach(r => { if (!r.resized) selected.add(r.id); });
+  // "none" leaves it empty
+  // reflect in checkboxes/cards
+  document.querySelectorAll(".roll").forEach(card => {
+    const on = selected.has(card.dataset.id);
+    card.querySelector("input").checked = on;
+    card.classList.toggle("off", !on);
+  });
+  updateSelNote();
+  scheduleEstimate();
+});
+
+// ---- Live estimate (debounced) ----
+let estTimer = null, estSeq = 0;
+function scheduleEstimate() {
+  clearTimeout(estTimer);
+  if (!selected.size) {
+    $("#estimate").innerHTML = '<div class="loading">No rolls selected.</div>';
+    $("#go").disabled = true;
+    return;
+  }
+  $("#go").disabled = false;
+  $("#estimate").innerHTML = '<div class="loading">Estimating… <span style="opacity:.7">(first run may be slow while Drive downloads samples)</span></div>';
+  estTimer = setTimeout(runEstimate, 400);
+}
+async function runEstimate() {
+  const seq = ++estSeq;
+  try {
+    const r = await fetch("/api/estimate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload()),
+    });
+    const d = await r.json();
+    if (seq !== estSeq) return;
+    renderEstimate(d);
+  } catch (e) {
+    if (seq === estSeq) $("#estimate").innerHTML = '<div class="loading">Estimate failed.</div>';
+  }
+}
+function renderEstimate(d) {
+  if (!d.file_count) { $("#estimate").innerHTML = '<div class="loading">No JPGs in selection.</div>'; return; }
+  const pct = Math.max(0, Math.min(100, 100 - d.reduction_pct));
+  $("#estimate").innerHTML = `
+    <div class="stats">
+      <div class="stat"><div class="k">Files</div><div class="v">${d.file_count}</div></div>
+      <div class="stat"><div class="k">Estimated size</div><div class="v">${fmtBytes(d.estimated_bytes)}</div></div>
+      <div class="stat"><div class="k">Original size</div><div class="v"><small>${fmtBytes(d.original_bytes)}</small></div></div>
+      <div class="stat"><div class="k">Reduction</div><div class="v">${d.reduction_pct}<small> %</small></div></div>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="barnote">Estimated from a sample of ${d.sample_size} images.</div>`;
+}
+
+// ---- Export ----
+let pollTimer = null;
+$("#go").addEventListener("click", async () => {
+  if (!selected.size) return;
+  $("#go").disabled = true;
+  $("#exportBox").classList.add("show");
+  $("#dl").style.display = "none";
+  $("#path").textContent = "";
+  $("#pfill").style.width = "0%";
+  $("#pnote").textContent = "Starting…";
+  try {
+    const r = await fetch("/api/export", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload()),
+    });
+    const { job_id } = await r.json();
+    poll(job_id);
+  } catch (e) {
+    $("#pnote").textContent = "Failed to start export.";
+    $("#go").disabled = false;
+  }
+});
+function poll(jobId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    let d;
+    try { d = await (await fetch("/api/export/" + jobId)).json(); }
+    catch { return; }
+    const pct = d.total ? Math.round(d.done / d.total * 100) : 0;
+    $("#pfill").style.width = pct + "%";
+    if (d.status === "running") {
+      $("#pnote").textContent = `Processing ${d.done} / ${d.total} (${pct}%)`;
+    } else if (d.status === "done") {
+      clearInterval(pollTimer);
+      const skip = d.skipped ? ` · ${d.skipped} skipped` : "";
+      $("#pnote").textContent = `Done — ${d.done} images, ${fmtBytes(d.zip_bytes)}${skip}`;
+      const dl = $("#dl");
+      dl.href = "/api/export/" + jobId + "/download";
+      dl.style.display = "inline-block";
+      $("#path").textContent = "Saved to: " + d.zip_path;
+      $("#go").disabled = false;
+    } else if (d.status === "error") {
+      clearInterval(pollTimer);
+      $("#pnote").textContent = "Error: " + (d.error || "unknown");
+      $("#go").disabled = false;
+    }
+  }, 500);
+}
+
+loadRolls();
+</script>
+</body>
+</html>
