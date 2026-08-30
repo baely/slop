@@ -18,8 +18,8 @@ def process_image(args):
 
     # Resize original for web
     orig = img.copy()
-    orig.thumbnail((2000, 2000), Image.LANCZOS)
-    orig.save(os.path.join(ORIGINALS_DIR, fname), "JPEG", quality=85)
+    orig.thumbnail((1600, 1600), Image.LANCZOS)
+    orig.save(os.path.join(ORIGINALS_DIR, fname), "JPEG", quality=82)
 
     # Generate thumbnail in memory
     thumb = img.copy()
