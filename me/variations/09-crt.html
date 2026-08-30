@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0a0118;
+    color: #ff7af2;
+    font-family: 'VT323', monospace;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+  }
+  .crt {
+    width: min(720px, 95vw);
+    aspect-ratio: 4 / 3;
+    background: radial-gradient(ellipse at center, #1a0440 0%, #0a0118 80%);
+    border-radius: 36px / 28px;
+    border: 8px solid #251638;
+    box-shadow:
+      inset 0 0 60px rgba(255,122,242,.18),
+      0 0 60px rgba(255,122,242,.25),
+      0 30px 80px rgba(0,0,0,.6);
+    padding: 56px 48px;
+    position: relative;
+    overflow: hidden;
+    text-shadow: 0 0 6px currentColor;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 36px;
+  }
+  .crt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,122,242,.05) 0 1px, transparent 1px 4px),
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.5));
+    pointer-events: none;
+    animation: flicker 6s infinite;
+  }
+  @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: .85; } 99% { opacity: .9; } }
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 5vw, 40px);
+    line-height: 1.4;
+    color: #fff;
+    text-shadow: 2px 0 #ff7af2, -2px 0 #7ab8ff, 0 0 12px rgba(255,122,242,.7);
+    letter-spacing: 0.04em;
+  }
+  ul {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font-size: clamp(24px, 4vw, 34px);
+    line-height: 1.15;
+  }
+  ul a {
+    color: #ff7af2;
+    text-decoration: none;
+    padding: 0 4px;
+    transition: background .1s steps(2);
+    letter-spacing: 0.04em;
+  }
+  ul a:hover { background: #ff7af2; color: #0a0118; text-shadow: none; }
+</style>
+</head>
+<body>
+  <div class="crt">
+    <h1>BAILEY<br>BUTLER</h1>
+    <ul>
+      <li><a href="#">GITHUB</a></li>
+      <li><a href="#">LINKEDIN</a></li>
+      <li><a href="#">INSTAGRAM</a></li>
+      <li><a href="#">LETTERBOXD</a></li>
+      <li><a href="#">BLOG</a></li>
+    </ul>
+  </div>
+</body>
+</html>

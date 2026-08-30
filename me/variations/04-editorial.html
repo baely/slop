@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler — 04 / Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Fraunces', serif;
+    background: #f5efe6;
+    color: #1a1612;
+    min-height: 100vh;
+    font-variation-settings: "opsz" 96, "SOFT" 30;
+    padding: 56px 64px;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(140, 92, 60, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(60, 80, 140, 0.05), transparent 40%);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 112px);
+  }
+  .col-left, .col-right {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6b5a47;
+    line-height: 1.6;
+  }
+  .col-left { writing-mode: vertical-rl; transform: rotate(180deg); align-self: end; }
+  .col-right { align-self: start; text-align: right; }
+  .center { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 32px; }
+  .eyebrow {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: #8a6a4a;
+    font-weight: 400;
+  }
+  .eyebrow::before { content: '— '; }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(64px, 10vw, 144px);
+    line-height: 0.9;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: #8a6a4a;
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .lede {
+    font-size: 20px;
+    line-height: 1.5;
+    max-width: 40ch;
+    color: #2c241c;
+  }
+  .lede::first-letter {
+    font-weight: 900;
+    font-size: 64px;
+    float: left;
+    line-height: 0.85;
+    padding: 8px 8px 0 0;
+    color: #c4633b;
+    font-variation-settings: "opsz" 144;
+  }
+  .rule { width: 80px; height: 1px; background: #1a1612; margin: 8px 0; }
+  ol { list-style: none; counter-reset: link; display: grid; gap: 4px; width: 100%; max-width: 540px; }
+  ol li { counter-increment: link; }
+  ol li a {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    color: #1a1612;
+    text-decoration: none;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(26,22,18,0.18);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    transition: padding-left .3s ease;
+  }
+  ol li a::before {
+    content: counter(link, decimal-leading-zero);
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: #8a6a4a;
+    font-weight: 500;
+    align-self: center;
+  }
+  ol li a span.tag {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #8a6a4a;
+    font-weight: 500;
+  }
+  ol li a:hover { padding-left: 12px; color: #c4633b; }
+  .footer-row {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #8a6a4a;
+    border-top: 1px solid #1a1612;
+    padding-top: 16px;
+    margin-top: 32px;
+  }
+  .footer-row a { color: inherit; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="col-left">Issue Nº 04 · Spring · An Index of the Self</div>
+    <div class="center">
+      <div class="eyebrow">A Quiet Directory, in Five Parts</div>
+      <h1>Bailey,<br><em>Butler</em>.</h1>
+      <p class="lede">There is little here. A name, a handful of links, and the soft conviction that a personal homepage need not justify itself further. Choose any door.</p>
+      <div class="rule"></div>
+      <ol>
+        <li><a href="#"><span></span><span>GitHub</span><span class="tag">commits & repos</span></a></li>
+        <li><a href="#"><span></span><span>LinkedIn</span><span class="tag">the formal one</span></a></li>
+        <li><a href="#"><span></span><span>Instagram</span><span class="tag">moving pictures</span></a></li>
+        <li><a href="#"><span></span><span>Letterboxd</span><span class="tag">on cinema</span></a></li>
+        <li><a href="#"><span></span><span>Blog</span><span class="tag">writing, mostly</span></a></li>
+      </ol>
+    </div>
+    <div class="col-right">Fol. IV<br>MMXXVI</div>
+    <div class="footer-row">
+      <span>Set in Fraunces. Printed in pixels.</span>
+      <a href="../">← Return to the index</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler — 11 / Constellation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Italiana&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Cormorant Garamond', serif;
+    background:
+      radial-gradient(ellipse at 70% 20%, rgba(120, 90, 200, 0.25), transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(60, 90, 180, 0.25), transparent 60%),
+      linear-gradient(180deg, #07091a, #0d0e21 60%, #050610);
+    color: #e8e2d0;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+  /* Star field */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 12%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 24% 84%, #fff 50%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 78% 18%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 67% 92%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 90% 38%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 5% 60%, #fff 50%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 44% 12%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 33% 50%, #fff 60%, transparent 100%),
+      radial-gradient(0.8px 0.8px at 60% 67%, #fff 60%, transparent 100%),
+      radial-gradient(0.8px 0.8px at 12% 35%, #ddd 60%, transparent 100%),
+      radial-gradient(0.8px 0.8px at 95% 80%, #ddd 60%, transparent 100%);
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.4'/></svg>");
+    opacity: .12;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+  }
+  .title {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 4;
+  }
+  .title .eyebrow {
+    font-family: 'Italiana', serif;
+    font-size: 12px;
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: #b9a980;
+    margin-bottom: 14px;
+  }
+  .title h1 {
+    font-family: 'Italiana', serif;
+    font-weight: 400;
+    font-size: clamp(48px, 9vw, 112px);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #f0e6cc;
+    text-shadow: 0 0 30px rgba(220, 200, 140, .35);
+  }
+  .title h1 em { font-style: italic; color: #c2b07d; font-family: 'Cormorant Garamond', serif; }
+  .title .deck {
+    font-style: italic;
+    color: #b6ad96;
+    margin-top: 12px;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+
+  /* SVG constellation */
+  svg.lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  svg.lines path { stroke: rgba(220, 200, 140, .35); stroke-width: 0.6; fill: none; stroke-dasharray: 2 3; }
+
+  .stars { position: absolute; inset: 0; z-index: 3; }
+  .star {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-decoration: none;
+    color: #f0e6cc;
+    text-align: center;
+  }
+  .star .dot {
+    width: 10px; height: 10px;
+    background: #f0e6cc;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    box-shadow: 0 0 16px rgba(245, 230, 180, .9), 0 0 36px rgba(180, 150, 220, .6);
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .star .name {
+    font-family: 'Italiana', serif;
+    font-size: 22px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #f0e6cc;
+    transition: color .3s ease;
+  }
+  .star .sub {
+    font-style: italic;
+    font-size: 13px;
+    color: #b6ad96;
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  .star:hover .dot { transform: scale(1.4); box-shadow: 0 0 26px #fff8d0, 0 0 60px rgba(220,180,255,.7); }
+  .star:hover .name { color: #fff8d0; }
+  .star.twinkle .dot { animation: tw 3.5s ease-in-out infinite; }
+  .star:nth-child(2) .dot { animation-delay: .6s; }
+  .star:nth-child(3) .dot { animation-delay: 1.2s; }
+  .star:nth-child(4) .dot { animation-delay: 1.8s; }
+  .star:nth-child(5) .dot { animation-delay: 2.4s; }
+  @keyframes tw { 50% { opacity: 0.55; } }
+
+  .legend {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    font-family: 'Italiana', serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: #b6ad96;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .legend a { color: #c2b07d; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="title">
+      <div class="eyebrow">Chart XI · Of a Quiet Sky</div>
+      <h1>Bailey <em>Butler</em></h1>
+      <div class="deck">five fixed points, charted by hand</div>
+    </div>
+    <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path d="M 22 48 L 38 36 L 55 50 L 72 38 L 82 62 L 55 50" />
+      <path d="M 38 36 L 50 68" />
+    </svg>
+    <div class="stars">
+      <a class="star twinkle" href="#" style="top:48%; left:22%;">
+        <div class="dot"></div>
+        <div class="name">GitHub</div>
+        <div class="sub">— α boreas</div>
+      </a>
+      <a class="star twinkle" href="#" style="top:36%; left:38%;">
+        <div class="dot"></div>
+        <div class="name">LinkedIn</div>
+        <div class="sub">— β formalis</div>
+      </a>
+      <a class="star twinkle" href="#" style="top:50%; left:55%;">
+        <div class="dot"></div>
+        <div class="name">Instagram</div>
+        <div class="sub">— γ luminae</div>
+      </a>
+      <a class="star twinkle" href="#" style="top:38%; left:72%;">
+        <div class="dot"></div>
+        <div class="name">Letterboxd</div>
+        <div class="sub">— δ cinematis</div>
+      </a>
+      <a class="star twinkle" href="#" style="top:68%; left:50%;">
+        <div class="dot"></div>
+        <div class="name">Blog</div>
+        <div class="sub">— ε scriba</div>
+      </a>
+    </div>
+    <div class="legend">observed at 21:36 · <a href="../">return to the catalog</a></div>
+  </div>
+</body>
+</html>

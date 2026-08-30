@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bailey Butler — twelve variations of a personal page</title>
+<meta name="description" content="A directory of twelve different aesthetic takes on a personal homepage." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink: #111014; --paper: #f4f1ea; --muted: #6c6458; --accent: #c44b2a; }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 40px 32px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header.top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    gap: 24px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--ink);
+  }
+  header.top span:last-child { text-align: right; }
+  header.top .accent { color: var(--accent); }
+  .hero {
+    padding: 64px 0 36px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 48px;
+    align-items: end;
+    border-bottom: 1px solid var(--ink);
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(56px, 9vw, 124px);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .hero .colophon {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    line-height: 1.5;
+    color: #2a2620;
+    max-width: 40ch;
+    padding-bottom: 12px;
+  }
+  .hero .colophon em { font-style: italic; color: var(--muted); }
+  .meta-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 18px 0;
+    border-bottom: 1px solid var(--ink);
+  }
+  .meta-row strong { display: block; color: var(--ink); font-weight: 500; margin-top: 4px; font-size: 12px; letter-spacing: 0.08em; }
+  main.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0;
+    margin-top: 0;
+  }
+  .card {
+    position: relative;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 22px 22px 24px;
+    border-bottom: 1px solid var(--ink);
+    border-right: 1px solid var(--ink);
+    background: transparent;
+    transition: background .25s ease;
+    display: grid;
+    grid-template-rows: auto 120px auto;
+    gap: 14px;
+    min-height: 280px;
+  }
+  .card:hover { background: #ece7da; }
+  .card:hover .preview { transform: translateY(-2px); }
+  .card .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    align-self: end;
+  }
+  .card h2 em { font-style: italic; color: var(--muted); font-weight: 400; }
+  .card .preview {
+    border: 1px solid rgba(0,0,0,.18);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    transition: transform .3s ease;
+    align-self: start;
+  }
+  .card .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card .foot .arr { color: var(--ink); }
+  .card:nth-child(3n) { border-right: 1px solid var(--ink); }
+  @media (min-width: 800px) {
+    main.grid { grid-template-columns: repeat(3, 1fr); }
+    .card:nth-child(3n) { border-right: none; }
+    .card:nth-last-child(-n+3):not(:nth-last-child(n+4)) { border-bottom: 1px solid var(--ink); }
+  }
+  @media (min-width: 1100px) {
+    main.grid { grid-template-columns: repeat(4, 1fr); }
+    .card:nth-child(3n) { border-right: 1px solid var(--ink); }
+    .card:nth-child(4n) { border-right: none; }
+  }
+
+  /* preview vignettes (purely CSS, evocative not literal) */
+  .pv-1 { background: #f1f0ec; display: grid; place-items: center; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 38px; line-height: .85; color: #111; letter-spacing: -0.03em; padding: 8px; }
+  .pv-1 span { display: block; }
+  .pv-1 .e { color: #d2492a; font-weight: 400; }
+  .pv-2 { background: #fff200; background-image: repeating-linear-gradient(45deg, transparent 0 12px, rgba(0,0,0,0.04) 12px 13px); padding: 14px; }
+  .pv-2 .bb { font-family: 'Bowlby One', sans-serif; color: #000; font-size: 26px; line-height: .9; }
+  .pv-2 .blk { background:#000; color:#fff200; padding: 0 .1em; display:inline-block; }
+  .pv-3 { background: #0d0e10; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 10px; }
+  .pv-3 .g { color: #7ee787; }
+  .pv-3 .b { color: #58a6ff; }
+  .pv-3 .o { color: #ffa657; }
+  .pv-4 { background: linear-gradient(180deg, #f5efe6, #ece2cf); display: grid; place-items: center; font-family: 'Fraunces', serif; }
+  .pv-4 .b { font-size: 38px; line-height: .85; font-weight: 900; color: #1a1612; }
+  .pv-4 .e { font-style: italic; font-weight: 400; color: #8a6a4a; display:block; }
+  .pv-5 { background: radial-gradient(circle at 20% 20%, #ff8be1, transparent 60%), radial-gradient(circle at 80% 30%, #8be1ff, transparent 60%), radial-gradient(circle at 50% 90%, #b58bff, transparent 60%), linear-gradient(135deg, #1a1230, #0b0820); display: grid; place-items: center; font-family: 'Major Mono Display', monospace; color: #fff; font-size: 18px; letter-spacing: 0.08em; }
+  .pv-6 {
+    background: #fbf8ec;
+    background-image:
+      linear-gradient(90deg, transparent 18px, #f4c8c8 18px, #f4c8c8 19px, transparent 20px),
+      repeating-linear-gradient(180deg, transparent 0 23px, #a4c2dc 23px 24px);
+    padding: 14px 14px 14px 28px;
+    font-family: 'Caveat', cursive;
+    color: #1f2c4a;
+    font-size: 38px;
+    line-height: 1;
+  }
+  .pv-7 { background: #f6f1e3; padding: 10px; color: #181412; font-family: 'Old Standard TT', serif; text-align: center; }
+  .pv-7 .h { font-family: 'UnifrakturCook', serif; font-size: 22px; line-height: 1; }
+  .pv-7 .d { font-style: italic; font-size: 10px; margin-top: 4px; }
+  .pv-7 .r { border-top: 3px double #181412; border-bottom: 3px double #181412; padding: 2px 0; margin-top: 6px; font-size: 9px; letter-spacing: 0.1em; font-variant: small-caps; }
+  .pv-8 {
+    background:
+      radial-gradient(circle at 80% 30%, #ff5a8a 0 60px, transparent 80px),
+      radial-gradient(circle at 20% 90%, #1e3a8a 0 50px, transparent 70px),
+      #fbf6e8;
+    padding: 16px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    color: #161616;
+    font-weight: 800;
+    font-size: 30px;
+    line-height: .9;
+  }
+  .pv-8 em { color: #ff5a8a; font-style: normal; }
+  .pv-9 {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, #1a0440, #0a0118 80%);
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 14px;
+    text-shadow: 1px 0 #ff7af2, -1px 0 #7ab8ff;
+    display: grid; place-items: center;
+    text-align: center;
+  }
+  .pv-10 {
+    background: linear-gradient(135deg, #fff7ec, #f4ece0);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+    padding: 6px;
+  }
+  .pv-10 div { border-radius: 6px; }
+  .pv-10 .a { background: radial-gradient(circle at 70% 30%, #ffd0b0, transparent 60%), linear-gradient(135deg, #fff7ec, #f4ece0); grid-row: span 2; display: grid; place-items: center; font-family: 'Instrument Serif', serif; font-size: 22px; color: #15110d; }
+  .pv-10 .b { background: linear-gradient(140deg, #1f1f23, #0d0d10); }
+  .pv-10 .c { background: linear-gradient(140deg, #e84d6b, #6a3edb); }
+  .pv-11 {
+    background:
+      radial-gradient(circle at 60% 50%, rgba(120,90,200,.4), transparent 60%),
+      radial-gradient(1px 1px at 12% 22%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 88% 60%, #fff 50%, transparent 100%),
+      radial-gradient(1px 1px at 40% 80%, #ccc 50%, transparent 100%),
+      radial-gradient(1px 1px at 75% 18%, #fff 50%, transparent 100%),
+      linear-gradient(180deg, #07091a, #050610);
+    position: relative;
+    height: 100%;
+    min-height: 120px;
+  }
+  .pv-11 .dot { position: absolute; width: 5px; height: 5px; background: #f0e6cc; border-radius: 50%; box-shadow: 0 0 10px #fff8d0, 0 0 18px rgba(180,150,220,.6); }
+  .pv-11 .d1 { top: 30%; left: 22%; } .pv-11 .d2 { top: 25%; left: 50%; } .pv-11 .d3 { top: 55%; left: 70%; } .pv-11 .d4 { top: 65%; left: 35%; } .pv-11 .d5 { top: 45%; left: 84%; }
+  .pv-11 svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .pv-12 {
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/></filter><rect width='100' height='100' filter='url(%23n)' opacity='0.18'/></svg>"),
+      linear-gradient(160deg, #f1e6c8, #e7d8b3);
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .pv-12 .s { background: #fff5dc; border: 2px solid var(--c, #b22222); padding: 8px; text-align: center; font-family: 'DM Serif Display', serif; font-style: italic; color: var(--c, #b22222); font-size: 14px; transform: rotate(var(--r, -2deg)); }
+
+  footer.bottom {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  footer.bottom a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <span><span class="accent">●</span> personal page</span>
+      <span>twelve variations · one name</span>
+      <span>MMXXVI</span>
+    </header>
+
+    <section class="hero">
+      <h1>Bailey<br><em>Butler.</em></h1>
+      <p class="colophon">
+        Twelve takes on the same five-link homepage. Each is a different argument about what a personal page can look like.
+        <em>Pick one. They all go the same places.</em>
+      </p>
+    </section>
+
+    <div class="meta-row">
+      <div>Contents <strong>5 links</strong></div>
+      <div>Variations <strong>12 designs</strong></div>
+      <div>Type <strong>varies wildly</strong></div>
+      <div>Built <strong>by hand</strong></div>
+    </div>
+
+    <main class="grid">
+      <a class="card" href="variations/01-swiss.html">
+        <div class="head"><span>nº 01</span><span>grotesque</span></div>
+        <div class="preview pv-1"><span>Bailey<span class="e">Butler.</span></span></div>
+        <div>
+          <h2>Swiss <em>Minimal</em></h2>
+          <div class="foot"><span>archivo · grid</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/02-brutalist.html">
+        <div class="head"><span>nº 02</span><span>concrete</span></div>
+        <div class="preview pv-2"><div class="bb">BAILEY<br><span class="blk">BUTLER</span></div></div>
+        <div>
+          <h2>Brutalist <em>Block</em></h2>
+          <div class="foot"><span>bowlby · yellow</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/03-terminal.html">
+        <div class="head"><span>nº 03</span><span>command line</span></div>
+        <div class="preview pv-3">
+          <div><span class="g">➜</span> <span class="b">~</span> whoami</div>
+          <div>bailey butler</div>
+          <div><span class="g">➜</span> <span class="b">~</span> ls links/</div>
+          <div><span class="o">github  linkedin</span></div>
+          <div><span class="o">instagram</span></div>
+        </div>
+        <div>
+          <h2><em>~/</em>Terminal</h2>
+          <div class="foot"><span>jetbrains mono</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/04-editorial.html">
+        <div class="head"><span>nº 04</span><span>magazine</span></div>
+        <div class="preview pv-4"><div><div class="b">Bailey,</div><span class="e">Butler.</span></div></div>
+        <div>
+          <h2>Editorial <em>Serif</em></h2>
+          <div class="foot"><span>fraunces · cream</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/05-y2k.html">
+        <div class="head"><span>nº 05</span><span>chrome</span></div>
+        <div class="preview pv-5">BAILEY</div>
+        <div>
+          <h2>Y2K <em>Chrome</em></h2>
+          <div class="foot"><span>holographic · glass</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/06-notebook.html">
+        <div class="head"><span>nº 06</span><span>handwritten</span></div>
+        <div class="preview pv-6">bailey<br>butler</div>
+        <div>
+          <h2>Notebook <em>Pages</em></h2>
+          <div class="foot"><span>caveat · ruled</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/07-newspaper.html">
+        <div class="head"><span>nº 07</span><span>broadsheet</span></div>
+        <div class="preview pv-7">
+          <div class="h">The Daily Butler</div>
+          <div class="d"><em>A modest paper of one man's whereabouts</em></div>
+          <div class="r">Vol. MMXXVI · One Penny</div>
+        </div>
+        <div>
+          <h2>News <em>Print</em></h2>
+          <div class="foot"><span>blackletter · columns</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/08-risograph.html">
+        <div class="head"><span>nº 08</span><span>2-colour print</span></div>
+        <div class="preview pv-8">Bailey<br><em>Butler.</em></div>
+        <div>
+          <h2>Riso <em>Print</em></h2>
+          <div class="foot"><span>pink + blue · paper</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/09-crt.html">
+        <div class="head"><span>nº 09</span><span>cathode ray</span></div>
+        <div class="preview pv-9">BAILEY<br>BUTLER</div>
+        <div>
+          <h2>CRT <em>Glow</em></h2>
+          <div class="foot"><span>scanlines · neon</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/10-bento.html">
+        <div class="head"><span>nº 10</span><span>modular</span></div>
+        <div class="preview pv-10"><div class="a">Bailey<br><em>B.</em></div><div class="b"></div><div class="c"></div></div>
+        <div>
+          <h2>Bento <em>Grid</em></h2>
+          <div class="foot"><span>instrument · cards</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/11-constellation.html">
+        <div class="head"><span>nº 11</span><span>star map</span></div>
+        <div class="preview pv-11">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M22 60 L50 35 L70 55 L84 30" stroke="rgba(220,200,140,.5)" stroke-width="0.5" stroke-dasharray="2 2" fill="none"/></svg>
+          <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span><span class="dot d4"></span><span class="dot d5"></span>
+        </div>
+        <div>
+          <h2>Star <em>Chart</em></h2>
+          <div class="foot"><span>italiana · night</span><span class="arr">→</span></div>
+        </div>
+      </a>
+      <a class="card" href="variations/12-stamp.html">
+        <div class="head"><span>nº 12</span><span>postal</span></div>
+        <div class="preview pv-12">
+          <div class="s" style="--c:#b22222;--r:-3deg">G</div>
+          <div class="s" style="--c:#1f6e3a;--r:2deg">L</div>
+          <div class="s" style="--c:#c25a1e;--r:-1deg">I</div>
+          <div class="s" style="--c:#1f4f8a;--r:3deg">B</div>
+        </div>
+        <div>
+          <h2>Postage <em>Stamps</em></h2>
+          <div class="foot"><span>kraft · perforated</span><span class="arr">→</span></div>
+        </div>
+      </a>
+    </main>
+
+    <footer class="bottom">
+      <span>set in fraunces &amp; jetbrains mono · five links per page</span>
+      <span>made by <a href="#">bailey butler</a></span>
+    </footer>
+  </div>
+</body>
+</html>
