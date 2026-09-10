@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0b0d">
+<title>gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* bailey house style — v1 tokens (gallery pins dark) */
+  :root {
+    --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --accent: #0891b2;
+    --accent-deep: #0e7490;
+    --accent-ink: #ffffff;
+
+    --r-ctl: 3px;
+    --r-card: 4px;
+    --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+
+    --bg: #fafafa;
+    --surface: #f1f1f3;
+    --surface-2: #e9e9ed;
+    --text: #131316;
+    --text-2: #55555e;
+    --muted: #9b9ba6;
+    --line: #e4e4e9;
+    --accent-text: #0e7490;
+    --accent-soft: #e2f0f4;
+
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0d; --surface: #17171a; --surface-2: #212126;
+      --text: #f2f2f4; --text-2: #a3a3ad; --muted: #5b5b66; --line: #26262c;
+      --accent-text: #3aa8c4; --accent-soft: #0c2229;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0b0d; --surface: #17171a; --surface-2: #212126;
+    --text: #f2f2f4; --text-2: #a3a3ad; --muted: #5b5b66; --line: #26262c;
+    --accent-text: #3aa8c4; --accent-soft: #0c2229;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  }
+  .roll {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    padding: 26px 8px 8px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .roll:first-child { padding-top: 10px; }
+  .roll .sep { color: var(--muted); }
+  .roll .n { margin-left: auto; color: var(--muted); font-weight: 400; }
+  .roll a { color: var(--accent-text); text-decoration: none; }
+  .roll a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .frame {
+    display: block;
+    aspect-ratio: 3 / 2;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .frame:hover img { opacity: .85; }
+
+  /* theater */
+  .theater {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+  }
+  .theater[hidden] { display: none; }
+  .stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: pan-y;
+  }
+  .stage img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    cursor: pointer;
+  }
+  .bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 6px 8px 6px 12px;
+    background: var(--bg);
+    color: var(--text-2);
+  }
+  .bar .pos { color: var(--text); font-weight: 500; white-space: nowrap; }
+  .bar .sep { color: var(--muted); }
+  .bar .meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .meta .sep { margin: 0 8px; }
+  .bar .meta a { color: var(--accent-text); text-decoration: none; }
+  .bar .meta a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .bar .grow { flex: 1; }
+  .bar .btn {
+    font: 500 12.5px/1 var(--font-mono);
+    color: var(--text);
+    background: var(--surface);
+    border: none;
+    border-radius: var(--r-ctl);
+    padding: 0 12px;
+    min-height: 36px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bar .btn:hover { background: var(--surface-2); }
+  @media (pointer: coarse) { .bar .btn { min-height: 44px; } }
+  @media (max-width: 600px) {
+    .bar { flex-wrap: wrap; row-gap: 4px; }
+    .bar .meta { flex-basis: 100%; order: 10; }
+    .bar .sep.hide-sm { display: none; }
+  }
+
+  /* signature */
+  .b-glyph {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 90;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text-2);
+    background: var(--surface);
+    border-radius: var(--r-ctl);
+    padding: 6px 8px;
+    text-decoration: none;
+  }
+  .b-glyph:hover { color: var(--accent-text); }
+</style>
+</head>
+<body>
+<main class="grid" id="grid"></main>
+
+<div class="theater" id="theater" hidden>
+  <div class="stage" id="stage"><img id="big" alt="" decoding="async"></div>
+  <div class="bar">
+    <span class="pos" id="pos"></span>
+    <span class="sep hide-sm">·</span>
+    <span class="meta" id="meta"></span>
+    <span class="grow"></span>
+    <button class="btn" id="prev" type="button">Prev</button>
+    <button class="btn" id="next" type="button">Next</button>
+    <button class="btn" id="close" type="button">Close</button>
+  </div>
+</div>
+
+<a class="b-glyph" href="https://baileybutler.au" title="Bailey Butler">b.</a>
+
+<script>
+const rolls = __ROLLS__;
+
+// flat frame list: { id, roll }
+const frames = [];
+const index = new Map();
+rolls.forEach(roll => roll.f.forEach(id => {
+  index.set(id, frames.length);
+  frames.push({ id, roll });
+}));
+
+const grid = document.getElementById('grid');
+const theater = document.getElementById('theater');
+const stage = document.getElementById('stage');
+const big = document.getElementById('big');
+const pos = document.getElementById('pos');
+const meta = document.getElementById('meta');
+let current = -1;
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function rollLabel(roll, withCount) {
+  const parts = [`<time datetime="${roll.d}">${roll.d}</time>`, `<span>${esc(roll.r)}</span>`];
+  if (roll.s) parts.push(`<span>${esc(roll.s)}</span>`);
+  if (roll.l) {
+    parts.push(roll.m
+      ? `<a href="${esc(roll.m)}" target="_blank" rel="noopener">${esc(roll.l)}</a>`
+      : `<span>${esc(roll.l)}</span>`);
+  }
+  let html = parts.join('<span class="sep">·</span>');
+  if (withCount) html += `<span class="n">${roll.f.length}</span>`;
+  return html;
+}
+
+// build grid
+const fragment = document.createDocumentFragment();
+rolls.forEach(roll => {
+  const head = document.createElement('div');
+  head.className = 'roll';
+  head.innerHTML = rollLabel(roll, true);
+  fragment.appendChild(head);
+  roll.f.forEach(id => {
+    const a = document.createElement('a');
+    a.className = 'frame';
+    a.href = '#' + id;
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.src = 't/' + id + '.jpg';
+    img.alt = '';
+    a.appendChild(img);
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      history.pushState({ frame: id }, '', '#' + id);
+      show(index.get(id));
+    });
+    fragment.appendChild(a);
+  });
+});
+grid.appendChild(fragment);
+
+function src(i) { return 'img/' + frames[i].id + '.jpg'; }
+
+function show(i) {
+  current = i;
+  const f = frames[i];
+  big.src = src(i);
+  pos.textContent = `${i + 1} / ${frames.length}`;
+  meta.innerHTML = rollLabel(f.roll, false);
+  if (theater.hidden) {
+    theater.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  // preload neighbours
+  [i + 1, i - 1].forEach(j => {
+    if (j >= 0 && j < frames.length) { const p = new Image(); p.src = src(j); }
+  });
+}
+
+function hide() {
+  if (theater.hidden) return;
+  theater.hidden = true;
+  document.body.style.overflow = '';
+  const el = current >= 0 && document.querySelector(`a[href="#${frames[current].id}"]`);
+  if (el) el.scrollIntoView({ block: 'nearest' });
+  current = -1;
+}
+
+function nav(dir) {
+  if (current < 0) return;
+  const i = (current + dir + frames.length) % frames.length;
+  history.replaceState({ frame: frames[i].id }, '', '#' + frames[i].id);
+  show(i);
+}
+
+function close() {
+  if (history.state && history.state.frame) history.back();
+  else { history.replaceState(null, '', location.pathname); hide(); }
+}
+
+function applyHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (index.has(id)) show(index.get(id)); else hide();
+}
+
+document.getElementById('close').addEventListener('click', close);
+document.getElementById('prev').addEventListener('click', () => nav(-1));
+document.getElementById('next').addEventListener('click', () => nav(1));
+
+// click image: left third back, otherwise forward; click black surround: close
+stage.addEventListener('click', e => {
+  if (e.target === big) {
+    const r = big.getBoundingClientRect();
+    nav((e.clientX - r.left) < r.width / 3 ? -1 : 1);
+  } else {
+    close();
+  }
+});
+
+// swipe
+let touchX = null;
+stage.addEventListener('touchstart', e => { touchX = e.changedTouches[0].clientX; }, { passive: true });
+stage.addEventListener('touchend', e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 40) nav(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+document.addEventListener('keydown', e => {
+  if (theater.hidden) return;
+  if (e.key === 'Escape') close();
+  else if (e.key === 'ArrowLeft') nav(-1);
+  else if (e.key === 'ArrowRight') nav(1);
+});
+
+window.addEventListener('popstate', applyHash);
+applyHash();
+</script>
+</body>
+</html>
