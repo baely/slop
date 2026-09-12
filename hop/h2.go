@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"strings"
-	"time"
 
 	"golang.org/x/net/http2/hpack"
 )
@@ -57,6 +56,7 @@ const (
 // per-stream state is a response waiting on flow-control credit.
 type h2Conn struct {
 	s   *Server
+	cn  *conn
 	c   net.Conn
 	br  *bufio.Reader
 	buf []byte // frame payload scratch, h2MaxFrameSize long
@@ -68,12 +68,11 @@ type h2Conn struct {
 	pending      []h2Pending
 
 	// Header block under assembly (HEADERS then CONTINUATIONs).
-	block         []byte
-	blockOpen     bool
-	blockStream   uint32
-	blockEnd      bool // END_STREAM was on the HEADERS frame
-	blockOver     bool // exceeded MaxHeadBytes
-	blockDeadline time.Time
+	block       []byte
+	blockOpen   bool
+	blockStream uint32
+	blockEnd    bool // END_STREAM was on the HEADERS frame
+	blockOver   bool // exceeded MaxHeadBytes
 
 	// Captured while the decoder emits the current block.
 	method, path string
@@ -91,16 +90,26 @@ type h2Pending struct {
 // serveH2 takes over a connection whose client preface has been consumed.
 // block is the connection's 8 KiB head buffer, reused for header blocks;
 // leftover is whatever arrived after the preface and may alias it.
-func (s *Server) serveH2(c net.Conn, block, leftover []byte) {
+func (s *Server) serveH2(cn *conn, block, leftover []byte) {
 	rest := bytes.Clone(leftover)
 	bp := s.h2bufs.Get().(*[]byte)
 	defer s.h2bufs.Put(bp)
 	h := &h2Conn{
-		s: s, c: c, buf: *bp, block: block[:0],
+		s: s, cn: cn, c: cn.c, buf: *bp, block: block[:0],
 		sendWindow: h2InitialWindow, streamWindow: h2InitialWindow,
 	}
-	h.br = bufio.NewReaderSize(io.MultiReader(bytes.NewReader(rest), c), 4096)
+	h.br = bufio.NewReaderSize(io.MultiReader(bytes.NewReader(rest), h.c), 4096)
 	h.dec = hpack.NewDecoder(4096, h.onHeader)
+	// Timeout goodbye: a GOAWAY the client can act on, written by the sweeper.
+	cn.bye = func(phase uint64) {
+		var b [9 + 8]byte
+		h2FrameHeader(b[:], h2GoAway, 0, 0, 8)
+		binary.BigEndian.PutUint32(b[9:], h.lastStream)
+		if phase == phaseHead {
+			binary.BigEndian.PutUint32(b[13:], h2ErrCalm)
+		}
+		h.c.Write(b[:])
+	}
 
 	// Server preface: a SETTINGS frame; empty means all defaults.
 	if !h.writeFrame(h2Settings, 0, 0, nil) {
@@ -113,19 +122,15 @@ func (s *Server) serveH2(c net.Conn, block, leftover []byte) {
 // readFrame reads and handles one frame. It returns false when the
 // connection is finished; any GOAWAY has already been written.
 func (h *h2Conn) readFrame() bool {
-	if h.blockOpen {
-		// Mid header block: the whole block shares one deadline, so trickled
-		// CONTINUATION frames cannot stretch it.
-		h.c.SetReadDeadline(h.blockDeadline)
-	} else {
-		h.c.SetReadDeadline(time.Now().Add(h.s.cfg.IdleTimeout))
+	// Mid header block the phase stays "head" from the HEADERS frame, so
+	// trickled CONTINUATION frames cannot stretch the deadline. Otherwise
+	// wait idle for the first byte, then the head timeout applies.
+	if !h.blockOpen {
+		h.cn.enter(h.s, phaseIdle)
 		if _, err := h.br.Peek(1); err != nil {
-			if isTimeout(err) {
-				h.goAway(h2ErrNo)
-			}
 			return false
 		}
-		h.c.SetReadDeadline(time.Now().Add(h.s.cfg.HeadTimeout))
+		h.cn.enter(h.s, phaseHead)
 	}
 	if _, err := io.ReadFull(h.br, h.hdr[:]); err != nil {
 		return false
@@ -157,7 +162,6 @@ func (h *h2Conn) handle(typ, flags byte, stream uint32, p []byte) bool {
 		h.blockEnd = flags&h2FlagEndStream != 0
 		h.blockOver = false
 		h.block = h.block[:0]
-		h.blockDeadline = time.Now().Add(h.s.cfg.HeadTimeout)
 		h.appendBlock(frag)
 		if flags&h2FlagEndHeaders != 0 {
 			return h.endHeaders()
@@ -394,8 +398,9 @@ func (h *h2Conn) writeFrame(typ, flags byte, stream uint32, payload []byte) bool
 }
 
 func (h *h2Conn) write(b net.Buffers) bool {
-	h.c.SetWriteDeadline(time.Now().Add(h.s.cfg.WriteTimeout))
+	h.cn.enter(h.s, phaseWrite)
 	_, err := b.WriteTo(h.c)
+	h.cn.enter(h.s, phaseHead)
 	return err == nil
 }
 

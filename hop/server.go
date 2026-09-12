@@ -13,24 +13,44 @@ import (
 // Config tunes the listener. Every limit exists to bound what one slow or
 // hostile client can hold open.
 type Config struct {
-	Addr string
-
 	// HeadTimeout bounds the time from a request's first byte until its
-	// terminating blank line. This is the slowloris defence: a client that
-	// trickles headers is cut off regardless of how many bytes it has sent.
+	// terminating blank line (or, for HTTP/2, until its header block ends).
+	// This is the slowloris defence.
 	HeadTimeout time.Duration
-	// IdleTimeout bounds how long a keep-alive connection may sit with no
-	// bytes in flight before it is closed.
+	// IdleTimeout bounds how long a kept-alive connection may sit with no
+	// bytes in flight.
 	IdleTimeout time.Duration
 	// WriteTimeout bounds each response write, defeating clients that never
 	// read what they asked for.
 	WriteTimeout time.Duration
-	// MaxHeadBytes caps the request line plus headers. Anything larger gets
-	// a 431 and is closed.
+	// MaxHeadBytes caps the request head. Anything larger gets a 431.
 	MaxHeadBytes int
-	// MaxConns caps concurrently open connections. Beyond it new
-	// connections are answered with a baked 503 and closed at once.
+	// MaxConns caps open connections. Beyond it new connections get a baked
+	// 503 and are closed at once.
 	MaxConns int
+	// SweepInterval is how often timeouts are checked. It is also the
+	// resolution of the clock the hot path stamps connections with.
+	SweepInterval time.Duration
+}
+
+// Connection phases, as the sweeper sees them.
+const (
+	phaseIdle  = 0 // waiting for the first byte of a request
+	phaseHead  = 1 // reading a request head or HTTP/2 header block
+	phaseWrite = 2 // writing a response
+)
+
+// conn is what the sweeper knows about a live connection. The request path
+// does one atomic store on it per phase change and nothing else: no timers,
+// no syscalls, no time.Now.
+type conn struct {
+	c     net.Conn
+	stamp atomic.Uint64      // phase<<62 | milliseconds on the server clock
+	bye   func(phase uint64) // protocol-specific goodbye before a timeout close
+}
+
+func (cn *conn) enter(s *Server, phase uint64) {
+	cn.stamp.Store(phase<<62 | uint64(s.clock.Load()))
 }
 
 // Server is a bare TCP server that answers each HTTP/1.x or HTTP/2 request
@@ -42,11 +62,17 @@ type Server struct {
 	bufs   sync.Pool // MaxHeadBytes buffers for request heads
 	h2bufs sync.Pool // h2MaxFrameSize buffers for frame payloads
 	log    *log.Logger
+
+	start time.Time
+	clock atomic.Int64 // milliseconds since start, advanced by the sweeper
+
+	mu    sync.Mutex
+	conns map[*conn]struct{}
 }
 
 // NewServer prepares a server with the given table installed.
 func NewServer(cfg Config, t *table, logger *log.Logger) *Server {
-	s := &Server{cfg: cfg, log: logger, sem: make(chan struct{}, cfg.MaxConns)}
+	s := &Server{cfg: cfg, log: logger, sem: make(chan struct{}, cfg.MaxConns), start: time.Now(), conns: map[*conn]struct{}{}}
 	s.bufs.New = func() any {
 		b := make([]byte, cfg.MaxHeadBytes)
 		return &b
@@ -65,6 +91,10 @@ func (s *Server) SetTable(t *table) { s.table.Store(t) }
 
 // Serve accepts connections until the listener is closed.
 func (s *Server) Serve(ln net.Listener) error {
+	done := make(chan struct{})
+	defer close(done)
+	go s.sweep(done)
+
 	var backoff time.Duration
 	for {
 		c, err := ln.Accept()
@@ -94,6 +124,57 @@ func (s *Server) Serve(ln net.Listener) error {
 	}
 }
 
+// sweep advances the coarse clock and closes connections that have sat in a
+// phase too long. One goroutine does this for every connection, so the
+// request path never touches a timer.
+func (s *Server) sweep(done <-chan struct{}) {
+	t := time.NewTicker(s.cfg.SweepInterval)
+	defer t.Stop()
+	limits := [3]int64{
+		phaseIdle:  s.cfg.IdleTimeout.Milliseconds(),
+		phaseHead:  s.cfg.HeadTimeout.Milliseconds(),
+		phaseWrite: s.cfg.WriteTimeout.Milliseconds(),
+	}
+	var victims []*conn
+	for {
+		select {
+		case <-done:
+			return
+		case <-t.C:
+		}
+		now := time.Since(s.start).Milliseconds()
+		s.clock.Store(now)
+		victims = victims[:0]
+		s.mu.Lock()
+		for cn := range s.conns {
+			st := cn.stamp.Load()
+			if now-int64(st&(1<<62-1)) > limits[st>>62] {
+				victims = append(victims, cn)
+			}
+		}
+		s.mu.Unlock()
+		for _, cn := range victims {
+			if phase := cn.stamp.Load() >> 62; phase != phaseWrite && cn.bye != nil {
+				cn.c.SetWriteDeadline(time.Now().Add(s.cfg.WriteTimeout))
+				cn.bye(phase)
+			}
+			cn.c.Close()
+		}
+	}
+}
+
+func (s *Server) track(cn *conn) {
+	s.mu.Lock()
+	s.conns[cn] = struct{}{}
+	s.mu.Unlock()
+}
+
+func (s *Server) untrack(cn *conn) {
+	s.mu.Lock()
+	delete(s.conns, cn)
+	s.mu.Unlock()
+}
+
 // reject writes a closing response to a connection we will not serve.
 func (s *Server) reject(c net.Conn, r *response) {
 	c.SetWriteDeadline(time.Now().Add(s.cfg.WriteTimeout))
@@ -101,11 +182,20 @@ func (s *Server) reject(c net.Conn, r *response) {
 	c.Close()
 }
 
-// handle serves one connection: read a request head within the deadline,
-// write the baked answer, repeat while keep-alive holds. A connection that
-// opens with the HTTP/2 preface is handed to serveH2 instead.
+// handle serves one connection: read a request head, write the baked
+// answer, repeat while keep-alive holds. A connection that opens with the
+// HTTP/2 preface is handed to serveH2 instead.
 func (s *Server) handle(c net.Conn) {
+	cn := &conn{c: c}
+	cn.bye = func(phase uint64) {
+		if phase == phaseHead {
+			c.Write(respTimeout.close)
+		}
+	}
+	cn.enter(s, phaseHead) // the client dialled us; it should be talking
+	s.track(cn)
 	defer func() {
+		s.untrack(cn)
 		c.Close()
 		<-s.sem
 	}()
@@ -117,15 +207,6 @@ func (s *Server) handle(c net.Conn) {
 	n := 0        // bytes buffered in buf
 	first := true // first request on this connection
 	for {
-		// A fresh connection gets the head timeout straight away: the client
-		// dialled us, it should be talking. A kept-alive connection may idle,
-		// but the moment a byte lands the head timeout takes over.
-		if n == 0 && !first {
-			c.SetReadDeadline(time.Now().Add(s.cfg.IdleTimeout))
-		} else {
-			c.SetReadDeadline(time.Now().Add(s.cfg.HeadTimeout))
-		}
-
 		end := -1
 		scanFrom := 0
 		for {
@@ -136,29 +217,27 @@ func (s *Server) handle(c net.Conn) {
 				break
 			}
 			if n == len(buf) {
-				s.reply(c, respTooLarge, false, false)
+				cn.enter(s, phaseWrite)
+				c.Write(respTooLarge.close)
 				return
 			}
 			scanFrom = max(n-3, 0)
 			m, err := c.Read(buf[n:])
 			if m > 0 && n == 0 && !first {
-				c.SetReadDeadline(time.Now().Add(s.cfg.HeadTimeout))
+				cn.enter(s, phaseHead) // first byte of the next request
 			}
 			n += m
 			if err != nil {
-				if isTimeout(err) && n > 0 {
-					s.reply(c, respTimeout, false, false)
-				}
 				return
 			}
 		}
 		if first && n >= len(h2Preface) && bytes.Equal(buf[:len(h2Preface)], h2Preface) {
-			s.serveH2(c, buf, buf[len(h2Preface):n])
+			s.serveH2(cn, buf, buf[len(h2Preface):n])
 			return
 		}
 
 		req := parseRequest(buf[:end])
-		keep := req.keep && !req.hasBody
+		keep := req.keep
 		var resp *response
 		switch req.status {
 		case 400:
@@ -168,42 +247,18 @@ func (s *Server) handle(c net.Conn) {
 		default:
 			resp = s.table.Load().lookup(req.path)
 		}
-		if !s.reply(c, resp, keep, req.head) || !keep {
+		cn.enter(s, phaseWrite)
+		if _, err := c.Write(resp.bytes(keep, req.head)); err != nil || !keep {
 			return
 		}
 
 		// Carry over anything read past this head (pipelined requests).
 		n = copy(buf, buf[end:n])
 		first = false
-	}
-}
-
-// reply writes one baked response under the write deadline.
-func (s *Server) reply(c net.Conn, r *response, keep, headOnly bool) bool {
-	c.SetWriteDeadline(time.Now().Add(s.cfg.WriteTimeout))
-	_, err := c.Write(r.bytes(keep, headOnly))
-	return err == nil
-}
-
-// findHeadEnd returns the index just past the blank line that ends a request
-// head ("\r\n\r\n", or a bare "\n\n" for hand-typed clients), scanning from
-// index from. It returns -1 if the head is not yet complete.
-func findHeadEnd(b []byte, from int) int {
-	for i := max(from, 1); i < len(b); i++ {
-		if b[i] != '\n' {
-			continue
-		}
-		if b[i-1] == '\n' {
-			return i + 1
-		}
-		if i >= 3 && b[i-1] == '\r' && b[i-2] == '\n' && b[i-3] == '\r' {
-			return i + 1
+		if n == 0 {
+			cn.enter(s, phaseIdle)
+		} else {
+			cn.enter(s, phaseHead)
 		}
 	}
-	return -1
-}
-
-func isTimeout(err error) bool {
-	var ne net.Error
-	return errors.As(err, &ne) && ne.Timeout()
 }

@@ -49,17 +49,21 @@ without a restart. `SIGHUP` reloads immediately.
 
 ## Request handling
 
+The request path is: read, find the blank line, parse the request line,
+cut the target at `?`, one map lookup, one write. Nothing else.
+
+- Headers are never read. Keep-alive follows the HTTP version: 1.1 stays
+  open, 1.0 closes. `Connection: close` is ignored; the client closes and
+  hop notices on the next read. A request that carries a body gets its
+  response and then the body is read as the next request, which fails as a
+  400 and closes the connection. Redirectors don't take bodies.
 - `GET` and `HEAD` are served. Anything else gets a 405 with an `Allow`
-  header.
-- The request target must be a path. Everything up to the first `?` is the
-  map key; there is no other processing.
-- HTTP/1.1 connections are kept alive and pipelined requests are answered in
-  order. HTTP/1.0 connections always close. A request that declares a body
-  is answered, then closed, since the body is never read.
+  header. The target must start with `/`.
+- Pipelined HTTP/1.1 requests are answered in order.
 - A connection that opens with the HTTP/2 preface is served as HTTP/2: each
   stream is answered from a prebaked HPACK header block as soon as its
-  headers are complete. Only header decoding (via `x/net/http2/hpack`) does
-  work per request.
+  headers are complete. Only HPACK decoding (`x/net/http2/hpack`) does work
+  per request.
 - Unknown paths get a 404 page. Index and error pages are static, so no
   request data is ever reflected into a response.
 
@@ -70,15 +74,30 @@ be tuned per deployment.
 
 | Limit | Value | What it stops |
 |---|---|---|
-| head timeout | 5s | Time from a request's first byte to its blank line, or from a HEADERS frame to the end of its block. A client trickling headers is cut off no matter how many bytes it has sent. |
-| idle timeout | 10s | A kept-alive connection sitting with nothing in flight is closed (HTTP/2 gets a `GOAWAY`). |
+| head timeout | 5s | Time from a request's first byte to its blank line, or from a HEADERS frame to the end of its block. A client trickling headers is cut off (408, or a GOAWAY on HTTP/2) no matter how many bytes it has sent. |
+| idle timeout | 10s | A kept-alive connection sitting with nothing in flight is closed. |
 | write timeout | 5s | A client that never reads its response. |
-| head size | 8 KiB | Request line plus headers, or an HTTP/2 header block. Larger gets a 431 and the connection is closed. |
+| head size | 8 KiB | Request head, or an HTTP/2 header block. Larger gets a 431 and the connection is closed. |
 | connections | 4096 | Beyond it new connections get an instant baked 503 with `Retry-After: 1`, never a goroutine. |
 
-An attacker therefore has to sustain roughly 800 new connections per second
-to keep the pool full, and each one costs one goroutine and one buffer for
-at most five seconds.
+None of this touches the request path. Each connection carries one atomic
+word holding its phase (idle, reading a head, writing) and a coarse
+timestamp; entering a phase is a single store. One sweeper goroutine wakes
+every 250 ms, advances the clock, walks the connections and closes the ones
+over their limit. There are no per-request deadline timers, no `time.Now`,
+and on Linux the listener uses `TCP_DEFER_ACCEPT` so a connection is not
+handed to a goroutine until its first bytes have arrived.
+
+## Performance
+
+Per HTTP/1.1 request on a kept-alive connection: one read syscall, a SIMD
+scan for the blank line, request-line parse, map lookup, one write syscall.
+Zero heap allocations, so the garbage collector is idle. Parsing plus
+routing measures about 125 ns with no allocation; the two syscalls are the
+rest of the cost. On an M-series laptop with a Go client on the same
+machine, 100 keep-alive connections do about 140k redirects/s with zero
+errors and under 15 MiB resident. HTTP/2 allocates a few small strings per
+request inside the HPACK decoder.
 
 ## hop-writer
 

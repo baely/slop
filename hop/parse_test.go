@@ -8,11 +8,10 @@ import (
 
 func TestParseRequest(t *testing.T) {
 	type want struct {
-		status  int
-		head    bool
-		path    string
-		keep    bool
-		hasBody bool
+		status int
+		head   bool
+		path   string
+		keep   bool
 	}
 	cases := []struct {
 		name string
@@ -27,15 +26,10 @@ func TestParseRequest(t *testing.T) {
 		{"nested", "GET /docs/api HTTP/1.1\r\n\r\n", want{path: "/docs/api", keep: true}},
 		{"head", "HEAD /x HTTP/1.1\r\n\r\n", want{path: "/x", head: true, keep: true}},
 		{"absolute form rejected", "GET http://hop.example/linkedin HTTP/1.1\r\n\r\n", want{status: 400}},
-		{"connection close", "GET /x HTTP/1.1\r\nConnection: Close\r\n\r\n", want{path: "/x"}},
-		{"connection list", "GET /x HTTP/1.1\r\nconnection: keep-alive, close\r\n\r\n", want{path: "/x"}},
-		{"http/1.0 default close", "GET /x HTTP/1.0\r\n\r\n", want{path: "/x"}},
+		{"headers are not read", "GET /x HTTP/1.1\r\nConnection: close\r\nContent-Length: 5\r\n\r\n", want{path: "/x", keep: true}},
+		{"http/1.0 closes", "GET /x HTTP/1.0\r\n\r\n", want{path: "/x"}},
 		{"http/1.0 keep-alive still closes", "GET /x HTTP/1.0\r\nConnection: Keep-Alive\r\n\r\n", want{path: "/x"}},
-		{"bare lf", "GET /x HTTP/1.1\nHost: h\n\n", want{path: "/x", keep: true}},
-		{"body forces close", "GET /x HTTP/1.1\r\nContent-Length: 5\r\n\r\n", want{path: "/x", keep: true, hasBody: true}},
-		{"zero body ok", "GET /x HTTP/1.1\r\nContent-Length: 0\r\n\r\n", want{path: "/x", keep: true}},
-		{"chunked forces close", "GET /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n", want{path: "/x", keep: true, hasBody: true}},
-		{"post is 405", "POST /x HTTP/1.1\r\nContent-Length: 2\r\n\r\n", want{status: 405, path: "/x", keep: true, hasBody: true}},
+		{"post is 405", "POST /x HTTP/1.1\r\nContent-Length: 2\r\n\r\n", want{status: 405, path: "/x", keep: true}},
 		{"options is 405", "OPTIONS /x HTTP/1.1\r\n\r\n", want{status: 405, path: "/x", keep: true}},
 		{"http/0.9", "GET /x\r\n\r\n", want{status: 400}},
 		{"garbage", "\x16\x03\x01\x02\x00\x01\x00\x01\xfc\r\n\r\n", want{status: 400}},
@@ -45,9 +39,9 @@ func TestParseRequest(t *testing.T) {
 	}
 	for _, c := range cases {
 		got := parseRequest([]byte(c.raw))
-		g := want{got.status, got.head, string(got.path), got.keep, got.hasBody}
+		g := want{got.status, got.head, string(got.path), got.keep}
 		if got.status == 400 {
-			g.path, g.keep, g.hasBody, g.head = "", false, false, false
+			g.path, g.keep, g.head = "", false, false
 		}
 		if g != c.want {
 			t.Errorf("%s: got %+v, want %+v", c.name, g, c.want)
@@ -61,7 +55,7 @@ func TestFindHeadEnd(t *testing.T) {
 		want int
 	}{
 		{"GET / HTTP/1.1\r\n\r\n", 18},
-		{"GET / HTTP/1.1\n\n", 16},
+		{"GET / HTTP/1.1\n\n", -1},
 		{"GET / HTTP/1.1\r\nA: b\r\n\r\nGET /", 24},
 		{"GET / HTTP/1.1\r\nA: b\r\n", -1},
 		{"", -1},

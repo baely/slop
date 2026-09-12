@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net"
@@ -17,11 +18,12 @@ import (
 
 // The limits exist to bound hostile clients and are not worth configuring.
 var limits = Config{
-	HeadTimeout:  5 * time.Second,
-	IdleTimeout:  10 * time.Second,
-	WriteTimeout: 5 * time.Second,
-	MaxHeadBytes: 8192,
-	MaxConns:     4096,
+	HeadTimeout:   5 * time.Second,
+	IdleTimeout:   10 * time.Second,
+	WriteTimeout:  5 * time.Second,
+	MaxHeadBytes:  8192,
+	MaxConns:      4096,
+	SweepInterval: 250 * time.Millisecond,
 }
 
 func main() {
@@ -44,7 +46,10 @@ func main() {
 	}
 	srv := NewServer(limits, t, logger)
 
-	ln, err := net.Listen("tcp", *addr)
+	// KeepAlive -1: no per-connection keepalive setsockopts; the sweeper's
+	// idle timeout already bounds dead connections.
+	lc := net.ListenConfig{KeepAlive: -1, Control: listenControl}
+	ln, err := lc.Listen(context.Background(), "tcp", *addr)
 	if err != nil {
 		logger.Fatalf("hop: %v", err)
 	}

@@ -21,11 +21,12 @@ var testLinks = []links.Link{
 
 func testConfig() Config {
 	return Config{
-		HeadTimeout:  300 * time.Millisecond,
-		IdleTimeout:  500 * time.Millisecond,
-		WriteTimeout: time.Second,
-		MaxHeadBytes: 1024,
-		MaxConns:     8,
+		HeadTimeout:   300 * time.Millisecond,
+		IdleTimeout:   500 * time.Millisecond,
+		WriteTimeout:  time.Second,
+		MaxHeadBytes:  1024,
+		MaxConns:      8,
+		SweepInterval: 20 * time.Millisecond,
 	}
 }
 
@@ -144,7 +145,7 @@ func TestRootLinkReplacesIndex(t *testing.T) {
 func TestHead(t *testing.T) {
 	_, addr := start(t, testConfig())
 	c := dial(t, addr)
-	io.WriteString(c, "HEAD /nope HTTP/1.1\r\nConnection: close\r\n\r\n")
+	io.WriteString(c, "HEAD /nope HTTP/1.0\r\n\r\n")
 	raw, err := io.ReadAll(c)
 	if err != nil {
 		t.Fatal(err)
@@ -159,12 +160,9 @@ func TestHead(t *testing.T) {
 
 func TestMethodNotAllowed(t *testing.T) {
 	_, addr := start(t, testConfig())
-	resp := send(t, addr, "POST /linkedin HTTP/1.1\r\nContent-Length: 3\r\n\r\nabc")
+	resp := send(t, addr, "POST /linkedin HTTP/1.1\r\n\r\n")
 	if resp.StatusCode != 405 || resp.Header.Get("Allow") != "GET, HEAD" {
 		t.Fatalf("got %d allow=%q", resp.StatusCode, resp.Header.Get("Allow"))
-	}
-	if !resp.Close {
-		t.Errorf("request with body should force Connection: close")
 	}
 }
 
@@ -188,13 +186,18 @@ func TestKeepAliveAndPipelining(t *testing.T) {
 	if resp := readResponse(t, r, "GET"); resp.StatusCode != 302 || resp.Close {
 		t.Fatalf("first: %d close=%v", resp.StatusCode, resp.Close)
 	}
+	// Connection: close is not read; the client closes, we notice on EOF.
+	io.WriteString(c, "GET /linkedin HTTP/1.1\r\nConnection: close\r\n\r\n")
+	if resp := readResponse(t, r, "GET"); resp.StatusCode != 302 || resp.Close {
+		t.Fatalf("connection: close request: %d close=%v", resp.StatusCode, resp.Close)
+	}
 	io.WriteString(c, "GET /nope HTTP/1.1\r\nHost: h\r\n\r\n")
 	if resp := readResponse(t, r, "GET"); resp.StatusCode != 404 {
 		t.Fatalf("second: %d", resp.StatusCode)
 	}
 
 	// Three pipelined requests in one write, plus a partial fourth.
-	io.WriteString(c, "GET /docs/api HTTP/1.1\r\n\r\nHEAD / HTTP/1.1\r\n\r\nGET /linkedin HTTP/1.1\r\nConnection: close\r\n\r\nGET /part")
+	io.WriteString(c, "GET /docs/api HTTP/1.1\r\n\r\nHEAD / HTTP/1.1\r\n\r\nGET /linkedin HTTP/1.0\r\n\r\nGET /part")
 	want := []int{302, 200, 302}
 	for i, method := range []string{"GET", "HEAD", "GET"} {
 		if resp := readResponse(t, r, method); resp.StatusCode != want[i] {
@@ -202,7 +205,7 @@ func TestKeepAliveAndPipelining(t *testing.T) {
 		}
 	}
 	if _, err := r.ReadByte(); err != io.EOF {
-		t.Fatalf("expected EOF after Connection: close, got %v", err)
+		t.Fatalf("expected EOF after the HTTP/1.0 request, got %v", err)
 	}
 }
 
@@ -299,10 +302,11 @@ func TestHeadersTooLarge(t *testing.T) {
 func TestMaxConns(t *testing.T) {
 	cfg := testConfig()
 	_, addr := start(t, cfg)
-	// Fill every slot with a connection that has sent nothing.
+	// Fill every slot with a connection stuck mid-request-line.
 	for i := 0; i < cfg.MaxConns; i++ {
-		dial(t, addr)
+		io.WriteString(dial(t, addr), "GET /slow")
 	}
+	time.Sleep(50 * time.Millisecond)
 	c := dial(t, addr)
 	raw, _ := io.ReadAll(c)
 	if !bytes.HasPrefix(raw, []byte("HTTP/1.1 503 ")) || !bytes.Contains(raw, []byte("Retry-After: 1")) {
