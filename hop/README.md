@@ -117,6 +117,22 @@ docker build --platform linux/amd64 -t registry.baileys.dev/hop:latest --push .
 It runs as `nonroot` from a distroless base with the sample `links.txt`
 baked in at `/etc/hop/links.txt`. The compose file in
 [baely/infra](https://github.com/baely/infra) under
-`docker/github.com_baely_slop_hop/` overlays the real links at that path and
-routes `hop.baileys.dev` through Traefik. Editing a link is a PR to that
-file, and merging it redeploys.
+`docker/github.com_baely_slop_hop/` overlays the real links at that path.
+Editing a link is a PR to that file, and merging it redeploys.
+
+Traefik routes `hop.baileys.dev` with a **TCP router**, not an HTTP one. It
+terminates TLS by SNI on port 443 and pipes the decrypted byte stream
+straight to hop, so hop parses exactly what the browser sent and Traefik
+never re-serialises the request or buffers the response. Two details make
+that work:
+
+- ALPN is pinned to `http/1.1` through a TLS option (`http1only@file` in
+  Traefik's dynamic config). Traefik's default list offers `h2`, and a
+  browser that negotiated HTTP/2 would send binary frames that hop can only
+  answer with a 400.
+- Port 80 keeps a plain HTTP router that only issues a permanent redirect to
+  `https://`, because a TCP router on a non-TLS port has no hostname to match.
+
+Since the TCP router sits below Traefik's HTTP middlewares, visitors see
+hop's own 404 page rather than the shared error pages, and hop traffic is
+not counted by the umami feeder.
