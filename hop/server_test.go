@@ -14,8 +14,8 @@ import (
 )
 
 var testLinks = []Link{
-	{"linkedin", "https://linkedin.com/in/baileybutler1"},
-	{"docs/api", "https://example.com/docs?x=1"},
+	{"/linkedin", "https://linkedin.com/in/baileybutler1"},
+	{"/docs/api", "https://example.com/docs?x=1"},
 }
 
 func testConfig() Config {
@@ -80,7 +80,6 @@ func TestRedirects(t *testing.T) {
 		path, location string
 	}{
 		{"/linkedin", "https://linkedin.com/in/baileybutler1"},
-		{"/LinkedIn/", "https://linkedin.com/in/baileybutler1"},
 		{"/linkedin?utm_source=x&utm_medium=y", "https://linkedin.com/in/baileybutler1"},
 		{"/docs/api", "https://example.com/docs?x=1"},
 	}
@@ -124,11 +123,13 @@ func TestPages(t *testing.T) {
 	check("/", 200, "<h1>hop.</h1>")
 	check("/nope", 404, "HTTP 404")
 	check("/linkedin/extra", 404, "HTTP 404")
+	check("/LinkedIn", 404, "HTTP 404") // exact bytes only
+	check("/linkedin/", 404, "HTTP 404")
 }
 
 func TestRootLinkReplacesIndex(t *testing.T) {
 	s, addr := start(t, testConfig())
-	s.SetTable(buildTable([]Link{{"", "https://baileybutler.com"}}))
+	s.SetTable(buildTable([]Link{{"/", "https://baileybutler.com"}}))
 	resp := send(t, addr, "GET /?ref=x HTTP/1.1\r\nHost: h\r\n\r\n")
 	if resp.StatusCode != 302 || resp.Header.Get("Location") != "https://baileybutler.com" {
 		t.Fatalf("got %d %q", resp.StatusCode, resp.Header.Get("Location"))

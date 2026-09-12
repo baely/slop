@@ -10,7 +10,7 @@ func TestParseLinks(t *testing.T) {
 # comment
 linkedin=https://linkedin.com/in/baileybutler1
   GitHub = https://github.com/baely
-/=https://baileybutler.com
+=https://baileybutler.com
 docs/api=https://example.com/docs?x=1&y=2
 mail=mailto:hi@example.com
 `
@@ -19,11 +19,11 @@ mail=mailto:hi@example.com
 		t.Fatal(err)
 	}
 	want := []Link{
-		{"linkedin", "https://linkedin.com/in/baileybutler1"},
-		{"github", "https://github.com/baely"},
-		{"", "https://baileybutler.com"},
-		{"docs/api", "https://example.com/docs?x=1&y=2"},
-		{"mail", "mailto:hi@example.com"},
+		{"/linkedin", "https://linkedin.com/in/baileybutler1"},
+		{"/GitHub", "https://github.com/baely"},
+		{"/", "https://baileybutler.com"},
+		{"/docs/api", "https://example.com/docs?x=1&y=2"},
+		{"/mail", "mailto:hi@example.com"},
 	}
 	if len(links) != len(want) {
 		t.Fatalf("got %d links, want %d: %+v", len(links), len(want), links)
@@ -38,14 +38,14 @@ mail=mailto:hi@example.com
 func TestParseLinksErrors(t *testing.T) {
 	cases := map[string]string{
 		"no equals":      "linkedin https://x.com",
-		"duplicate":      "a=https://x.com\nA/=https://y.com",
+		"duplicate":      "a=https://x.com\na=https://y.com",
 		"relative url":   "a=/somewhere",
 		"bare host":      "a=example.com",
 		"space in url":   "a=https://x.com/a b",
 		"crlf injection": "a=https://x.com/\r\nSet-Cookie: x",
 		"non-ascii url":  "a=https://x.com/café",
 		"bad key char":   "a?b=https://x.com",
-		"empty segment":  "a//b=https://x.com",
+		"leading slash":  "/a=https://x.com",
 		"empty url":      "a=",
 		"scheme only":    "a=https:",
 	}
@@ -56,12 +56,12 @@ func TestParseLinksErrors(t *testing.T) {
 	}
 }
 
-func TestNormaliseKey(t *testing.T) {
-	cases := map[string]string{"/": "", "": "", "/LinkedIn/": "linkedin", "a/B": "a/b", "x.y~z_w-v": "x.y~z_w-v"}
+func TestKeyPath(t *testing.T) {
+	cases := map[string]string{"": "/", "linkedin": "/linkedin", "LinkedIn": "/LinkedIn", "a/B/": "/a/B/", "x.y~z_w-v": "/x.y~z_w-v"}
 	for in, want := range cases {
-		got, err := NormaliseKey(in)
+		got, err := keyPath(in)
 		if err != nil || got != want {
-			t.Errorf("NormaliseKey(%q) = %q, %v; want %q", in, got, err, want)
+			t.Errorf("keyPath(%q) = %q, %v; want %q", in, got, err, want)
 		}
 	}
 }

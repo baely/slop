@@ -7,13 +7,13 @@ import "bytes"
 type request struct {
 	status  int    // 0 when routable, else 400 or 405
 	head    bool   // HEAD method: send headers only
-	path    []byte // lowercased, no query/fragment, no surrounding slashes
+	path    []byte // request target with the query cut off, exactly as sent
 	keep    bool   // client allows connection reuse
 	hasBody bool   // request declares a body we will not read; forces close
 }
 
 // parseRequest parses a complete request head (including its final blank
-// line). It never allocates: the path is a view into b, lowercased in place.
+// line). It never allocates: the path is a view into b.
 func parseRequest(b []byte) request {
 	var r request
 
@@ -24,11 +24,14 @@ func parseRequest(b []byte) request {
 		r.status = 400
 		return r
 	}
+	if len(target) == 0 || target[0] != '/' {
+		r.status = 400
+		return r
+	}
 	// HTTP/1.0 connections always close. Supporting 1.0 keep-alive would
 	// mean advertising "Connection: keep-alive" in every reply, and it is
 	// not worth a third baked variant for clients that old.
-	http10 := len(version) == 8 && version[7] == '0'
-	r.keep = !http10
+	r.keep = !(len(version) == 8 && version[7] == '0')
 
 	switch string(method) {
 	case "GET":
@@ -38,22 +41,10 @@ func parseRequest(b []byte) request {
 		r.status = 405
 	}
 
-	// Request target: origin-form ("/path?q") or absolute-form
-	// ("http://host/path?q", which proxies send). Anything else is a 400.
-	switch {
-	case len(target) > 0 && target[0] == '/':
-	case hasPrefixFold(target, "http://"):
-		target = afterAuthority(target[7:])
-	case hasPrefixFold(target, "https://"):
-		target = afterAuthority(target[8:])
-	default:
-		r.status = 400
-		return r
-	}
-	if i := bytes.IndexAny(target, "?#"); i >= 0 {
+	if i := bytes.IndexByte(target, '?'); i >= 0 {
 		target = target[:i]
 	}
-	r.path = normalisePath(target)
+	r.path = target
 
 	// Headers: only the connection-management ones matter to us.
 	for len(rest) > 0 {
@@ -81,35 +72,6 @@ func parseRequest(b []byte) request {
 		}
 	}
 	return r
-}
-
-// afterAuthority skips "host[:port]" and returns the path that follows, or
-// an empty path when there is none.
-func afterAuthority(b []byte) []byte {
-	if i := bytes.IndexByte(b, '/'); i >= 0 {
-		return b[i:]
-	}
-	if i := bytes.IndexAny(b, "?#"); i >= 0 {
-		return b[i:]
-	}
-	return b[len(b):]
-}
-
-// normalisePath trims surrounding slashes and lowercases ASCII in place so
-// the lookup matches NormaliseKey.
-func normalisePath(p []byte) []byte {
-	for len(p) > 0 && p[0] == '/' {
-		p = p[1:]
-	}
-	for len(p) > 0 && p[len(p)-1] == '/' {
-		p = p[:len(p)-1]
-	}
-	for i, c := range p {
-		if c >= 'A' && c <= 'Z' {
-			p[i] = c + ('a' - 'A')
-		}
-	}
-	return p
 }
 
 // cutLine splits at the first LF, dropping the line terminator (LF or CRLF).
@@ -153,10 +115,6 @@ func equalFold(b []byte, s string) bool {
 		}
 	}
 	return true
-}
-
-func hasPrefixFold(b []byte, s string) bool {
-	return len(b) >= len(s) && equalFold(b[:len(s)], s)
 }
 
 // containsFold reports whether lowercase ASCII s occurs in b, ignoring case.

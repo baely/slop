@@ -21,22 +21,22 @@ content-length: 0
 linkedin=https://linkedin.com/in/baileybutler1
 github=https://github.com/baely
 docs/api=https://example.com/docs?x=1&y=2
-/=https://baileybutler.com
+=https://baileybutler.com
 ```
 
 - The first `=` splits key from URL, so URLs may contain `=`.
-- Keys are case-insensitive and matched without surrounding slashes:
-  `/LinkedIn`, `/linkedin` and `/linkedin/` are the same link. Keys may
-  contain `/`. Matching is otherwise exact: no prefix matching, no
-  percent-decoding.
-- Allowed key characters: letters, digits and `- _ . ~ / + @ :`.
+- The key is matched byte-for-byte against the request path after the
+  leading slash, with the query string cut off. `linkedin` serves exactly
+  `/linkedin`: `/LinkedIn` and `/linkedin/` are 404s. No case folding, no
+  slash trimming, no percent-decoding.
+- An empty key is the root. Without one the root serves a small index page.
+- Keys may not start with `/` or contain whitespace, `?` or `#`, since those
+  could never match.
 - URLs must be absolute (`https://…`, `mailto:…`). Whitespace, control bytes
   and non-ASCII are rejected at load time so nothing can break out of the
   `Location` header.
 - Duplicate keys are an error. A bad file fails startup, and fails a reload
   while keeping the previous links.
-- A key of `/` redirects the root path. Without it the root serves a small
-  index page.
 
 Every link answers with a 302. `SIGHUP` reloads the file without dropping
 connections.
@@ -45,7 +45,8 @@ connections.
 
 - `GET` and `HEAD` are served. Anything else gets a 405 with an `Allow`
   header.
-- The query string and fragment are dropped before lookup.
+- The request target must be a path. Everything up to the first `?` is the
+  map key; there is no other processing.
 - HTTP/1.1 connections are kept alive and pipelined requests are answered in
   order. HTTP/1.0 connections always close. A request that declares a body
   is answered, then closed, since the body is never read.

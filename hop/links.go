@@ -10,8 +10,8 @@ import (
 
 // Link is one registered short link.
 type Link struct {
-	Key string // normalised path with no surrounding slashes; "" is the root
-	URL string
+	Path string // request path that serves it, e.g. "/linkedin"; "/" is the root
+	URL  string
 }
 
 // LoadLinks reads a links file. Each non-blank, non-comment line is
@@ -26,7 +26,9 @@ func LoadLinks(path string) ([]Link, error) {
 }
 
 // ParseLinks parses "key=url" lines. Blank lines and lines starting with '#'
-// are ignored. Keys are normalised with NormaliseKey; duplicates are errors.
+// are ignored. A key is matched byte-for-byte against the request path after
+// the leading slash, so "linkedin" serves exactly "/linkedin". Duplicates are
+// errors.
 func ParseLinks(r io.Reader) ([]Link, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64*1024), 64*1024)
@@ -41,7 +43,7 @@ func ParseLinks(r io.Reader) ([]Link, error) {
 		if !ok {
 			return nil, fmt.Errorf("line %d: expected key=url", n)
 		}
-		key, err := NormaliseKey(strings.TrimSpace(k))
+		path, err := keyPath(strings.TrimSpace(k))
 		if err != nil {
 			return nil, fmt.Errorf("line %d: %w", n, err)
 		}
@@ -49,11 +51,11 @@ func ParseLinks(r io.Reader) ([]Link, error) {
 		if err := validateTarget(target); err != nil {
 			return nil, fmt.Errorf("line %d: %w", n, err)
 		}
-		if first, dup := seen[key]; dup {
-			return nil, fmt.Errorf("line %d: duplicate key %q (first defined on line %d)", n, displayKey(key), first)
+		if first, dup := seen[path]; dup {
+			return nil, fmt.Errorf("line %d: duplicate key %q (first defined on line %d)", n, path, first)
 		}
-		seen[key] = n
-		links = append(links, Link{Key: key, URL: target})
+		seen[path] = n
+		links = append(links, Link{Path: path, URL: target})
 	}
 	if err := sc.Err(); err != nil {
 		return nil, err
@@ -61,26 +63,19 @@ func ParseLinks(r io.Reader) ([]Link, error) {
 	return links, nil
 }
 
-// NormaliseKey lowercases a key and strips surrounding slashes so that
-// "LinkedIn", "/linkedin" and "linkedin/" all address the same link. "/" (or
-// an empty key) addresses the root path.
-func NormaliseKey(k string) (string, error) {
-	k = strings.Trim(k, "/")
-	if strings.Contains(k, "//") {
-		return "", fmt.Errorf("key %q contains an empty path segment", k)
+// keyPath turns a file key into the request path it serves: "/" plus the key
+// exactly as written. An empty key is the root. Bytes that cannot appear in a
+// request path, and a leading slash (which would double up), are rejected.
+func keyPath(k string) (string, error) {
+	if strings.HasPrefix(k, "/") {
+		return "", fmt.Errorf("key %q: write it without the leading slash", k)
 	}
-	b := []byte(k)
-	for i, c := range b {
-		switch {
-		case c >= 'A' && c <= 'Z':
-			b[i] = c + ('a' - 'A')
-		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
-		case c == '-', c == '_', c == '.', c == '~', c == '/', c == '+', c == '@', c == ':':
-		default:
-			return "", fmt.Errorf("key %q: character %q is not allowed (use letters, digits, - _ . ~ / + @ :)", k, c)
+	for i := 0; i < len(k); i++ {
+		if c := k[i]; c <= ' ' || c == 0x7f || c == '?' || c == '#' {
+			return "", fmt.Errorf("key %q: character %q can never match a request path", k, c)
 		}
 	}
-	return string(b), nil
+	return "/" + k, nil
 }
 
 // validateTarget accepts absolute URIs only, and rejects anything that could
@@ -113,11 +108,4 @@ func validateTarget(t string) error {
 		return fmt.Errorf("url %q has nothing after the scheme", t)
 	}
 	return nil
-}
-
-func displayKey(k string) string {
-	if k == "" {
-		return "/"
-	}
-	return k
 }

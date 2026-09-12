@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"strings"
 	"time"
 
 	"golang.org/x/net/http2/hpack"
@@ -298,11 +299,11 @@ func (h *h2Conn) endHeaders() bool {
 	case h.method != "GET" && h.method != "HEAD":
 		resp = respMethod
 	default:
-		p := append(h.buf[:0], h.path...) // the frame payload is spent; reuse it as scratch
-		if i := bytes.IndexAny(p, "?#"); i >= 0 {
+		p := h.path
+		if i := strings.IndexByte(p, '?'); i >= 0 {
 			p = p[:i]
 		}
-		resp = h.s.table.Load().lookup(normalisePath(p))
+		resp = h.s.table.Load().lookupString(p)
 	}
 	ok, sent := h.writeResponse(stream, resp, h.method == "HEAD")
 	if ok && sent && !endStream {

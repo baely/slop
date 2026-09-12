@@ -158,27 +158,34 @@ var (
 	respBusy       = htmlPage(503, []header{{"Retry-After", "1"}}, "Busy.", "Too many open connections. Try again shortly.")
 )
 
-// table maps normalised paths ("" for root) to baked responses.
+// table maps request paths to baked responses.
 type table struct {
 	routes map[string]*response
 }
 
-// buildTable bakes one redirect per link. A link keyed "/" replaces the
-// index page at the root path.
+// buildTable bakes one redirect per link. A link for "/" replaces the index
+// page at the root.
 func buildTable(links []Link) *table {
 	routes := make(map[string]*response, len(links)+1)
 	for _, l := range links {
-		routes[l.Key] = redirect(l.URL)
+		routes[l.Path] = redirect(l.URL)
 	}
-	if _, ok := routes[""]; !ok {
-		routes[""] = respIndex
+	if _, ok := routes["/"]; !ok {
+		routes["/"] = respIndex
 	}
 	return &table{routes: routes}
 }
 
-// lookup finds the response for a normalised path.
+// lookup finds the response for an exact path.
 func (t *table) lookup(path []byte) *response {
 	if r, ok := t.routes[string(path)]; ok { // no allocation: compiler-optimised map lookup
+		return r
+	}
+	return respNotFound
+}
+
+func (t *table) lookupString(path string) *response {
+	if r, ok := t.routes[path]; ok {
 		return r
 	}
 	return respNotFound

@@ -33,7 +33,7 @@ func h2Client(t *testing.T) *http.Client {
 func TestH2Redirect(t *testing.T) {
 	_, addr := start(t, testConfig())
 	c := h2Client(t)
-	for _, path := range []string{"/linkedin", "/LinkedIn/", "/linkedin?utm_source=x&y=1"} {
+	for _, path := range []string{"/linkedin", "/linkedin?utm_source=x&y=1"} {
 		resp, err := c.Get("http://" + addr + path)
 		if err != nil {
 			t.Fatal(err)
