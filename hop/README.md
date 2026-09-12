@@ -1,5 +1,10 @@
 # hop
 
+Two services in one module: **hop**, the redirector, and **hop-writer**,
+the internal page that edits its links file.
+
+## hop
+
 A URL shortener that answers from prebaked HTTP responses. Links are
 registered in a text file, one `key=url` per line. The server is a bare TCP
 listener: it reads the request head, strips the query, looks the path up in a
@@ -38,8 +43,9 @@ docs/api=https://example.com/docs?x=1&y=2
 - Duplicate keys are an error. A bad file fails startup, and fails a reload
   while keeping the previous links.
 
-Every link answers with a 302. `SIGHUP` reloads the file without dropping
-connections.
+Every link answers with a 302. hop polls the file every two seconds and
+reloads when it changes, so edits by hop-writer or by hand take effect
+without a restart. `SIGHUP` reloads immediately.
 
 ## Request handling
 
@@ -74,34 +80,49 @@ An attacker therefore has to sustain roughly 800 new connections per second
 to keep the pool full, and each one costs one goroutine and one buffer for
 at most five seconds.
 
+## hop-writer
+
+The internal admin page at https://hop.int.xbd.au (LAN only, via Traefik's
+`internal-only` middleware). It lists every link with its short URL, adds
+links, changes a target in place, deletes, and mints random keys.
+
+- **Random keys per character rules**: length (1 to 32), any mix of `a-z`,
+  `A-Z` and `0-9`, and a switch to skip `0 O 1 l I`, which read alike.
+  Leave the key blank and Add Link mints one; the Generate button previews
+  one first. Keys are drawn with `crypto/rand` and never collide with an
+  existing key.
+- **Edits are exact**: hop-writer rewrites only the affected line, so
+  comments, blank lines and order in `links.txt` survive.
+- **Every write is validated with hop's own parser** (the shared `links`
+  package) and then swapped in with an atomic rename, so hop never loads a
+  half-written or invalid file. If the file was hand-edited into something
+  hop cannot parse, hop-writer refuses to write until it is fixed.
+- No auth of its own; the internal-only middleware is the gate.
+
+Flags: `-addr` (`:8080`), `-links` (`/data/links.txt`), `-base`
+(`https://bly.au`, used to display short URLs).
+
 ## Running
 
 ```
-go run .                                # serves ./links.txt on :8080
+go run .                                # hop, serves ./links.txt on :8080
 go run . -addr :9000 -links my.txt
-kill -HUP $(pgrep hop)                  # reload links
+go run ./writer -addr :9001 -links my.txt -base http://localhost:9000
 go test -race ./...                     # needs loopback network access
 ```
-
-## Performance
-
-100 keep-alive HTTP/1.1 connections from a Go client on the same laptop:
-about 130k redirects/s with zero errors and 8 MiB resident. Parsing and
-routing one request takes about 350 ns with no allocation.
 
 ## Deployment
 
 ```
 docker build --platform linux/amd64 -t registry.baileys.dev/hop:latest --push .
+docker build --platform linux/amd64 -t registry.baileys.dev/hop-writer:latest --push -f writer/Dockerfile .
 ```
 
-hop runs on the home server from `~/manual-deploys/hop/`, which holds
-`deploy.yaml` and the live `links.txt`. The container runs
-`/hop -links /links.txt` with that file bind-mounted, so adding a link is an
-edit there followed by `docker compose up -d` (or `docker kill -s HUP` to
-reload in place). Pulling a new image is `docker compose pull && docker
-compose up -d`.
+Both run on the home server from `~/manual-deploys/hop/deploy.yaml` as one
+compose project sharing `./data/links.txt`: hop mounts `./data` read-only,
+hop-writer read-write as the host user so the file stays hand-editable.
 
-Traefik routes `bly.au` with a TCP router: it terminates TLS by SNI and
-pipes the plaintext stream to hop. Whatever the browser negotiated via ALPN,
-HTTP/2 or HTTP/1.1, hop handles it.
+Traefik routes `bly.au` to hop with a TCP router (TLS terminated by SNI,
+plaintext piped through; hop handles HTTP/2 or HTTP/1.1, whichever the
+browser negotiated) and `hop.int.xbd.au` to hop-writer with an HTTP router
+behind `internal-only@file`.

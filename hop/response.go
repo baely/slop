@@ -3,6 +3,8 @@ package main
 import (
 	"strconv"
 	"strings"
+
+	"github.com/baely/slop/hop/links"
 )
 
 // redirectStatus is used for every link. 302 keeps edits to the links file
@@ -165,9 +167,9 @@ type table struct {
 
 // buildTable bakes one redirect per link. A link for "/" replaces the index
 // page at the root.
-func buildTable(links []Link) *table {
-	routes := make(map[string]*response, len(links)+1)
-	for _, l := range links {
+func buildTable(ls []links.Link) *table {
+	routes := make(map[string]*response, len(ls)+1)
+	for _, l := range ls {
 		routes[l.Path] = redirect(l.URL)
 	}
 	if _, ok := routes["/"]; !ok {

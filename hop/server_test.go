@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/baely/slop/hop/links"
 	"io"
 	"log"
 	"net"
@@ -13,9 +14,9 @@ import (
 	"time"
 )
 
-var testLinks = []Link{
-	{"/linkedin", "https://linkedin.com/in/baileybutler1"},
-	{"/docs/api", "https://example.com/docs?x=1"},
+var testLinks = []links.Link{
+	{Path: "/linkedin", URL: "https://linkedin.com/in/baileybutler1"},
+	{Path: "/docs/api", URL: "https://example.com/docs?x=1"},
 }
 
 func testConfig() Config {
@@ -129,7 +130,7 @@ func TestPages(t *testing.T) {
 
 func TestRootLinkReplacesIndex(t *testing.T) {
 	s, addr := start(t, testConfig())
-	s.SetTable(buildTable([]Link{{"/", "https://baileybutler.com"}}))
+	s.SetTable(buildTable([]links.Link{{Path: "/", URL: "https://baileybutler.com"}}))
 	resp := send(t, addr, "GET /?ref=x HTTP/1.1\r\nHost: h\r\n\r\n")
 	if resp.StatusCode != 302 || resp.Header.Get("Location") != "https://baileybutler.com" {
 		t.Fatalf("got %d %q", resp.StatusCode, resp.Header.Get("Location"))

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/baely/slop/hop/links"
+)
 
 func TestParseRequest(t *testing.T) {
 	type want struct {
@@ -80,7 +84,7 @@ func TestFindHeadEnd(t *testing.T) {
 var benchReq = []byte("GET /linkedin?utm_source=share&utm_medium=member_desktop HTTP/1.1\r\nHost: hop.baileys.dev\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-AU,en;q=0.9\r\nAccept-Encoding: gzip, deflate, br\r\nConnection: keep-alive\r\nUpgrade-Insecure-Requests: 1\r\n\r\n")
 
 func BenchmarkParseAndLookup(b *testing.B) {
-	tbl := buildTable([]Link{{"/linkedin", "https://linkedin.com/in/baileybutler1"}})
+	tbl := buildTable([]links.Link{{Path: "/linkedin", URL: "https://linkedin.com/in/baileybutler1"}})
 	buf := make([]byte, len(benchReq))
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
