@@ -8,7 +8,7 @@ HTTP/1.1 and HTTP/2 (plaintext, as handed over by a TLS-terminating proxy)
 without `net/http`.
 
 ```
-$ curl -si https://hop.baileys.dev/linkedin?utm_source=share
+$ curl -si https://bly.au/linkedin?utm_source=share
 HTTP/2 302
 location: https://linkedin.com/in/baileybutler1
 content-length: 0
@@ -94,11 +94,13 @@ routing one request takes about 350 ns with no allocation.
 docker build --platform linux/amd64 -t registry.baileys.dev/hop:latest --push .
 ```
 
-The container runs `/hop -links /links.txt`; the file is bind-mounted from
-the service directory in [baely/infra](https://github.com/baely/infra)
-(`docker/github.com_baely_slop_hop/links.txt`), so adding a link is a
-one-line PR there and merging redeploys.
+hop runs on the home server from `~/manual-deploys/hop/`, which holds
+`deploy.yaml` and the live `links.txt`. The container runs
+`/hop -links /links.txt` with that file bind-mounted, so adding a link is an
+edit there followed by `docker compose up -d` (or `docker kill -s HUP` to
+reload in place). Pulling a new image is `docker compose pull && docker
+compose up -d`.
 
-Traefik routes `hop.baileys.dev` with a TCP router: it terminates TLS by
-SNI and pipes the plaintext stream to hop. Whatever the browser negotiated
-via ALPN, HTTP/2 or HTTP/1.1, hop handles it.
+Traefik routes `bly.au` with a TCP router: it terminates TLS by SNI and
+pipes the plaintext stream to hop. Whatever the browser negotiated via ALPN,
+HTTP/2 or HTTP/1.1, hop handles it.
