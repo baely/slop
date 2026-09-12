@@ -20,12 +20,11 @@ var testLinks = []Link{
 
 func testConfig() Config {
 	return Config{
-		HeadTimeout:    300 * time.Millisecond,
-		IdleTimeout:    500 * time.Millisecond,
-		WriteTimeout:   time.Second,
-		MaxHeadBytes:   1024,
-		MaxConns:       8,
-		RedirectStatus: 302,
+		HeadTimeout:  300 * time.Millisecond,
+		IdleTimeout:  500 * time.Millisecond,
+		WriteTimeout: time.Second,
+		MaxHeadBytes: 1024,
+		MaxConns:     8,
 	}
 }
 
@@ -36,7 +35,7 @@ func start(t *testing.T, cfg Config) (*Server, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := NewServer(cfg, buildTable(testLinks, cfg.RedirectStatus), log.New(io.Discard, "", 0))
+	s := NewServer(cfg, buildTable(testLinks), log.New(io.Discard, "", 0))
 	go s.Serve(ln)
 	t.Cleanup(func() { ln.Close() })
 	return s, ln.Addr().String()
@@ -129,9 +128,9 @@ func TestPages(t *testing.T) {
 
 func TestRootLinkReplacesIndex(t *testing.T) {
 	s, addr := start(t, testConfig())
-	s.SetTable(buildTable([]Link{{"", "https://baileybutler.com"}}, 301))
+	s.SetTable(buildTable([]Link{{"", "https://baileybutler.com"}}))
 	resp := send(t, addr, "GET /?ref=x HTTP/1.1\r\nHost: h\r\n\r\n")
-	if resp.StatusCode != 301 || resp.Header.Get("Location") != "https://baileybutler.com" {
+	if resp.StatusCode != 302 || resp.Header.Get("Location") != "https://baileybutler.com" {
 		t.Fatalf("got %d %q", resp.StatusCode, resp.Header.Get("Location"))
 	}
 	// The swapped table has no linkedin.
@@ -314,36 +313,6 @@ func TestMaxConns(t *testing.T) {
 	}
 }
 
-func TestMaxConnsPerIP(t *testing.T) {
-	cfg := testConfig()
-	cfg.MaxConnsPerIP = 2
-	s, addr := start(t, cfg)
-	a, b := dial(t, addr), dial(t, addr)
-	c := dial(t, addr)
-	raw, _ := io.ReadAll(c)
-	if !bytes.HasPrefix(raw, []byte("HTTP/1.1 503 ")) {
-		t.Fatalf("third connection from one IP should be refused, got:\n%s", raw)
-	}
-	a.Close()
-	b.Close()
-	deadline := time.Now().Add(2 * time.Second)
-	for {
-		s.perIP.Lock()
-		n := len(s.perIP.m)
-		s.perIP.Unlock()
-		if n == 0 {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("per-IP count never released")
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	if resp := send(t, addr, "GET /linkedin HTTP/1.1\r\n\r\n"); resp.StatusCode != 302 {
-		t.Fatalf("after release: %d", resp.StatusCode)
-	}
-}
-
 func TestNetHTTPClientKeepAlive(t *testing.T) {
 	// The standard client reuses connections; make sure a burst of requests
 	// through it all succeed, exercising the keep-alive loop under a real
@@ -368,7 +337,7 @@ func TestListenerClosedStopsServe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := NewServer(testConfig(), buildTable(nil, 302), log.New(io.Discard, "", 0))
+	s := NewServer(testConfig(), buildTable(nil), log.New(io.Discard, "", 0))
 	errc := make(chan error, 1)
 	go func() { errc <- s.Serve(ln) }()
 	ln.Close()

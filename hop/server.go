@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"log"
 	"net"
@@ -30,27 +31,17 @@ type Config struct {
 	// MaxConns caps concurrently open connections. Beyond it new
 	// connections are answered with a baked 503 and closed at once.
 	MaxConns int
-	// MaxConnsPerIP caps connections per remote IP. Zero disables it, which
-	// is what you want behind a reverse proxy where every connection shares
-	// the proxy's address.
-	MaxConnsPerIP int
-	// RedirectStatus is the 3xx code used for every link.
-	RedirectStatus int
 }
 
-// Server is a bare TCP HTTP/1.x server that answers each request with a
-// pre-serialised response chosen by path.
+// Server is a bare TCP server that answers each HTTP/1.x or HTTP/2 request
+// with a pre-serialised response chosen by path.
 type Server struct {
-	cfg   Config
-	table atomic.Pointer[table]
-	sem   chan struct{}
-	bufs  sync.Pool
-	log   *log.Logger
-
-	perIP struct {
-		sync.Mutex
-		m map[string]int
-	}
+	cfg    Config
+	table  atomic.Pointer[table]
+	sem    chan struct{}
+	bufs   sync.Pool // MaxHeadBytes buffers for request heads
+	h2bufs sync.Pool // h2MaxFrameSize buffers for frame payloads
+	log    *log.Logger
 }
 
 // NewServer prepares a server with the given table installed.
@@ -60,7 +51,10 @@ func NewServer(cfg Config, t *table, logger *log.Logger) *Server {
 		b := make([]byte, cfg.MaxHeadBytes)
 		return &b
 	}
-	s.perIP.m = map[string]int{}
+	s.h2bufs.New = func() any {
+		b := make([]byte, h2MaxFrameSize)
+		return &b
+	}
 	s.table.Store(t)
 	return s
 }
@@ -96,16 +90,7 @@ func (s *Server) Serve(ln net.Listener) error {
 			go s.reject(c, respBusy)
 			continue
 		}
-		ip := ""
-		if s.cfg.MaxConnsPerIP > 0 {
-			ip = remoteIP(c)
-			if !s.acquireIP(ip) {
-				<-s.sem
-				go s.reject(c, respBusy)
-				continue
-			}
-		}
-		go s.handle(c, ip)
+		go s.handle(c)
 	}
 }
 
@@ -116,41 +101,12 @@ func (s *Server) reject(c net.Conn, r *response) {
 	c.Close()
 }
 
-func remoteIP(c net.Conn) string {
-	if a, ok := c.RemoteAddr().(*net.TCPAddr); ok {
-		return a.IP.String()
-	}
-	return c.RemoteAddr().String()
-}
-
-func (s *Server) acquireIP(ip string) bool {
-	s.perIP.Lock()
-	defer s.perIP.Unlock()
-	if s.perIP.m[ip] >= s.cfg.MaxConnsPerIP {
-		return false
-	}
-	s.perIP.m[ip]++
-	return true
-}
-
-func (s *Server) releaseIP(ip string) {
-	s.perIP.Lock()
-	if s.perIP.m[ip] <= 1 {
-		delete(s.perIP.m, ip)
-	} else {
-		s.perIP.m[ip]--
-	}
-	s.perIP.Unlock()
-}
-
 // handle serves one connection: read a request head within the deadline,
-// write the baked answer, repeat while keep-alive holds.
-func (s *Server) handle(c net.Conn, ip string) {
+// write the baked answer, repeat while keep-alive holds. A connection that
+// opens with the HTTP/2 preface is handed to serveH2 instead.
+func (s *Server) handle(c net.Conn) {
 	defer func() {
 		c.Close()
-		if ip != "" {
-			s.releaseIP(ip)
-		}
 		<-s.sem
 	}()
 
@@ -173,7 +129,10 @@ func (s *Server) handle(c net.Conn, ip string) {
 		end := -1
 		scanFrom := 0
 		for {
-			if end = findHeadEnd(buf[:n], scanFrom); end >= 0 {
+			end = findHeadEnd(buf[:n], scanFrom)
+			// "PRI * HTTP/2.0\r\n\r\n" looks like a complete head but may be
+			// the first 18 bytes of the 24-byte HTTP/2 preface: keep reading.
+			if end >= 0 && !(first && n < len(h2Preface) && bytes.Equal(buf[:end], h2PrefaceLine)) {
 				break
 			}
 			if n == len(buf) {
@@ -187,12 +146,15 @@ func (s *Server) handle(c net.Conn, ip string) {
 			}
 			n += m
 			if err != nil {
-				var ne net.Error
-				if errors.As(err, &ne) && ne.Timeout() && n > 0 {
+				if isTimeout(err) && n > 0 {
 					s.reply(c, respTimeout, false, false)
 				}
 				return
 			}
+		}
+		if first && n >= len(h2Preface) && bytes.Equal(buf[:len(h2Preface)], h2Preface) {
+			s.serveH2(c, buf, buf[len(h2Preface):n])
+			return
 		}
 
 		req := parseRequest(buf[:end])
@@ -239,4 +201,9 @@ func findHeadEnd(b []byte, from int) int {
 		}
 	}
 	return -1
+}
+
+func isTimeout(err error) bool {
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
 }
