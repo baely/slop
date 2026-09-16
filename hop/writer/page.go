@@ -51,7 +51,7 @@ button{font:inherit;font-weight:500;border:0;border-radius:var(--r-ctl);padding:
 <form method="post" action="/add" class="add" id="add">
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 <div class="row">
-<label class="key">Key<input type="text" name="key" value="{{.Form.Key}}" placeholder="blank to generate" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+<label class="key">Key<input type="text" name="key" value="{{.Form.Key}}" placeholder="blank to generate, / for root" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
 <button type="button" class="quiet" id="gen">Generate</button>
 <label class="url">URL<input type="url" name="url" value="{{.Form.URL}}" placeholder="https://" required spellcheck="false"></label>
 <button class="primary">Add Link</button>

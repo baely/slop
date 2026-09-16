@@ -74,7 +74,11 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) add(w http.ResponseWriter, r *http.Request) {
 	f := form{Key: strings.TrimSpace(r.FormValue("key")), URL: strings.TrimSpace(r.FormValue("url")), Rules: rulesFrom(r.Form)}
-	if f.Key == "" {
+	root := f.Key == "/" // "/" in the form means the root; the file spells it as an empty key
+	if root {
+		f.Key = ""
+	}
+	if f.Key == "" && !root {
 		taken, err := h.taken()
 		if err != nil {
 			h.render(w, http.StatusInternalServerError, f, err.Error())

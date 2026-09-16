@@ -108,7 +108,7 @@ links, changes a target in place, deletes, and mints random keys.
 - **Random keys per character rules**: length (1 to 32), any mix of `a-z`,
   `A-Z` and `0-9`, and a switch to skip `0 O 1 l I`, which read alike.
   Leave the key blank and Add Link mints one; the Generate button previews
-  one first. Keys are drawn with `crypto/rand` and never collide with an
+  one first. Enter `/` as the key to set the root redirect. Keys are drawn with `crypto/rand` and never collide with an
   existing key.
 - **Edits are exact**: hop-writer rewrites only the affected line, so
   comments, blank lines and order in `links.txt` survive.

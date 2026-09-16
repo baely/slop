@@ -62,6 +62,24 @@ func TestAddWithKey(t *testing.T) {
 	}
 }
 
+func TestAddSlashMeansRoot(t *testing.T) {
+	srv, path := testServer(t, "")
+	resp := post(t, srv, "/add", url.Values{"key": {"/"}, "url": {"https://baileybutler.au"}})
+	if resp.StatusCode != http.StatusSeeOther {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("status %d: %s", resp.StatusCode, body)
+	}
+	got, _ := os.ReadFile(path)
+	if string(got) != "=https://baileybutler.au\n" {
+		t.Fatalf("file: %q", got)
+	}
+	idx, _ := http.Get(srv.URL + "/")
+	body, _ := io.ReadAll(idx.Body)
+	if !strings.Contains(string(body), `href="https://bly.au/"`) {
+		t.Fatalf("root link not listed:\n%s", body)
+	}
+}
+
 func TestAddBlankKeyGenerates(t *testing.T) {
 	srv, path := testServer(t, "")
 	resp := post(t, srv, "/add", url.Values{"key": {""}, "url": {"https://x.example"}, "len": {"5"}, "upper": {"1"}})
