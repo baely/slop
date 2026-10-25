@@ -1,0 +1,103 @@
+// The package the page holds. "Copy Payload" in Settings emits it as
+// proto3 JSON. The raw localStorage["tc-calc-v2"] object is the same shape
+// except enums are lowercase and selYear is a bare number | "avg" | "total".
+syntax = "proto3";
+
+package tc;
+
+message Config {
+  int32   start_year     = 1;   // first year in the window; a label, not a date
+  int32   horizon        = 2;   // years shown
+  double  super_rate     = 3;   // percent
+  bool    super_cap_on   = 4;
+  double  super_cap_base = 5;   // AUD p.a., max contribution base
+  string  display        = 6;   // ISO 4217, one of CURRENCIES
+  YearSel sel_year       = 7;
+
+  repeated Group groups = 8;
+  repeated Award awards = 9;
+  repeated Type  types  = 10;   // saved award shapes
+  repeated View  views  = 11;   // saved toggle sets
+
+  map<string, bool>   show      = 12;  // group id -> visible, plus the key "super"
+  map<string, double> overrides = 13;  // currency -> AUD per unit; absent or 0 = use fetched rate
+
+  double  share_price    = 14;  // current price per unit, applied to every UNITS award
+  string  share_currency = 15;  // ISO 4217, currency of share_price
+}
+
+message Group {
+  string id            = 1;
+  string name          = 2;
+  bool   super_default = 3;   // new awards in this group start with super_applies set
+}
+
+message Award {
+  string   id            = 1;
+  string   label         = 2;
+  string   group_id      = 3;
+  bool     enabled       = 4;
+  bool     super_applies = 5;
+  Value    value         = 6;
+  Schedule schedule      = 7;
+}
+
+// Where the number comes from.
+message Value {
+  enum Mode {
+    FIXED   = 0;   // amount in currency
+    PERCENT = 1;   // pct of the same-year total of of_groups
+    UNITS   = 2;   // units × Config.share_price
+  }
+  Mode   mode      = 1;
+  double amount    = 2;   // FIXED
+  string currency  = 3;   // FIXED
+  double pct       = 4;   // PERCENT
+  repeated string of_groups = 5;   // PERCENT: group ids, summed
+  double units     = 6;   // UNITS
+}
+
+// How it lands across years.
+message Schedule {
+  enum Type {
+    ONCE      = 0;   // whole amount in start_year
+    RECURRING = 1;   // every year from start_year, compounding by growth
+    SPREAD    = 2;   // amount is a total, vested over years per split
+  }
+  Type   type       = 1;
+  optional int32 start_year = 2;   // unset in a Type template
+  int32  years      = 3;   // RECURRING: 0 = ongoing. SPREAD: vest length
+  double growth     = 4;   // RECURRING: %/yr
+  string split      = 5;   // SPREAD: "25/25/25/25"; "" = even. Needs one number per year or it's ignored
+}
+
+// An Award shape without the money: id, label and enabled are left to the instance.
+message Type {
+  string id   = 1;
+  string name = 2;
+  Spec   spec = 3;
+}
+
+message Spec {
+  string   group_id      = 1;
+  bool     super_applies = 2;
+  Value    value         = 3;
+  Schedule schedule      = 4;
+}
+
+message View {
+  string id   = 1;
+  string name = 2;
+  map<string, bool> show = 3;   // same keys as Config.show; missing = false
+}
+
+message YearSel {
+  enum Agg {
+    AVG   = 0;   // average year across the window
+    TOTAL = 1;   // cumulative across the window
+  }
+  oneof sel {
+    int32 year = 1;
+    Agg   agg  = 2;
+  }
+}

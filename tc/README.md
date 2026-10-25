@@ -6,6 +6,8 @@ shows what the number looks like year by year and under different definitions
 of "TC".
 
 Static page, no build step, no backend. State lives in `localStorage`.
+**Copy Payload** in Settings puts the current package on the clipboard as
+JSON conforming to `payload.proto`.
 
 The model underneath is general, so the page keeps it folded away: each award
 is one line showing its shape and what it contributes, and opens only when you
@@ -23,7 +25,13 @@ needing new code.
 | Mode | Meaning |
 |---|---|
 | **Fixed Amount** | A number in any supported currency |
+| **Units** | A number of shares, valued at the current **Share Price** set in Settings |
 | **Percent Of** | A percent of the total of one *or more* groups, in the same year |
+
+`Units` is the one to use for equity: enter the grant as shares, and every
+units award is revalued whenever you update the share price. The price has
+its own currency (USD by default) and converts to AUD like any other amount.
+Combined with `Spread`, the units are the total grant, vested per the split.
 
 `Percent Of` resolves per year against live values, so a bonus set to 15% of
 Base automatically tracks a pay rise, and can be pointed at several groups at

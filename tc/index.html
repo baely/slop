@@ -145,10 +145,19 @@
             <label for="setCapBase">Super Cap Base</label>
             <input type="number" id="setCapBase" step="1000">
           </div>
+          <div class="field">
+            <label for="setSharePrice">Share Price</label>
+            <input type="number" id="setSharePrice" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="setShareCur">Price Currency</label>
+            <select id="setShareCur"></select>
+          </div>
         </div>
         <div class="chips settings-toggles">
           <label class="toggle"><input type="checkbox" id="setCapOn"><span>Cap At Maximum Contribution Base</span></label>
         </div>
+        <p class="note">Awards valued in <span class="mono">Units</span> are worth units × share price, so updating the price revalues every one of them.</p>
         <p class="note">Super is calculated on the visible awards marked <span class="mono">Super Applies</span> and added on top. The cap applies the maximum contribution base (AUD 250,000 p.a. for FY2025-26) before the rate.</p>
 
         <h3 class="sub-title">Exchange Rates</h3>
@@ -161,6 +170,7 @@
         </div>
 
         <div class="card-actions">
+          <button class="btn tiny" type="button" id="exportBtn">Copy Payload</button>
           <button class="btn tiny" type="button" id="resetBtn">Reset To Example</button>
           <button class="btn tiny" type="button" id="clearBtn">Clear All Awards</button>
         </div>

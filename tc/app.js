@@ -1,8 +1,9 @@
 /* tc — total comp calculator
  *
  * An award is composed, not typed. Three orthogonal parts:
- *   value    — where the number comes from (a fixed amount, or a percent of
- *              one or more groups in the same year)
+ *   value    — where the number comes from (a fixed amount, a number of units
+ *              at the current share price, or a percent of one or more groups
+ *              in the same year)
  *   schedule — how it lands across years (one-off, recurring with optional
  *              growth, or a total spread over N years with a vest split)
  *   group    — a user-defined category, which is what the view toggles switch
@@ -22,6 +23,7 @@ const CURRENCIES = ['AUD', 'USD', 'EUR', 'GBP', 'NZD', 'SGD', 'CAD', 'CHF', 'HKD
 
 const VALUE_MODES = [
   { key: 'fixed', label: 'Fixed Amount' },
+  { key: 'units', label: 'Units' },
   { key: 'percent', label: 'Percent Of' },
 ];
 const SCHEDULES = [
@@ -85,6 +87,7 @@ function defaultConfig() {
   return {
     startYear: y, horizon: 4,
     superRate: 12, superCapOn: false, superCapBase: 250000,
+    sharePrice: 0, shareCurrency: 'USD',
     display: 'AUD', selYear: y,
     groups, awards, show,
     types: defaultTypes(G),
@@ -142,6 +145,7 @@ function normalise(c) {
     a.value = a.value || { mode: 'fixed', amount: 0, currency: 'AUD', pct: 0, ofGroups: [] };
     a.schedule = a.schedule || { type: 'recurring', startYear: c.startYear, years: 0, growth: 0, split: '' };
     if (!Array.isArray(a.value.ofGroups)) a.value.ofGroups = [];
+    if (typeof a.value.units !== 'number') a.value.units = 0;
     a.value.ofGroups = a.value.ofGroups.filter(id => gids.has(id));
     if (!gids.has(a.groupId)) a.groupId = c.groups[0].id;
   });
@@ -221,6 +225,66 @@ function saveConfig() {
 const groupById = id => cfg.groups.find(g => g.id === id);
 const groupName = id => (groupById(id) || {}).name || '—';
 
+/* ---------- export: JSON per payload.proto ---------- */
+
+const MODE_NAME = { fixed: 'FIXED', percent: 'PERCENT', units: 'UNITS' };
+const SCHED_NAME = { once: 'ONCE', recurring: 'RECURRING', spread: 'SPREAD' };
+
+function payloadValue(v) {
+  return {
+    mode: MODE_NAME[v.mode] || 'FIXED',
+    amount: v.amount || 0,
+    currency: v.currency || 'AUD',
+    pct: v.pct || 0,
+    ofGroups: [...(v.ofGroups || [])],
+    units: v.units || 0,
+  };
+}
+
+function payloadSchedule(s) {
+  const out = { type: SCHED_NAME[s.type] || 'RECURRING' };
+  if (s.startYear != null) out.startYear = s.startYear;   // optional: omitted when unset
+  out.years = s.years || 0;
+  out.growth = s.growth || 0;
+  out.split = s.split || '';
+  return out;
+}
+
+// selYear is a bare number | 'avg' | 'total' in cfg; the proto makes it a oneof.
+function payloadYearSel(sel) {
+  return (sel === 'avg' || sel === 'total') ? { agg: sel.toUpperCase() } : { year: Number(sel) };
+}
+
+function toPayload(c) {
+  return {
+    startYear: c.startYear,
+    horizon: c.horizon,
+    superRate: c.superRate,
+    superCapOn: !!c.superCapOn,
+    superCapBase: c.superCapBase,
+    sharePrice: c.sharePrice || 0,
+    shareCurrency: c.shareCurrency || 'USD',
+    display: c.display,
+    selYear: payloadYearSel(c.selYear),
+    groups: c.groups.map(g => ({ id: g.id, name: g.name, superDefault: !!g.superDefault })),
+    awards: c.awards.map(a => ({
+      id: a.id, label: a.label, groupId: a.groupId,
+      enabled: !!a.enabled, superApplies: !!a.superApplies,
+      value: payloadValue(a.value), schedule: payloadSchedule(a.schedule),
+    })),
+    types: c.types.map(t => ({
+      id: t.id, name: t.name,
+      spec: {
+        groupId: t.spec.groupId, superApplies: !!t.spec.superApplies,
+        value: payloadValue(t.spec.value), schedule: payloadSchedule(t.spec.schedule),
+      },
+    })),
+    views: c.views.map(v => ({ id: v.id, name: v.name, show: Object.assign({}, v.show) })),
+    show: Object.assign({}, c.show),
+    overrides: Object.assign({}, c.overrides),
+  };
+}
+
 /* ---------- fx ---------- */
 
 function audPerUnit(cur) {
@@ -231,6 +295,7 @@ function audPerUnit(cur) {
 }
 const toAUD = (amt, cur) => (amt || 0) * audPerUnit(cur || 'AUD');
 const fromAUD = (aud, cur) => (aud || 0) / audPerUnit(cur || 'AUD');
+const unitsAUD = units => toAUD((units || 0) * (cfg.sharePrice || 0), cfg.shareCurrency);
 
 async function fetchRates() {
   const sources = [
@@ -351,7 +416,9 @@ function computeYear(y) {
       if (w) {
         const basis = a.value.mode === 'percent'
           ? a.value.ofGroups.reduce((s, gid) => s + groupTotal(gid), 0) * ((a.value.pct || 0) / 100)
-          : toAUD(a.value.amount, a.value.currency);
+          : a.value.mode === 'units'
+            ? unitsAUD(a.value.units)
+            : toAUD(a.value.amount, a.value.currency);
         v = basis * w;
       }
     }
@@ -434,6 +501,10 @@ const moneyIn = (amt, cur) => new Intl.NumberFormat('en-AU', {
   style: 'currency', currency: cur, maximumFractionDigits: 0,
 }).format(amt || 0);
 
+const moneyPrice = amt => new Intl.NumberFormat('en-AU', {
+  style: 'currency', currency: cfg.shareCurrency || 'USD', maximumFractionDigits: 2,
+}).format(amt || 0);
+
 const pct = (part, whole) => (whole ? (part / whole * 100).toFixed(1) + '%' : '—');
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -443,7 +514,7 @@ function specSummary(spec) {
   const parts = [];
   parts.push(v.mode === 'percent'
     ? `${v.pct}% of ${(v.ofGroups || []).map(groupName).join(' + ') || '—'}`
-    : `fixed ${v.currency}`);
+    : v.mode === 'units' ? 'units' : `fixed ${v.currency}`);
   if (s.type === 'once') parts.push('one-off');
   else if (s.type === 'recurring') parts.push(s.years > 0 ? `recurring ${s.years}y` : 'recurring, ongoing');
   else parts.push(`spread ${s.years}y ${s.split ? s.split : 'even'}`);
@@ -465,7 +536,9 @@ function awardSpecLine(a) {
   const v = a.value, s = a.schedule;
   const amount = v.mode === 'percent'
     ? `${v.pct || 0}% of ${(v.ofGroups || []).map(groupName).join(' + ') || '—'}`
-    : moneyIn(v.amount || 0, v.currency || 'AUD');
+    : v.mode === 'units'
+      ? `${(v.units || 0).toLocaleString('en-AU')} units @ ${moneyPrice(cfg.sharePrice)}`
+      : moneyIn(v.amount || 0, v.currency || 'AUD');
   let when;
   if (s.type === 'once') when = `${s.startYear}`;
   else if (s.type === 'recurring') {
@@ -533,6 +606,8 @@ function renderAwards() {
           </div>
           ${v.mode === 'percent'
             ? num('value', 'pct', 'Percent', { step: '0.5' })
+            : v.mode === 'units'
+            ? num('value', 'units', 'Units', { step: '1' })
             : num('value', 'amount', 'Amount', { step: '1000' }) + `<div class="field">
                 <label for="f-${a.id}-value-currency">Currency</label>
                 <select id="f-${a.id}-value-currency" data-id="${a.id}" data-path="value" data-f="currency">
@@ -590,7 +665,9 @@ function renderAwardScheds() {
     }
     const warn = bad ? `<span class="warn">split ignored — needs ${n} numbers</span> · ` : '';
     const empty = a.value.mode === 'percent' && !a.value.ofGroups.length
-      ? '<span class="warn">pick at least one group</span>' : '';
+      ? '<span class="warn">pick at least one group</span>'
+      : a.value.mode === 'units' && !(cfg.sharePrice > 0)
+        ? '<span class="warn">set a share price in Settings</span>' : '';
     el.innerHTML = empty || (warn + (parts.length ? parts.join(' · ') : 'no years'));
   }
 }
@@ -725,7 +802,8 @@ function renderOutputs() {
   $('#schedBody').innerHTML = cfg.awards.length
     ? cfg.awards.map(a => {
         const on = cfg.show[a.groupId] && a.enabled;
-        const cur = a.value.mode === 'fixed' && a.value.currency !== 'AUD' ? ' · ' + a.value.currency : '';
+        const cur = a.value.mode === 'fixed' && a.value.currency !== 'AUD' ? ' · ' + a.value.currency
+          : a.value.mode === 'units' && cfg.shareCurrency !== 'AUD' ? ' · ' + cfg.shareCurrency : '';
         return `<tr class="${on ? '' : 'off'}">
           <td>${esc(a.label)} <span class="mono row-tag">· ${esc(groupName(a.groupId))}${cur}</span></td>
           ${years.map(y => `<td class="num">${money(byYear[y].perAward[a.id] || 0)}</td>`).join('')}
@@ -757,7 +835,9 @@ function renderOutputs() {
   $('#schedHint').textContent = `${cfg.awards.length} award${cfg.awards.length === 1 ? '' : 's'} × ${cfg.horizon} years`;
   $('#groupHint').textContent = cfg.groups.map(g => g.name).join(' · ');
   $('#typeHint').textContent = `${cfg.types.length} template${cfg.types.length === 1 ? '' : 's'}`;
-  $('#setHint').textContent = `super ${cfg.superRate}%${cfg.superCapOn ? ' capped' : ''} · from ${cfg.startYear} · ${cfg.display}`;
+  const usesUnits = cfg.awards.some(a => a.value.mode === 'units');
+  $('#setHint').textContent = `super ${cfg.superRate}%${cfg.superCapOn ? ' capped' : ''} · from ${cfg.startYear} · ${cfg.display}`
+    + (usesUnits ? ` · price ${moneyPrice(cfg.sharePrice)}` : '');
 
   renderAwardScheds();
   syncChips();
@@ -770,7 +850,10 @@ function renderOutputs() {
 
 function usedCurrencies() {
   const set = new Set(['USD', cfg.display]);
-  cfg.awards.forEach(a => { if (a.value.mode === 'fixed') set.add(a.value.currency || 'AUD'); });
+  cfg.awards.forEach(a => {
+    if (a.value.mode === 'fixed') set.add(a.value.currency || 'AUD');
+    if (a.value.mode === 'units') set.add(cfg.shareCurrency || 'USD');
+  });
   return [...set].filter(c => c !== 'AUD').sort();
 }
 
@@ -808,6 +891,10 @@ function bindEvents() {
   const dc = $('#displayCur');
   dc.innerHTML = CURRENCIES.map(c => `<option value="${c}">${c}</option>`).join('');
   dc.addEventListener('change', () => { cfg.display = dc.value; renderRates(); renderOutputs(); });
+
+  const sc = $('#setShareCur');
+  sc.innerHTML = CURRENCIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  sc.addEventListener('change', () => { cfg.shareCurrency = sc.value; renderRates(); renderOutputs(); });
 
   $('#fxRefresh').addEventListener('click', async () => {
     $('#fxLine').textContent = 'fx refreshing…';
@@ -953,6 +1040,7 @@ function bindEvents() {
   bindNum('#setHorizon', v => { cfg.horizon = Math.min(12, Math.max(1, Math.round(v) || 1)); renderChips(); });
   bindNum('#setSuperRate', v => { cfg.superRate = Math.max(0, v || 0); });
   bindNum('#setCapBase', v => { cfg.superCapBase = Math.max(0, v || 0); });
+  bindNum('#setSharePrice', v => { cfg.sharePrice = Math.max(0, v || 0); });
   $('#setCapOn').addEventListener('change', e => { cfg.superCapOn = e.target.checked; renderOutputs(); });
 
   $('#rateBody').addEventListener('input', e => {
@@ -964,6 +1052,22 @@ function bindEvents() {
     renderOutputs();
   });
 
+  $('#exportBtn').addEventListener('click', async () => {
+    const btn = $('#exportBtn');
+    const json = JSON.stringify(toPayload(cfg), null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+      btn.textContent = 'Copied';
+    } catch (e) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      a.download = 'tc-payload.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      btn.textContent = 'Downloaded';
+    }
+    setTimeout(() => { btn.textContent = 'Copy Payload'; }, 1200);
+  });
   $('#resetBtn').addEventListener('click', () => {
     const keep = { display: cfg.display, overrides: cfg.overrides };
     cfg = Object.assign(defaultConfig(), keep);
@@ -1077,6 +1181,7 @@ function saveAwardAsType(awardId) {
     schedule: a.schedule,
   }));
   spec.value.amount = 0;              // a type carries the shape, not the money
+  spec.value.units = 0;
   spec.schedule.startYear = null;     // and starts wherever it's dropped
   const existing = cfg.types.find(t => t.name === a.label);
   if (existing) existing.spec = spec;
@@ -1095,6 +1200,8 @@ function fullRender() {
   $('#setSuperRate').value = cfg.superRate;
   $('#setCapBase').value = cfg.superCapBase;
   $('#setCapOn').checked = !!cfg.superCapOn;
+  $('#setSharePrice').value = cfg.sharePrice || '';
+  $('#setShareCur').value = cfg.shareCurrency || 'USD';
   renderAwards();
   renderChips();
   renderGroups();
