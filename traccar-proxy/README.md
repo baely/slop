@@ -32,7 +32,7 @@ Everything is environment variables.
 | Variable | Default | Meaning |
 |---|---|---|
 | `TARGET_<NAME>` | required, at least one | Base URL of an upstream. `<NAME>` is a label shown on the status page. |
-| `DEVICE_<NAME>` | unset | Device override for target `<NAME>`, as `<from>:<to>`: reports with `id=<from>` reach that target as `id=<to>`. Other ids pass through. |
+| `DEVICE_<NAME>` | unset | Device override for target `<NAME>`, as `<from>:<to>`: reports with `id=<from>` (in the query string or a form-encoded body) reach that target as `id=<to>`. Other ids pass through. |
 | `TOKEN` | unset | Secret path segment. When set, the client must post to `/<TOKEN>` and everything else is 404. |
 | `ADDR` | `:8080` | Listen address. |
 | `DATA_DIR` | `./data` (`/data` in Docker) | Where queues are persisted. Mount a volume. |

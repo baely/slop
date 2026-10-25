@@ -147,11 +147,15 @@ func (w *Worker) deliver(ctx context.Context, j *Job) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, w.timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, j.Method, u.String(), bytes.NewReader(j.Body))
+	body := j.Body
+	if w.target.DeviceFrom != "" && strings.HasPrefix(j.ContentType, "application/x-www-form-urlencoded") {
+		body = []byte(overrideDevice(string(body), w.target.DeviceFrom, w.target.DeviceTo))
+	}
+	req, err := http.NewRequestWithContext(ctx, j.Method, u.String(), bytes.NewReader(body))
 	if err != nil {
 		return 0, err
 	}
-	req.ContentLength = int64(len(j.Body))
+	req.ContentLength = int64(len(body))
 	if j.ContentType != "" {
 		req.Header.Set("Content-Type", j.ContentType)
 	}
@@ -169,7 +173,8 @@ func (w *Worker) deliver(ctx context.Context, j *Job) (int, error) {
 // buildURL appends the client's path to the target's and forwards the query
 // string verbatim, except that any parameter fixed on the target URL replaces
 // the client's value (e.g. a per-target device id), and a client id matching
-// the target's device override is swapped for its replacement.
+// the target's device override is swapped for its replacement. deliver does the
+// same swap in form-encoded bodies, which is where newer clients put the id.
 func buildURL(t Target, j *Job) *url.URL {
 	base := t.URL
 	u := *base

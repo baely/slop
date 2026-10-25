@@ -62,6 +62,26 @@ func TestDeviceOverride(t *testing.T) {
 	}
 }
 
+func TestDeviceOverrideFormBody(t *testing.T) {
+	rec, srv := newRecorder(200)
+	defer srv.Close()
+	q, err := openQueue(t.TempDir(), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := newWorker(Target{Name: "t", URL: mustURL(t, srv.URL+"/"), DeviceFrom: "317783", DeviceTo: "429424942"}, q, 2*time.Second)
+	// What the current Traccar client sends: everything in a form body.
+	body := "id=317783&lat=-37.8&lon=144.9&timestamp=1792918469&batt=100&charge=false"
+	status, err := w.deliver(context.Background(), &Job{Method: "POST", Path: "/", Body: []byte(body), ContentType: "application/x-www-form-urlencoded; charset=UTF-8"})
+	if err != nil || status != 200 {
+		t.Fatalf("deliver: %d %v", status, err)
+	}
+	want := "id=429424942&lat=-37.8&lon=144.9&timestamp=1792918469&batt=100&charge=false"
+	if rec.bodies[0] != want {
+		t.Errorf("body %q, want %q", rec.bodies[0], want)
+	}
+}
+
 func TestStripToken(t *testing.T) {
 	s := &Server{cfg: Config{Token: "s3cret"}}
 	cases := []struct {
