@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="30">
+<title>traccar-proxy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --accent: #0891b2;
+  --accent-deep: #0e7490;
+  --accent-ink: #ffffff;
+  --r-ctl: 3px;
+  --r-card: 4px;
+  --sheen: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(0 0 0 / .08));
+  --bg: #fafafa;
+  --surface: #f1f1f3;
+  --surface-2: #e9e9ed;
+  --text: #131316;
+  --text-2: #55555e;
+  --muted: #9b9ba6;
+  --line: #e4e4e9;
+  --accent-text: #0e7490;
+  --accent-soft: #e2f0f4;
+  --good: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d; --surface: #17171a; --surface-2: #212126;
+    --text: #f2f2f4; --text-2: #a3a3ad; --muted: #5b5b66; --line: #26262c;
+    --accent-text: #3aa8c4; --accent-soft: #0c2229;
+    --good: #4ade80; --warn: #fbbf24; --bad: #f87171;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body); font-size: 14.5px; line-height: 1.55;
+  color: var(--text); background: var(--bg);
+  padding: 32px 16px 64px;
+}
+main { max-width: 1100px; margin: 0 auto; }
+h1 {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1.1; font-size: clamp(28px, 6vw, 44px);
+}
+.sub { color: var(--text-2); margin-top: 8px; }
+.sub code { font-family: var(--font-mono); font-size: 0.93em; color: var(--text); user-select: all; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 24px 0; }
+@media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--surface); border-radius: var(--r-card); padding: 12px 16px; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.stat-value {
+  font-family: var(--font-mono); font-weight: 700; font-size: 28px;
+  line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums;
+}
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-size: 12px; font-weight: 600; color: var(--text-2); text-align: left;
+  padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { font-family: var(--font-mono); font-size: 0.93em; text-align: right; font-variant-numeric: tabular-nums; }
+td.mono { font-family: var(--font-mono); font-size: 0.93em; word-break: break-all; }
+td.name { font-weight: 600; white-space: nowrap; }
+.state { font-weight: 600; white-space: nowrap; }
+.state.ok { color: var(--good); }
+.state.idle { color: var(--text-2); }
+.state.retrying { color: var(--warn); }
+.state.failing { color: var(--bad); }
+.detail { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); margin-top: 2px; word-break: break-word; }
+time { font-family: var(--font-mono); font-size: 0.93em; white-space: nowrap; }
+.foot { color: var(--muted); font-size: 12px; margin-top: 24px; }
+.b-glyph {
+  position: fixed; bottom: 10px; right: 10px; z-index: 90;
+  font-family: var(--font-display); font-weight: 800; font-size: 13px; line-height: 1;
+  color: var(--text-2); background: var(--surface); border-radius: var(--r-ctl);
+  padding: 6px 8px; text-decoration: none;
+}
+.b-glyph:hover { color: var(--accent-text); }
+</style>
+</head>
+<body>
+<main>
+  <h1>traccar-proxy</h1>
+  <p class="sub">Traccar client server URL: <code>{{.ClientURL}}</code></p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Received</div><div class="stat-value">{{comma .Received}}</div></div>
+    <div class="stat"><div class="stat-label">Delivered</div><div class="stat-value">{{comma .Delivered}}</div></div>
+    <div class="stat"><div class="stat-label">Queued</div><div class="stat-value">{{comma .Queued}}</div></div>
+    <div class="stat"><div class="stat-label">Rejected</div><div class="stat-value">{{comma .Rejected}}</div></div>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Target</th>
+        <th>Endpoint</th>
+        <th class="num">Queued</th>
+        <th class="num">Delivered</th>
+        <th class="num">Rejected</th>
+        <th>Last Delivery</th>
+        <th>State</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Targets}}
+      <tr>
+        <td class="name">{{.Name}}</td>
+        <td class="mono">{{.Endpoint}}</td>
+        <td class="num">{{comma .Queued}}</td>
+        <td class="num">{{comma .Delivered}}</td>
+        <td class="num">{{comma .Rejected}}{{if .Dropped}}<span class="detail">{{comma .Dropped}} dropped, queue full</span>{{end}}</td>
+        <td><time title="{{.LastSuccess.Format "2006-01-02 15:04:05 MST"}}">{{ago .LastSuccess}}</time></td>
+        <td>
+          <span class="state {{.State}}">{{if eq .State "ok"}}Ok{{else if eq .State "idle"}}Idle{{else if eq .State "retrying"}}Retrying{{else}}Failing{{end}}</span>
+          {{if .NextRetry.IsZero | not}}<span class="detail">next attempt {{ago .NextRetry}}</span>{{end}}
+          {{if .LastError}}<span class="detail">{{.LastError}}</span>{{end}}
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+
+  <p class="foot">Up {{.Uptime}}. Counts reset on restart; the queue does not. Refreshes every 30 seconds.</p>
+</main>
+<a class="b-glyph" href="https://index.baileys.app" title="A Bailey App">b.</a>
+</body>
+</html>
