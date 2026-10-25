@@ -32,6 +32,7 @@ Everything is environment variables.
 | Variable | Default | Meaning |
 |---|---|---|
 | `TARGET_<NAME>` | required, at least one | Base URL of an upstream. `<NAME>` is a label shown on the status page. |
+| `DEVICE_<NAME>` | unset | Device override for target `<NAME>`, as `<from>:<to>`: reports with `id=<from>` reach that target as `id=<to>`. Other ids pass through. |
 | `TOKEN` | unset | Secret path segment. When set, the client must post to `/<TOKEN>` and everything else is 404. |
 | `ADDR` | `:8080` | Listen address. |
 | `DATA_DIR` | `./data` (`/data` in Docker) | Where queues are persisted. Mount a volume. |
@@ -46,6 +47,8 @@ Target URL rules:
 - Query parameters fixed on the target URL override the client's. Use this to
   give one upstream a different device id:
   `TARGET_HA=https://ha.example.com/api/webhook/abc?id=bailey-phone`.
+- To rename just one device for one upstream, use `DEVICE_<NAME>` instead:
+  `DEVICE_HA=123456:bailey-phone`. A fixed `id` on the target URL still wins.
 - Userinfo in the URL becomes HTTP Basic auth: `https://user:pass@host/`.
 - Redirects are not followed, so use the final URL.
 

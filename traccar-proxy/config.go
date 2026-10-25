@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,6 +16,10 @@ import (
 type Target struct {
 	Name string
 	URL  *url.URL // base URL; its query params are merged over the incoming ones
+
+	// Device override: a client id of DeviceFrom is sent to this target as DeviceTo.
+	DeviceFrom string
+	DeviceTo   string
 }
 
 // Config is read entirely from the environment.
@@ -67,6 +72,22 @@ func loadConfig() (Config, error) {
 			return c, fmt.Errorf("%s: must be an absolute http(s) URL", k)
 		}
 		c.Targets = append(c.Targets, Target{Name: name, URL: u})
+	}
+	for _, kv := range os.Environ() {
+		k, v, _ := strings.Cut(kv, "=")
+		if !strings.HasPrefix(k, "DEVICE_") || v == "" {
+			continue
+		}
+		name := strings.ToLower(strings.TrimPrefix(k, "DEVICE_"))
+		from, to, ok := strings.Cut(v, ":")
+		if !ok || from == "" || to == "" {
+			return c, fmt.Errorf("%s: must be <from>:<to>", k)
+		}
+		i := slices.IndexFunc(c.Targets, func(t Target) bool { return t.Name == name })
+		if i < 0 {
+			return c, fmt.Errorf("%s: no TARGET_%s", k, strings.TrimPrefix(k, "DEVICE_"))
+		}
+		c.Targets[i].DeviceFrom, c.Targets[i].DeviceTo = from, to
 	}
 	sort.Slice(c.Targets, func(i, j int) bool { return c.Targets[i].Name < c.Targets[j].Name })
 	if len(c.Targets) == 0 {

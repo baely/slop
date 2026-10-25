@@ -15,6 +15,7 @@ services:
       # One TARGET_<name> per upstream. Fixed query params on a target URL
       # override the client's (e.g. ?id=phone).
       TARGET_TRACCAR: "${TARGET_TRACCAR:?set TARGET_TRACCAR}"
+      # Optional DEVICE_<name>=<from>:<to> maps one client id for that target.
     volumes:
       - traccar-proxy-data:/data
 

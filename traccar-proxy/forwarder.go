@@ -143,7 +143,7 @@ func retryable(status int) bool {
 // deliver replays a job against the target. Returns the HTTP status, or an
 // error for transport-level failures.
 func (w *Worker) deliver(ctx context.Context, j *Job) (int, error) {
-	u := buildURL(w.target.URL, j)
+	u := buildURL(w.target, j)
 	ctx, cancel := context.WithTimeout(ctx, w.timeout)
 	defer cancel()
 
@@ -168,19 +168,25 @@ func (w *Worker) deliver(ctx context.Context, j *Job) (int, error) {
 
 // buildURL appends the client's path to the target's and forwards the query
 // string verbatim, except that any parameter fixed on the target URL replaces
-// the client's value (e.g. a per-target device id).
-func buildURL(base *url.URL, j *Job) *url.URL {
+// the client's value (e.g. a per-target device id), and a client id matching
+// the target's device override is swapped for its replacement.
+func buildURL(t Target, j *Job) *url.URL {
+	base := t.URL
 	u := *base
 	if j.Path != "" && j.Path != "/" {
 		u.Path = strings.TrimSuffix(u.Path, "/") + "/" + strings.TrimPrefix(j.Path, "/")
 	}
-	u.RawQuery = j.Query
+	query := j.Query
+	if t.DeviceFrom != "" {
+		query = overrideDevice(query, t.DeviceFrom, t.DeviceTo)
+	}
+	u.RawQuery = query
 	if base.RawQuery == "" {
 		return &u
 	}
 	fixed := base.Query()
 	var kept []string
-	for _, pair := range strings.Split(j.Query, "&") {
+	for _, pair := range strings.Split(query, "&") {
 		if pair == "" {
 			continue
 		}
@@ -194,6 +200,21 @@ func buildURL(base *url.URL, j *Job) *url.URL {
 	}
 	u.RawQuery = strings.Join(append(kept, base.RawQuery), "&")
 	return &u
+}
+
+// overrideDevice replaces id=from with id=to, leaving every other pair as sent.
+func overrideDevice(query, from, to string) string {
+	pairs := strings.Split(query, "&")
+	for i, pair := range pairs {
+		key, val, _ := strings.Cut(pair, "=")
+		if key != "id" {
+			continue
+		}
+		if v, err := url.QueryUnescape(val); err == nil && v == from {
+			pairs[i] = "id=" + url.QueryEscape(to)
+		}
+	}
+	return strings.Join(pairs, "&")
 }
 
 func (w *Worker) Snapshot() Snapshot {

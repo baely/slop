@@ -38,9 +38,26 @@ func TestBuildURL(t *testing.T) {
 		{"http://user:pw@h/", "", "id=1", "http://user:pw@h/?id=1"},
 	}
 	for _, c := range cases {
-		got := buildURL(mustURL(t, c.base), &Job{Path: c.path, Query: c.query}).String()
+		got := buildURL(Target{URL: mustURL(t, c.base)}, &Job{Path: c.path, Query: c.query}).String()
 		if got != c.want {
 			t.Errorf("buildURL(%q, %q, %q) = %q, want %q", c.base, c.path, c.query, got, c.want)
+		}
+	}
+}
+
+func TestDeviceOverride(t *testing.T) {
+	cases := []struct{ base, query, want string }{
+		{"http://h/", "lat=2&id=123&lon=3", "http://h/?lat=2&id=bailey&lon=3"},
+		{"http://h/", "id=456&lat=2", "http://h/?id=456&lat=2"},
+		{"http://h/", "lat=2", "http://h/?lat=2"},
+		// a fixed id on the target URL still wins
+		{"http://h/?id=phone", "id=123&lat=2", "http://h/?lat=2&id=phone"},
+	}
+	for _, c := range cases {
+		tgt := Target{URL: mustURL(t, c.base), DeviceFrom: "123", DeviceTo: "bailey"}
+		got := buildURL(tgt, &Job{Query: c.query}).String()
+		if got != c.want {
+			t.Errorf("buildURL(%q, %q) = %q, want %q", c.base, c.query, got, c.want)
 		}
 	}
 }
@@ -292,6 +309,23 @@ func TestLoadConfig(t *testing.T) {
 	if got := cfg.Targets[0].Redacted(); got != "https://ha.example.com/api/webhook/x?id=…" {
 		t.Errorf("redacted %q", got)
 	}
+	t.Setenv("DEVICE_TRACCAR", "123:bailey")
+	if cfg, err = loadConfig(); err != nil {
+		t.Fatal(err)
+	}
+	if tr := cfg.Targets[1]; tr.DeviceFrom != "123" || tr.DeviceTo != "bailey" {
+		t.Errorf("device override %+v", tr)
+	}
+	t.Setenv("DEVICE_TRACCAR", "123")
+	if _, err := loadConfig(); err == nil {
+		t.Error("expected error for malformed device override")
+	}
+	os.Unsetenv("DEVICE_TRACCAR")
+	t.Setenv("DEVICE_nope", "1:2")
+	if _, err := loadConfig(); err == nil {
+		t.Error("expected error for device override without target")
+	}
+	os.Unsetenv("DEVICE_nope")
 	t.Setenv("TARGET_bad", "not a url")
 	if _, err := loadConfig(); err == nil {
 		t.Error("expected error for bad target url")
